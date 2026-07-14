@@ -2,6 +2,7 @@ module Main where
 
 import Test.Hspec
 import Data.Word (Word8, Word16)
+import qualified Data.Text as T
 import Dayan.Core.Trit
 import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe,
   minTryte, maxTryte, balanceTryte, tryteCardinality,
