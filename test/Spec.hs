@@ -19,6 +19,9 @@ import qualified Dayan.Compute.Cascade as Cascade
 import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
+import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729)
+import Dayan.Core.Tryte (mkTryte)
+import Dayan.Core.Torus (TorusPoint(..))
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
@@ -354,3 +357,18 @@ main = hspec $ do
         case parseDy "-- test\np0 : 0 = 0\np0 = refl" of
           Right f -> length (fileDecls f) `shouldBe` 2  -- 1 comment + 1 def
           Left _  -> expectationFailure "parse failed"
+
+  describe "Kernel.Conversion — 格点定义相等性" $ do
+    context "Tryte 比较" $ do
+      it "相同" $ compareTryte (mkTryte 0) (mkTryte 0) `shouldBe` Equal
+      it "不同" $ compareTryte (mkTryte 0) (mkTryte 1) `shouldBe` NotEqual
+    context "Torus 比较" $ do
+      it "相同" $ compareTorus (TorusPoint 0 0) (TorusPoint 0 0) `shouldBe` Equal
+      it "不同" $ compareTorus (TorusPoint 0 0) (TorusPoint 1 0) `shouldBe` NotEqual
+    context "A4 轨道等价" $ do
+      it "同轨-全N" $ orbitEqual (mkTryte 0) (mkTryte 0) `shouldBe` True
+    context "CRT 投影等价" $ do
+      it "同余-自身" $ crtEqual 0 0 `shouldBe` True
+      it "不同余-自身" $ crtEqual 0 1 `shouldBe` False
+    context "穷举" $ do
+      it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True
