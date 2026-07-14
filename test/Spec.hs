@@ -1,6 +1,7 @@
 module Main where
 
 import Test.Hspec
+import Data.Word (Word8, Word16)
 import Dayan.Core.Trit
 import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe,
   minTryte, maxTryte, balanceTryte, tryteCardinality,
@@ -10,6 +11,8 @@ import qualified Dayan.Core.Tryte as Tryte
 import Dayan.Core.Torus
 import qualified Dayan.Core.Torus as Torus
 import qualified Dayan.Core.Constants as C
+import Dayan.Compute.CRT
+import Dayan.Compute.ModArith
 
 main :: IO ()
 main = hspec $ do
@@ -248,4 +251,43 @@ main = hspec $ do
     context "幻方" $ do
       it "magicSum4x4" $ C.magicSum4x4 `shouldBe` 34
       it "twelveTones" $ C.twelveTones `shouldBe` 12
+
+  describe "CRT — 中国剩余定理查表" $ do
+    context "查表" $ do
+      it "lookupCrt 0"   $ lookupCrt 0   `shouldBe` (0, 0)
+      it "lookupCrt 144" $ lookupCrt 144 `shouldBe` (0, 6 :: Word8)   -- 144%144=0, 144%46=6
+      it "lookupCrt 46"  $ lookupCrt 46  `shouldBe` (46, 0 :: Word8)  -- 46%144=46, 46%46=0
+      it "lookupCrt 6623" $ lookupCrt 6623 `shouldBe` (143, 45 :: Word8)
+    context "投影" $ do
+      it "length projectAll = 6624" $
+        length projectAll `shouldBe` 6624
+      it "all projections valid" $
+        mapM_ (\(_, (p, t)) -> do
+          p `shouldSatisfy` (< 144)
+          t `shouldSatisfy` (< 46)
+          ) (take 100 projectAll)
+    context "双向一致性" $ do
+      it "lookup then reconstruct = id (前100个)" $
+        mapM_ (\i -> lookupIndex (lookupPolar i) (lookupToroidal i) `shouldBe` i) [0..99]
+    context "gcd" $ do
+      it "egcd(46,144) = 2" $ do
+        let (g, _, _) = egcd 144 46
+        g `shouldBe` 2
+
+  describe "ModArith — 快速模算术" $ do
+    context "mod 3" $ do
+      it "mod3 0=0, 1=1, 2=2, 3=0" $ do
+        mod3 0 `shouldBe` 0; mod3 1 `shouldBe` 1
+        mod3 2 `shouldBe` 2; mod3 3 `shouldBe` 0
+    context "unpack3/pack3" $ do
+      it "roundtrip 0..99" $
+        mapM_ (\n -> pack3 (unpack3 n) `shouldBe` n) [0..99 :: Word16]
+      it "unpack3 729" $ unpack3 729 `shouldBe` replicate 6 0  -- wraps
+    context "mod 12" $ do
+      it "mod12" $ mod12 11 `shouldBe` 11
+      it "isZhonglv 11" $ isZhonglv 11 `shouldBe` True
+      it "isZhonglv 0"  $ isZhonglv 0  `shouldBe` False
+    context "mod 46" $ do
+      it "mod46 46=0" $ mod46 46 `shouldBe` 0
+      it "isMultipleOf46 6624" $ isMultipleOf46 6624 `shouldBe` True
 
