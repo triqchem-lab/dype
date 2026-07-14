@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import Test.Hspec
@@ -15,6 +16,9 @@ import qualified Dayan.Core.Constants as C
 import Dayan.Compute.CRT
 import Dayan.Compute.ModArith
 import qualified Dayan.Compute.Cascade as Cascade
+import Dayan.ProofGen.AST
+import Dayan.ProofGen.Emit
+import Dayan.ProofGen.Templates
 
 main :: IO ()
 main = hspec $ do
@@ -307,4 +311,20 @@ main = hspec $ do
     context "对齐" $ do
       it "huangzhong (idx 0) is aligned" $
         Cascade.isAligned 0 `shouldBe` True
+
+  describe "ProofGen — 证明项生成" $ do
+    context "AST" $ do
+      it "Refl show" $ show Refl `shouldBe` "Refl"
+      it "App show" $ show (App (Def "+") (Lit (LNat 3))) `shouldNotBe` ""
+    context "Emit" $ do
+      it "emit module" $ T.length (emitFile testFile) `shouldSatisfy` (> 0)
+    context "Templates" $ do
+      it "genCrtLookup" $ show (genCrtLookup 0 (0,0)) `shouldNotBe` ""
+      it "genT6File" $ length (fileDecls testT6File) `shouldSatisfy` (> 5)
+
+testFile :: AgdaFile
+testFile = AgdaFile "{-# OPTIONS --rewriting #-}" "Test" [DPostulate "x" TNat]
+
+testT6File :: AgdaFile
+testT6File = genT6VerificationFile "Test.T6" [(0, (0,0))]
 
