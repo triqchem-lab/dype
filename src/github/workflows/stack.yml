@@ -5,25 +5,34 @@
 name: Build (stack)
 
 on:
-  push:
+  push: &trigger_paths
     branches: [ "main", "ci-*", "release*" ]
-    paths:
+    paths: &trigger_path_list
     - '.github/workflows/stack.yml'
     - 'dype.cabal'
     - 'config/stack-*.yaml'
     - 'src/**'
 
   pull_request:
-    paths:
-    - '.github/workflows/stack.yml'
-    - 'dype.cabal'
-    - 'config/stack-*.yaml'
-    - 'src/**'
+    paths: *trigger_path_list
 
   workflow_dispatch:
 
 jobs:
-  stack:
+  auto-cancel:
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]')
+      && !contains(github.event.head_commit.message, '[ci skip]')
+      && !contains(github.event.head_commit.message, '[github skip]')
+      && !contains(github.event.head_commit.message, '[skip github]')
+    runs-on: ubuntu-latest
+    steps:
+    - uses: styfle/cancel-workflow-action@0.13.1
+      with:
+        access_token: ${{ github.token }}
+
+  stack: &stack_job
+    needs: auto-cancel
     timeout-minutes: 60
 
     runs-on: ${{ matrix.os }}
@@ -55,9 +64,14 @@ jobs:
 
     - name: Environment settings
       run: |
+        echo "runner.os         = ${{ runner.os                               }}"
+        echo "ghc-path          = ${{ steps.haskell-setup.outputs.ghc-path    }}"
+        echo "cabal-path        = ${{ steps.haskell-setup.outputs.cabal-path  }}"
+        echo "stack-root        = ${{ steps.haskell-setup.outputs.stack-root  }}"
         echo "STACK_ROOT=${{ steps.haskell-setup.outputs.stack-root }}" >> "${GITHUB_ENV}"
+        echo "STACK_VER=$(stack --numeric-version)"                     >> "${GITHUB_ENV}"
         GHC_VER=$(ghc --numeric-version)
-        echo "GHC_VER=${GHC_VER}" >> "${GITHUB_ENV}"
+        echo "GHC_VER=${GHC_VER}"                                       >> "${GITHUB_ENV}"
         echo "ARGS=--stack-yaml=${GITHUB_WORKSPACE}/config/stack-${GHC_VER}.yaml --system-ghc --no-terminal" >> "${GITHUB_ENV}"
 
     - name: Restore cache
