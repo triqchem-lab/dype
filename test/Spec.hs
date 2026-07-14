@@ -2,6 +2,7 @@ module Main where
 
 import Test.Hspec
 import Dayan.Core.Trit
+import Dayan.Core.Tryte
 
 main :: IO ()
 main = hspec $ do
@@ -100,3 +101,70 @@ main = hspec $ do
         isExpress N `shouldBe` False
         isExpress Z `shouldBe` False
         isExpress P `shouldBe` True
+
+  describe "Tryte — Fin 729 (6-trit 格点)" $ do
+
+    context "构造与验证" $ do
+      it "mkTryte" $ do
+        unTryte (mkTryte 0) `shouldBe` 0
+        unTryte (mkTryte 728) `shouldBe` 728
+      it "mkTryteSafe" $ do
+        mkTryteSafe 0   `shouldNotBe` Nothing
+        mkTryteSafe 728 `shouldNotBe` Nothing
+        mkTryteSafe 729 `shouldBe` Nothing
+      it "isValid" $ do
+        isValid (Tryte 0)   `shouldBe` True
+        isValid (Tryte 728) `shouldBe` True
+        isValid (Tryte 729) `shouldBe` False
+      it "minTryte" $ unTryte minTryte `shouldBe` 0
+      it "maxTryte" $ unTryte maxTryte `shouldBe` 728
+      it "balanceTryte" $ unTryte balanceTryte `shouldBe` 364
+
+    context "基3 编解码" $ do
+      it "encode/decode roundtrip" $ do
+        let test n = case encode (decode (Tryte n)) of
+                       Just t  -> unTryte t `shouldBe` n
+                       Nothing -> expectationFailure "encode failed"
+        mapM_ test [0..100]
+      it "decode/encode roundtrip" $ do
+        let trits = [N, Z, P, N, Z, P]  -- v0=N, v1=Z, v2=P, v3=N, v4=Z, v5=P
+        case encode trits of
+          Just t  -> decode t `shouldBe` trits
+          Nothing -> expectationFailure "encode failed"
+      it "decodeRaw length" $ do
+        length (decodeRaw (Tryte 0)) `shouldBe` 6
+      it "specific encoding: all N" $ do
+        case encode [N,N,N,N,N,N] of
+          Just t  -> unTryte t `shouldBe` 0
+          Nothing -> expectationFailure "encode all-N failed"
+      it "specific encoding: all P" $ do
+        case encode [P,P,P,P,P,P] of
+          Just t  -> unTryte t `shouldBe` 728
+          Nothing -> expectationFailure "encode all-P failed"
+      it "specific encoding: [N,Z,P,N,Z,P]" $ do
+        -- v0=N(0), v1=Z(1), v2=P(2), v3=N(0), v4=Z(1), v5=P(2)
+        -- = 0 + 3*1 + 9*2 + 27*0 + 81*1 + 243*2
+        -- = 0 + 3 + 18 + 0 + 81 + 486 = 588
+        case encode [N,Z,P,N,Z,P] of
+          Just t  -> unTryte t `shouldBe` 588
+          Nothing -> expectationFailure "encode failed"
+
+    context "Trit 级访问" $ do
+      it "tritAt" $ do
+        tritAt (Tryte 588) 0 `shouldBe` Just N   -- v0
+        tritAt (Tryte 588) 1 `shouldBe` Just Z   -- v1
+        tritAt (Tryte 588) 2 `shouldBe` Just P   -- v2
+        tritAt (Tryte 588) 5 `shouldBe` Just P   -- v5
+        tritAt (Tryte 588) (-1) `shouldBe` Nothing
+        tritAt (Tryte 588) 6 `shouldBe` Nothing
+      it "setTrit" $ do
+        case setTrit (Tryte 0) 0 P of
+          Just t  -> unTryte t `shouldBe` 2  -- 仅 v0 改为 P(2)
+          Nothing -> expectationFailure "setTrit failed"
+
+    context "枚举" $ do
+      it "allTrytes count" $ length allTrytes `shouldBe` 729
+      it "allTrytes are valid" $
+        mapM_ (\t -> isValid t `shouldBe` True) (take 50 allTrytes)
+      it "findTryte" $ do
+        findTryte (\t -> unTryte t == 364) `shouldBe` Just balanceTryte
