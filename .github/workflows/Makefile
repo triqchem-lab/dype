@@ -1,5 +1,6 @@
 SRC = ../../src/github/workflows
 DIR = .
+HEADER = $(SRC)/header.txt
 
 # Source files (e.g., stack.yml)
 WORKFLOWS := $(notdir $(wildcard $(SRC)/*.yml))
@@ -7,9 +8,10 @@ WORKFLOWS := $(notdir $(wildcard $(SRC)/*.yml))
 .PHONY: all
 all: $(WORKFLOWS)
 
-# Copy source to generated location
-$(DIR)/%: $(SRC)/%
-	cp $< $@
+# Prepend header and copy to generated location
+$(DIR)/%: $(SRC)/% $(HEADER)
+	cp $(HEADER) $@
+	cat $< >> $@
 
 .PHONY: clean
 clean:
