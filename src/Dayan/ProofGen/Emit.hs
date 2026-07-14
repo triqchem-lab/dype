@@ -7,7 +7,7 @@ emitFile (AgdaFile opts modName decls) = T.unlines $ [opts, "module " <> modName
 emitDecl = \case
   DModule n ds -> ("module " <> n <> " where") : map ("  " <>) (concatMap emitDecl ds)
   DOpen n -> ["open " <> n]; DOpenUsing n ns -> ["open " <> n <> " using (" <> T.intercalate "; " ns <> ")"]
-  DImport n -> ["import " <> n]; DPostulate n ty -> ["postulate", "  " <> n <> " : " <> emitType ty]
+  DImport n -> ["open import " <> n]; DPostulate n ty -> ["postulate", "  " <> n <> " : " <> emitType ty]
   DDef n ty cls -> map (\c -> n <> " : " <> emitType ty <> "\n" <> n <> " " <> emitClause c) cls
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
   DComment t -> ["-- " <> t]
