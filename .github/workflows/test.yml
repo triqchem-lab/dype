@@ -38,6 +38,7 @@ on:
     - cron: '0 0 * * 0'
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   GHC_VER: "9.14.1"
   PARALLEL_TESTS: 2
   TASTY_ANSI_TRICKS: "false"

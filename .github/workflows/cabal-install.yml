@@ -7,6 +7,8 @@
 ######################################################
 # This workflow tests whether we can build dype from the sdist tarball.
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 name: Install (v2-cabal)
 
 on:
