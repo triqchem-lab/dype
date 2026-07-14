@@ -72,6 +72,7 @@ jobs:
 
     - name: Prepare to upload built htmls
       run: |
+        mkdir -p html/docs
         find dist-newstyle -path '*/doc/html/dype' -type d -exec cp -R {} html/docs \;
         find html -name '*.md' -delete
 
