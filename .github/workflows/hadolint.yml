@@ -32,7 +32,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Check Dockerfile exists
+        id: check-dockerfile
+        run: |
+          if [ -f ./Dockerfile ]; then echo "exists=true" >> "${GITHUB_OUTPUT}"; else echo "exists=false" >> "${GITHUB_OUTPUT}"; fi
+
       - name: Run hadolint
+        if: steps.check-dockerfile.outputs.exists == 'true'
         uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
         with:
           dockerfile: ./Dockerfile
@@ -41,6 +47,7 @@ jobs:
           no-fail: true
 
       - name: Upload analysis results to GitHub
+        if: steps.check-dockerfile.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: hadolint-results.sarif
