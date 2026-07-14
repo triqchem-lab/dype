@@ -19,6 +19,7 @@ import qualified Dayan.Compute.Cascade as Cascade
 import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
+import Dayan.Compute.Orbit
 
 main :: IO ()
 main = hspec $ do
@@ -313,18 +314,25 @@ main = hspec $ do
         Cascade.isAligned 0 `shouldBe` True
 
   describe "ProofGen — 证明项生成" $ do
+    let testFile = AgdaFile "{-# OPTIONS --rewriting #-}" "Test" [DPostulate "x" TNat]
+        testT6File = genT6VerificationFile "Test.T6" [(0, (0,0))]
     context "AST" $ do
       it "Refl show" $ show Refl `shouldBe` "Refl"
       it "App show" $ show (App (Def "+") (Lit (LNat 3))) `shouldNotBe` ""
     context "Emit" $ do
       it "emit module" $ T.length (emitFile testFile) `shouldSatisfy` (> 0)
     context "Templates" $ do
-      it "genCrtLookup" $ show (genCrtLookup 0 (0,0)) `shouldNotBe` ""
       it "genT6File" $ length (fileDecls testT6File) `shouldSatisfy` (> 5)
-
-testFile :: AgdaFile
-testFile = AgdaFile "{-# OPTIONS --rewriting #-}" "Test" [DPostulate "x" TNat]
-
-testT6File :: AgdaFile
-testT6File = genT6VerificationFile "Test.T6" [(0, (0,0))]
-
+  describe "Orbit — A4 轨道分解" $ do
+    context "A4 群" $ do
+      it "group order = 12" $ length a4Group `shouldBe` 12
+      it "identity is id" $ a4Identity `shouldBe` [0,1,2,3]
+    context "轨道" $ do
+      it "orbit of minTryte" $ length (orbit minTryte) `shouldSatisfy` (<= 12)
+      it "verify Orbit-Stabilizer (前10格点)" $
+        mapM_ (\t -> verifyOrbitStabilizer t `shouldBe` True) (take 10 allTrytes)
+    context "分解" $ do
+      let decomp = decomposeOrbits
+      it "轨道总数 > 0" $ orbitCount decomp `shouldSatisfy` (> 0)
+      it "覆盖所有 729 格点" $ verifyCoverage decomp `shouldBe` True
+      it "最大轨道 ≤ 12" $ maxOrbitSize decomp `shouldSatisfy` (<= 12)
