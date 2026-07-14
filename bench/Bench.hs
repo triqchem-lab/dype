@@ -2,7 +2,7 @@ module Main where
 import Criterion.Main
 import Dayan.Core.Tryte (mkTryte, decode)
 import Dayan.Core.Trit
-import Data.Word
+import Data.Word (Word16)
 
 main :: IO ()
 main = defaultMain
@@ -12,6 +12,7 @@ main = defaultMain
       , bench "superpose N P" $ nf (superpose N) P
       ]
   , bgroup "Tryte"
-      [ bench "length . decode . mkTryte" $ nf (length . decode . mkTryte) (365 :: Word8)
+      [ bench "mkTryte 365" $ nf mkTryte (365 :: Word16)
+      , bench "decode 365" $ nf (length . decode . mkTryte) (365 :: Word16)
       ]
   ]
