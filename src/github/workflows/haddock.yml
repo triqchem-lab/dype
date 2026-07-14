@@ -33,7 +33,7 @@ jobs:
       FLAGS: --disable-library-profiling --enable-documentation
 
     steps:
-    - uses: actions/checkout@v8
+    - uses: actions/checkout@v7
 
     - id: setup-haskell
       name: Detect Haskell toolchain
@@ -50,7 +50,7 @@ jobs:
         cabal build --dry-run
 
     - name: Cache dependencies
-      uses: actions/cache@v7
+      uses: actions/cache@v6
       id: cache
       with:
         path: |

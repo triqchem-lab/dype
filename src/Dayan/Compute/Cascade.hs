@@ -10,6 +10,7 @@
 module Dayan.Compute.Cascade where
 
 import Data.Word (Word16)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
 import Dayan.Core.Torus (TorusPoint(..))
 
@@ -32,10 +33,10 @@ indexToPoint idx = TorusPoint
 pointToIndex :: TorusPoint -> Word16
 pointToIndex (TorusPoint p t) =
   -- 线性搜索: p + k*144, k∈[0..45], 找 toroidal ≡ t (mod 46)
-  head [ idx | k <- [0..45]
+  fromMaybe 0 (listToMaybe [ idx | k <- [0..45]
          , let idx = fromIntegral p + k * 144
          , idx < 6624
-         , lookupToroidal idx == t ]
+         , lookupToroidal idx == t ])
 
 ----------------------------------------------------------------------
 -- 2. 极限环轨迹
@@ -71,7 +72,7 @@ zhonglvSync idx = idx + 144  -- 在 144 基线上注入额外歧义
 
 -- | 带仲吕同步的步进: 每 12 步检查是否需要同步
 cascadeWithZhonglv :: Word16 -> [Word16]
-cascadeWithZhonglv = go 0
+cascadeWithZhonglv = go (0 :: Int)
   where
     go steps idx
       | steps >= 6624 = []
@@ -92,8 +93,8 @@ isAligned idx = lookupPolar idx == 0 && lookupToroidal idx == 0
 
 -- | 找到下一个对齐点 (从当前索引开始)
 nextAlignment :: Word16 -> Word16
-nextAlignment idx = head $
-  dropWhile (not . isAligned) $ iterate cascadeStep idx
+nextAlignment idx = fromMaybe idx (listToMaybe $
+  dropWhile (not . isAligned) $ iterate cascadeStep idx)
 
 -- | 两个对齐点之间的步数应为 6624
 alignmentPeriod :: Bool

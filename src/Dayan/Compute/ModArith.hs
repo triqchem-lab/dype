@@ -33,8 +33,9 @@ div3k k = k  -- 因为 (3*k)/3 = k
 --   输入: ℕ 值 → 输出: [v0, v1, v2, v3, v4, v5] (每位 ∈ {0,1,2})
 unpack3 :: Word16 -> [Word8]
 unpack3 0 = replicate 6 0
-unpack3 n = go n 6
+unpack3 n = go (fromIntegral n :: Int) (6 :: Int)
   where
+    go :: Int -> Int -> [Word8]
     go _ 0 = []
     go m k = fromIntegral (m `mod` 3) : go (m `div` 3) (k - 1)
 

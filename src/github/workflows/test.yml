@@ -69,7 +69,7 @@ jobs:
 
     - &checkout
       name: Checkout repo
-      uses: actions/checkout@v8
+      uses: actions/checkout@v7
       with:
         submodules: recursive
 
@@ -93,7 +93,7 @@ jobs:
         STACK: "stack --system-ghc --stack-yaml=${{ github.workspace }}/config/stack-9.14.1.yaml"
 
     - name: Restore cache from approximate key
-      uses: actions/cache/restore@v7
+      uses: actions/cache/restore@v6
       id: cache
       with:
         path: &cache_path ${{ steps.setup-haskell.outputs.stack-root }}
@@ -121,7 +121,7 @@ jobs:
           stack-work.tzst
 
     - name: Save cache
-      uses: actions/cache/save@v7
+      uses: actions/cache/save@v6
       if:   steps.cache.outputs.cache-hit != 'true'
       with:
         key:  *cache_key

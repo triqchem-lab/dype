@@ -22,7 +22,7 @@ jobs:
     steps:
 
     - name: Check out code
-      uses: actions/checkout@v8
+      uses: actions/checkout@v7
 
     - name: Cleanup
       run: |
