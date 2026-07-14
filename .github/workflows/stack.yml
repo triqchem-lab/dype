@@ -1,0 +1,94 @@
+name: Build (stack)
+
+on:
+  push:
+    branches: [ "main", "ci-*", "release*" ]
+    paths:
+    - '.github/workflows/stack.yml'
+    - 'dype.cabal'
+    - 'config/stack-*.yaml'
+    - 'src/**'
+
+  pull_request:
+    paths:
+    - '.github/workflows/stack.yml'
+    - 'dype.cabal'
+    - 'config/stack-*.yaml'
+    - 'src/**'
+
+  workflow_dispatch:
+
+jobs:
+  stack:
+    timeout-minutes: 60
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        ghc-ver: [9.14.1, 9.12.4, 9.10.3, 9.8.4, 9.6.7, 9.4.8]
+        include:
+        - os: macos-15
+          ghc-ver: 9.14.1
+        - os: windows-2025
+          ghc-ver: 9.14.1
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: clearnature/setup@main
+      id: haskell-setup
+      with:
+        ghc-version: ${{ matrix.ghc-ver }}
+        stack-version: latest
+        enable-stack: true
+        cabal-update: false
+
+    - name: Environment settings
+      run: |
+        echo "STACK_ROOT=${{ steps.haskell-setup.outputs.stack-root }}" >> "${GITHUB_ENV}"
+        GHC_VER=$(ghc --numeric-version)
+        echo "GHC_VER=${GHC_VER}" >> "${GITHUB_ENV}"
+        echo "ARGS=--stack-yaml=${GITHUB_WORKSPACE}/config/stack-${GHC_VER}.yaml --system-ghc --no-terminal" >> "${GITHUB_ENV}"
+
+    - name: Restore cache
+      uses: actions/cache/restore@v6
+      id:   cache
+      env:
+        key: stack-${{ runner.os }}-ghc-${{ env.GHC_VER }}
+      with:
+        key: ${{ env.key }}-plan-${{ hashFiles('dype.cabal', format('config/stack-{0}.yaml', env.GHC_VER)) }}
+        restore-keys: ${{ env.key }}-
+        path: ${{ env.STACK_ROOT }}
+
+    - name: Install dependencies
+      run: |
+        # shellcheck disable=SC2086
+        stack build ${ARGS} --test --bench --only-dependencies
+
+    - name: Build
+      run: |
+        # shellcheck disable=SC2086
+        stack build ${ARGS} --test --bench --no-run-tests
+
+    - name: Run tests
+      run: |
+        # shellcheck disable=SC2086
+        stack test ${ARGS}
+
+    - name: Run benchmarks
+      run: |
+        # shellcheck disable=SC2086
+        stack bench ${ARGS}
+
+    - name: Save cache
+      uses: actions/cache/save@v6
+      if:   always() && steps.cache.outputs.cache-matched-key != steps.cache.outputs.cache-primary-key
+      with:
+        key:  ${{ steps.cache.outputs.cache-primary-key }}
+        path: ${{ env.STACK_ROOT }}
