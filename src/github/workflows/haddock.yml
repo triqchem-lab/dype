@@ -91,7 +91,7 @@ jobs:
 HTML
 
     - name: Deploy haddock
-      uses: ./.github/actions/gh-pages
+      uses: peaceiris/actions-gh-pages@v4
       if: github.ref == 'refs/heads/main'
       with:
         personal_token: ${{ secrets.DEPLOY_TOKEN }}
