@@ -85,17 +85,17 @@ jobs:
     - name: Add redirect index.html
       run: |
         cat > html/index.html << 'HTML'
-<!DOCTYPE html>
-<html>
-<head>
-  <meta http-equiv="refresh" content="0; url=docs/">
-  <title>dype - Da-Yan Proof Engine</title>
-</head>
-<body>
-  <p>Redirecting to <a href="docs/">documentation</a>...</p>
-</body>
-</html>
-HTML
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta http-equiv="refresh" content="0; url=docs/">
+          <title>dype - Da-Yan Proof Engine</title>
+        </head>
+        <body>
+          <p>Redirecting to <a href="docs/">documentation</a>...</p>
+        </body>
+        </html>
+        HTML
 
     - name: Deploy haddock
       uses: peaceiris/actions-gh-pages@v4
