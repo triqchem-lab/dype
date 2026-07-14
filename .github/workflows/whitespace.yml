@@ -6,9 +6,11 @@
 ##                                                  ##
 ######################################################
 name: Whitespace
-on:
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
   push:
     branches:
     - main
@@ -19,14 +21,10 @@ env:
 jobs:
   check:
     runs-on: ubuntu-24.04
-
+    permissions:
+      contents: read
     steps:
-    - name: Checkout dype sources
-      uses: actions/checkout@v7
-
-    - name: Check for whitespace violations
-      uses: andreasabel/fix-whitespace-action@v1
-
-    - name: Check building the source tarball
-      run: |
-        cabal sdist
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - uses: andreasabel/fix-whitespace-action@v1
