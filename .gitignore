@@ -9,3 +9,6 @@ cabal.sandbox.config
 *.dyn_o
 *.dyn_hi
 stack.yaml
+
+# Auto-generated workflow files
+.github/workflows/stack.yml
