@@ -44,7 +44,7 @@ genT6Iso729 = DPostulate "t6≃fin729"
 -- | toℕ-sum-injective: 6层 %3+/3 剥离模具
 genToNatSumInjective :: Decl
 genToNatSumInjective =
-  in DPostulate "toℕ-sum-injective"
+   DPostulate "toℕ-sum-injective"
        (TPi "x" (TDef "T6Lattice") (TPi "y" (TDef "T6Lattice")
          (TFun (TApp (TApp (TDef "_≡_") (apps (Def "toℕ-sum") [Var "x"]))
                         (apps (Def "toℕ-sum") [Var "y"]))

@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 module Dayan.ProofGen.Emit where
-import qualified Data.Text as T; import Dayan.ProofGen.AST
+import Data.Text (Text)
+import qualified Data.Text as T
+import Dayan.ProofGen.AST
 
 emitFile :: AgdaFile -> Text
 emitFile (AgdaFile opts modName decls) = T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl decls
