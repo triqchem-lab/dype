@@ -1,5 +1,5 @@
 module Dayan.Kernel.Conversion where
-import Data.Word (Word16, Word8)
+import Data.Word (Word16)
 import Dayan.Core.Tryte (Tryte(..), allTrytes)
 import Dayan.Core.Torus (TorusPoint(..))
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)

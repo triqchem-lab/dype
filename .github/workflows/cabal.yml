@@ -96,7 +96,11 @@ jobs:
 
     - name: Determine the ICU version
       run: |
-        ICU_VER=$(pkg-config --modversion icu-i18n 2>/dev/null || echo "0")
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ICU_VER=$(stack exec -- pacman -Qi mingw-w64-x86_64-icu 2>/dev/null | grep Version | head -1 | sed 's/.*: //' | cut -d- -f1 || echo "0")
+        else
+          ICU_VER=$(pkg-config --modversion icu-i18n 2>/dev/null || echo "0")
+        fi
         echo "ICU_VER=${ICU_VER}"
         echo "ICU_VER=${ICU_VER}" >> "${GITHUB_ENV}"
 

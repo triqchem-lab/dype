@@ -14,8 +14,6 @@ module Dayan.Core.Torus where
 
 import Data.Word (Word16, Word8)
 
-import Dayan.Core.Tryte (Tryte(..), tryteCardinality)
-import Dayan.Core.Trit (Trit)
 
 ----------------------------------------------------------------------
 -- 1. 核心类型

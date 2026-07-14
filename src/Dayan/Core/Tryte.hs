@@ -14,8 +14,6 @@
 module Dayan.Core.Tryte where
 
 import Data.Word (Word16, Word8)
-import Data.Bits (shiftR, (.&.))
-import Data.Maybe (isJust)
 
 import Dayan.Core.Trit (Trit(..), toNat, fromNat)
 

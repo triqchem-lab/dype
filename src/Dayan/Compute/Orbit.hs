@@ -16,8 +16,6 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Set (Set)
 import qualified Data.Set as S
-import Data.List (sortOn, group, sort)
-import Data.Maybe (fromMaybe)
 
 import Dayan.Core.Tryte (Tryte(..), allTrytes)
 
@@ -123,8 +121,8 @@ data OrbitDecomp = OrbitDecomp
 -- | 对所有 729 个格点计算轨道分解
 decomposeOrbits :: OrbitDecomp
 decomposeOrbits =
-  let all = S.fromList allTrytes
-      orbits' = findOrbits all S.empty
+  let pts = S.fromList allTrytes
+      orbits' = findOrbits pts S.empty
   in OrbitDecomp
     { orbits     = orbits'
     , orbitSizes = [(length o, a4Order `div` length o) | o <- orbits']

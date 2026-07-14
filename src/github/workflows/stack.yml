@@ -97,8 +97,12 @@ jobs:
 
     - name: Determine the ICU version
       run: |
-        # shellcheck disable=SC2086
-        ICU_VER=$(stack exec ${ARGS} -- pkg-config --modversion icu-i18n)
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ICU_VER=$(stack exec ${ARGS} -- pacman -Qi mingw-w64-x86_64-icu 2>/dev/null | grep Version | head -1 | sed 's/.*: //' | cut -d- -f1 || echo "0")
+        else
+          # shellcheck disable=SC2086
+          ICU_VER=$(stack exec ${ARGS} -- pkg-config --modversion icu-i18n)
+        fi
         echo "ICU_VER=${ICU_VER}"
         echo "ICU_VER=${ICU_VER}" >> "${GITHUB_ENV}"
 

@@ -9,7 +9,7 @@
 
 module Dayan.Compute.Cascade where
 
-import Data.Word (Word8, Word16)
+import Data.Word (Word16)
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
 import Dayan.Core.Torus (TorusPoint(..))
 

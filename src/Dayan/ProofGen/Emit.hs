@@ -1,9 +1,11 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 module Dayan.ProofGen.Emit where
-import Data.Text (Text); import qualified Data.Text as T; import Dayan.ProofGen.AST
+import qualified Data.Text as T; import Dayan.ProofGen.AST
 
+emitFile :: AgdaFile -> Text
 emitFile (AgdaFile opts modName decls) = T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl decls
 
+emitDecl :: Decl -> [Text]
 emitDecl = \case
   DModule n ds -> ("module " <> n <> " where") : map ("  " <>) (concatMap emitDecl ds)
   DOpen n -> ["open import " <> n]; DOpenUsing n ns -> ["open import " <> n <> " using (" <> T.intercalate "; " ns <> ")"]
@@ -12,9 +14,13 @@ emitDecl = \case
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
   DComment t -> ["-- " <> t]
 
+emitClause :: Clause -> Text
 emitClause (Clause pats body) = T.intercalate " " (map emitPattern pats) <> " = " <> emitTerm body
+
+emitConDecl :: ConDecl -> Text
 emitConDecl (ConDecl n ty) = n <> " : " <> emitType ty
 
+emitType :: Type -> Text
 emitType = \case
   TSet -> "Set"; TNat -> "Nat"; TDef n -> n; TFun a b -> emitType a <> " → " <> emitType b
   TPi x a b -> "(" <> x <> " : " <> emitType a <> ") → " <> emitType b
@@ -22,6 +28,7 @@ emitType = \case
   TApp (TApp (TDef "_≡_") a) b -> emitTerm a <> " ≡ " <> emitTerm b
   TApp t e -> emitType t <> " " <> emitTerm e
 
+emitTerm :: Term -> Text
 emitTerm = \case
   Var x -> x; Def f -> f; Refl -> "refl"; Hole -> "{!!}"; Lit l -> emitLit l
   Lam x e -> "λ " <> x <> " → " <> emitTerm e
@@ -32,5 +39,8 @@ emitTerm = \case
   App f a -> emitTerm f <> " " <> emitTerm a
   Ann e t -> "(" <> emitTerm e <> " : " <> emitType t <> ")"; Pi _ _ _ -> "{! Pi !}"
 
+emitLit :: Lit -> Text
 emitLit = \case; LNat n -> T.pack (show n); LZero -> "zero"; LSuc n -> "suc " <> emitTerm n
+
+emitPattern :: Pattern -> Text
 emitPattern = \case; PVar x -> x; PWild -> "_"; PLit l -> emitLit l; PCon c [] -> c; PCon c ps -> c <> " " <> T.unwords (map emitPattern ps)
