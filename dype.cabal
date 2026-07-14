@@ -23,6 +23,7 @@ library
     import:           warnings
     hs-source-dirs:   src
     exposed-modules:
+        Dayan.Verify.Agda
         Dayan.Parse.Dy
         Dayan
         Dayan.Core.Trit
@@ -38,6 +39,9 @@ library
         Dayan.ProofGen.Templates
     build-depends:
         base >=4.17 && <5,
+        process,
+        temporary,
+        filepath,
         containers,
         text,
         vector
