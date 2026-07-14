@@ -82,8 +82,23 @@ jobs:
         find dist-newstyle -path '*/doc/html/dype' -type d -exec cp -R {} html \;
         find html -name '*.md' -delete
 
+    - name: Add redirect index.html
+      run: |
+        cat > html/index.html << 'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="refresh" content="0; url=docs/">
+  <title>dype - Da-Yan Proof Engine</title>
+</head>
+<body>
+  <p>Redirecting to <a href="docs/">documentation</a>...</p>
+</body>
+</html>
+HTML
+
     - name: Deploy haddock
-      uses: peaceiris/actions-gh-pages@v4
+      uses: ./.github/actions/gh-pages
       if: github.ref == 'refs/heads/main'
       with:
         personal_token: ${{ secrets.DEPLOY_TOKEN }}
