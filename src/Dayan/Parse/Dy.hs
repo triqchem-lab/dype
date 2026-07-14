@@ -8,9 +8,9 @@ import Dayan.Adapter.Agda (AgdaModuleName(..))
 parseDy :: Text -> Either String (AgdaModuleName, AgdaFile)
 parseDy input = case T.lines input of
   []    -> Left "empty file"
-  (l:ls) -> case parseOpts l of
-    Just opts -> Right (AgdaModuleName "TODO", AgdaFile opts "TODO" (parseDecls ls))
-    Nothing   -> Right (AgdaModuleName "TODO", AgdaFile "" "TODO" (parseDecls ls))
+  (l:rest) -> case parseOpts l of
+    Just opts -> Right (AgdaModuleName "TODO", AgdaFile opts "TODO" (parseDecls rest))
+    Nothing   -> Right (AgdaModuleName "TODO", AgdaFile "" "TODO" (parseDecls (l:rest)))
 
 parseOpts l | "{-#" `T.isPrefixOf` l && "#-}" `T.isSuffixOf` l = Just l
             | otherwise = Nothing
