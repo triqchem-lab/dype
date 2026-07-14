@@ -29,7 +29,6 @@ emitType = \case
   TFin n -> "Fin " <> emitTerm n; TVec a n -> "Vec " <> emitType a <> " " <> emitTerm n
   TApp (TApp (TDef "_≡_") a) b -> emitTerm a <> " ≡ " <> emitTerm b
   TApp (TApp (TDef "_≤_") a) b -> emitTerm a <> " ≤ " <> emitTerm b
-  TApp (TApp (TDef "_≤_") a) b -> emitTerm a <> " ≤ " <> emitTerm b
   TApp t e -> emitType t <> " " <> emitTerm e
 
 emitTerm :: Term -> Text

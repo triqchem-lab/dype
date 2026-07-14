@@ -4,6 +4,7 @@ import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import qualified Data.Text.IO as TIO
 
+main :: IO ()
 main = do
   let f = AgdaFile "{-# OPTIONS --rewriting #-}" "Generated.T6Verification"
             [ DOpenUsing "Data.Nat" ["_≤_"]
