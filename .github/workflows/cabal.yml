@@ -81,6 +81,25 @@ jobs:
         cabal-version: latest
         cabal-update:  true
 
+    - name: Install the ICU library (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install icu4c
+        ICU4C=$(brew --prefix)/opt/icu4c
+        echo "PKG_CONFIG_PATH=${ICU4C}/lib/pkgconfig" >> "${GITHUB_ENV}"
+
+    - name: Install the ICU library (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # shellcheck disable=SC2086
+        stack exec -- pacman --noconfirm -S mingw-w64-x86_64-icu mingw-w64-x86_64-pkgconf mingw-w64-x86_64-zlib
+
+    - name: Determine the ICU version
+      run: |
+        ICU_VER=$(pkg-config --modversion icu-i18n 2>/dev/null || echo "0")
+        echo "ICU_VER=${ICU_VER}"
+        echo "ICU_VER=${ICU_VER}" >> "${GITHUB_ENV}"
+
     - name: Configure the build plan
       run: |
         # shellcheck disable=SC2086
@@ -95,7 +114,7 @@ jobs:
         key: ${{ env.key }}-${{ hashFiles('**/plan.json') }}
         restore-keys: ${{ env.key }}
       env:
-        key: cabal.yml-${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ steps.setup-haskell.outputs.cabal-version }}
+        key: cabal.yml-${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ steps.setup-haskell.outputs.cabal-version }}-icu
 
     - name: Install dependencies
       run: |
