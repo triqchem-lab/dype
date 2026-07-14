@@ -64,3 +64,14 @@ benchmark dype-bench
         dype,
         criterion
     default-language: Haskell2010
+
+executable gen-demo
+    import:           warnings
+    main-is:          GenDemo.hs
+    hs-source-dirs:   app
+    build-depends:
+        base,
+        dype,
+        text
+    default-language: Haskell2010
+    ghc-options:      -O0
