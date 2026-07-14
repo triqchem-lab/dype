@@ -24,6 +24,7 @@ library
     hs-source-dirs:   src
     exposed-modules:
         Dayan.Verify.Agda
+        Dayan.Kernel.Conversion
         Dayan.Parse.Dy
         Dayan
         Dayan.Core.Trit
