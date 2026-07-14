@@ -1,0 +1,62 @@
+cabal-version:      3.0
+name:               dype
+version:            0.1.0.0
+synopsis:           Da-Yan High-Dimensional Isomorphism Proof Engine
+description:
+  The Da-Yan Proof Engine (DY-PE) is a discrete lattice computation
+  engine that generates Agda proof terms. It replaces Agda's
+  λ-calculus reduction with CRT table lookups, orbit decomposition,
+  and limit-cascade phase alignment on the T⁶ torus lattice (729 points).
+
+homepage:           https://github.com/triqchem-lab/dype
+license:            MIT
+license-file:       LICENSE
+author:             triqchem-lab
+maintainer:         triqchem-lab@github
+category:           Math, Proof Assistants
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    hs-source-dirs:   src
+    exposed-modules:
+        Dayan.Core.Trit
+        Dayan.Core.Tryte
+        Dayan.Core.Torus
+        Dayan.Core.Constants
+        Dayan.Compute.CRT
+        Dayan.Compute.Orbit
+        Dayan.Compute.Cascade
+        Dayan.Compute.ModArith
+        Dayan.ProofGen.AST
+        Dayan.ProofGen.Emit
+        Dayan.ProofGen.Templates
+    build-depends:
+        base >=4.17 && <5
+    default-language: Haskell2010
+    ghc-options:      -O2
+
+test-suite dype-test
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Spec.hs
+    build-depends:
+        base,
+        dype,
+        hspec
+    default-language: Haskell2010
+
+benchmark dype-bench
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   bench
+    main-is:          Main.hs
+    build-depends:
+        base,
+        dype,
+        criterion
+    default-language: Haskell2010
