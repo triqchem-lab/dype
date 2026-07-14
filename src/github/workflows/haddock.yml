@@ -72,7 +72,7 @@ jobs:
 
     - name: Prepare to upload built htmls
       run: |
-        find dist-newstyle -path '*/doc/html/dype' -type d -exec cp -R {} html \;
+        find dist-newstyle -path '*/doc/html/dype' -type d -exec cp -R {} html/docs \;
         find html -name '*.md' -delete
 
     - name: Add redirect index.html
@@ -97,4 +97,3 @@ HTML
         personal_token: ${{ secrets.DEPLOY_TOKEN }}
         publish_dir: html
         force_orphan:  true
-        destination_dir: docs
