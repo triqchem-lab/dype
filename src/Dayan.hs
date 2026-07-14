@@ -5,16 +5,21 @@ module Dayan
   , module Dayan.Core.Constants
   , module Dayan.Compute.CRT
   , module Dayan.Compute.ModArith
+  , module Dayan.Kernel.Conversion
   , module Dayan.ProofGen.AST
   , module Dayan.ProofGen.Emit
   , module Dayan.ProofGen.Templates
+  , module Dayan.Parse.Dy
+  , module Dayan.Verify.Agda
   ) where
-
 import Dayan.Core.Trit
 import Dayan.Core.Tryte
 import Dayan.Core.Constants
 import Dayan.Compute.CRT
 import Dayan.Compute.ModArith
+import Dayan.Kernel.Conversion
 import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
+import Dayan.Parse.Dy
+import Dayan.Verify.Agda

@@ -1,19 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
-import Data.Text (pack)
-import qualified Data.Text.IO as TIO
 import Dayan.ProofGen.AST
-import Dayan.ProofGen.Emit
+import Dayan.ProofGen.Emit (emitFile)
+import Dayan.Parse.Dy (parseDy)
 import Dayan.Verify.Agda (verify)
+import qualified Data.Text.IO as TIO
 
 main = do
-  let f = AgdaFile "" "Generated.Verified" $
+  let f = AgdaFile "" "Generated.DyTest"
             [ DOpen "Agda.Builtin.Nat"
             , DOpen "Agda.Builtin.Equality"
-            , DComment "Da-Yan Engine + Verify pipeline"
-            , DDef "p0" (TApp (TApp (TDef "_≡_") (Lit (LNat 0))) (Lit (LNat 0)))
-                [Clause [] Refl]
+            , DDef "p0" (TApp (TApp (TDef "_≡_") (Lit (LNat 0))) (Lit (LNat 0))) [Clause [] Refl]
             ]
-  TIO.writeFile "/tmp/GenVerify.agda" (emitFile f)
   result <- verify f
-  putStrLn $ "Verify result: " ++ show result
+  putStrLn $ "Gen→Emit→Verify: " ++ show result
+  case parseDy "-- test\ndef p: Set\np = Set" of
+    Left err -> putStrLn $ "Parse: " ++ err
+    Right (_, f2) -> putStrLn $ "Parse: " ++ show (length (fileDecls f2)) ++ " decls"

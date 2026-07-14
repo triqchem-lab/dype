@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 module Dayan.ProofGen.Templates where
+import Dayan.Compute.CRT (projectAll)
 import Data.Word (Word16); import Data.Text (Text); import qualified Data.Text as T; import Dayan.ProofGen.AST
 
 genCrtLookup :: Word16 -> (Word16, Word16) -> Decl
