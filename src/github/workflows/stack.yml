@@ -58,7 +58,7 @@ jobs:
       id: haskell-setup
       with:
         ghc-version: ${{ matrix.ghc-ver }}
-        stack-version: latest
+        stack-version: '3.11.1'
         enable-stack: true
         cabal-update: false
 
