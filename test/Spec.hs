@@ -350,13 +350,13 @@ main = hspec $ do
     context "postulate" $ do
       it "simple postulate" $
         case parseDy "postulate x : Set" of
-          Right f -> length (fileDecls f) `shouldSatisfy` (> 0)
-          Left _  -> expectationFailure "parse failed"
+          Right (_, f) -> length (fileDecls f) `shouldSatisfy` (> 0)
+          Left _ -> expectationFailure "parse failed"
     context "defs" $ do
       it "definition" $
         case parseDy "-- test\np0 : 0 = 0\np0 = refl" of
-          Right f -> length (fileDecls f) `shouldBe` 2  -- 1 comment + 1 def
-          Left _  -> expectationFailure "parse failed"
+          Right (_, f) -> length (fileDecls f) `shouldBe` 2  -- 1 comment + 1 def
+          Left _ -> expectationFailure "parse failed"
 
   describe "Kernel.Conversion — 格点定义相等性" $ do
     context "Tryte 比较" $ do

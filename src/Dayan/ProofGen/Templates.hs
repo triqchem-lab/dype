@@ -35,3 +35,35 @@ genTryteVerificationFile :: Text -> AgdaFile
 genTryteVerificationFile modName = AgdaFile
   { fileOpts = "{-# OPTIONS --guardedness #-}", fileModule = modName
   , fileDecls = [DImport "Sovereign.Core.Tryte", DComment "encode∘decode roundtrip"] ++ genEncodeDecodeRange 0 99 }
+
+-- | T6格点 ≃ Fin729 同构声明
+genT6Iso729 :: Decl
+genT6Iso729 = DPostulate "t6≃fin729"
+  (TDef "T6Lattice≃Fin729")
+
+-- | toℕ-sum-injective: 6层 %3+/3 剥离模具
+genToNatSumInjective :: Decl
+genToNatSumInjective =
+  let arg = Lit (LNat 729)
+      body = apps (Def "toℕ-sum") [Var "x"]
+  in DPostulate "toℕ-sum-injective"
+       (TPi "x" (TDef "T6Lattice") (TPi "y" (TDef "T6Lattice")
+         (TFun (TApp (TApp (TDef "_≡_") (apps (Def "toℕ-sum") [Var "x"]))
+                        (apps (Def "toℕ-sum") [Var "y"]))
+               (TApp (TApp (TDef "_≡_") (Var "x")) (Var "y")))))
+
+-- | 完整的 T6 验证文件生成器 (含所有模版)
+genFullT6File :: Text -> [(Word16, (Word16, Word16))] -> AgdaFile
+genFullT6File modName crtEntries = AgdaFile
+  { fileOpts = "{-# OPTIONS --rewriting #-}"
+  , fileModule = modName
+  , fileDecls =
+      [ DImport "Sovereign.Structology.T6"
+      , DComment "Type-level 同构"
+      , genT6Iso729
+      , DComment "6层剥离模具"
+      , genToNatSumInjective
+      , DComment "CRT 查表"
+      ] ++ genAllCrtLookups crtEntries
+      ++ [ DComment "全息对齐", genAlignmentProof ]
+  }

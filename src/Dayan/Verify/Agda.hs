@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Dayan.Verify.Agda where
 import System.Process (readProcessWithExitCode)
 import System.Exit (ExitCode(..))
@@ -12,9 +13,12 @@ data VerifyResult = VerifyOK | VerifyError Text deriving (Show, Eq)
 
 verify :: AgdaFile -> IO VerifyResult
 verify af = withSystemTempDirectory "dayan" $ \tmp -> do
-  let agdaPath = tmp ++ "/" ++ T.unpack (fileModule af) ++ ".agda"
-  TIO.writeFile agdaPath (emitFile af)
-  (exit, _, err) <- readProcessWithExitCode "agda" [agdaPath] ""
-  return $ case exit of
-    ExitSuccess   -> VerifyOK
-    ExitFailure _ -> VerifyError (T.pack (take 300 err))
+  let parts = T.splitOn "." (fileModule af)
+      subDir = T.unpack (T.intercalate "/" (init parts))
+      baseName = T.unpack (last parts) ++ ".agda"
+      fullDir = tmp ++ "/" ++ subDir
+      relPath = T.unpack (T.intercalate "/" parts) ++ ".agda"
+  _ <- readProcessWithExitCode "mkdir" ["-p", fullDir] ""
+  TIO.writeFile (fullDir ++ "/" ++ baseName) (emitFile af)
+  (exit, out, _) <- readProcessWithExitCode "bash" ["-c", "cd " ++ tmp ++ " && agda " ++ relPath] ""
+  return $ case exit of ExitSuccess -> VerifyOK; _ -> VerifyError (T.pack (take 200 out))
