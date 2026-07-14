@@ -23,6 +23,7 @@ library
     import:           warnings
     hs-source-dirs:   src
     exposed-modules:
+        Dayan
         Dayan.Core.Trit
         Dayan.Core.Tryte
         Dayan.Core.Torus
@@ -58,7 +59,7 @@ benchmark dype-bench
     import:           warnings
     type:             exitcode-stdio-1.0
     hs-source-dirs:   bench
-    main-is:          Main.hs
+    main-is:          Bench.hs
     build-depends:
         base,
         dype,
