@@ -1,1 +1,1 @@
-Dayan Engine placeholder
+module Dayan.ProofGen.Emit () where
