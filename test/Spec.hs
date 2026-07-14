@@ -13,6 +13,7 @@ import qualified Dayan.Core.Torus as Torus
 import qualified Dayan.Core.Constants as C
 import Dayan.Compute.CRT
 import Dayan.Compute.ModArith
+import qualified Dayan.Compute.Cascade as Cascade
 
 main :: IO ()
 main = hspec $ do
@@ -290,4 +291,19 @@ main = hspec $ do
     context "mod 46" $ do
       it "mod46 46=0" $ mod46 46 `shouldBe` 0
       it "isMultipleOf46 6624" $ isMultipleOf46 6624 `shouldBe` True
+
+  describe "Cascade — 极限环级联" $ do
+    context "步进" $ do
+      it "cascadeStep 0 = 1" $ Cascade.cascadeStep 0 `shouldBe` 1
+      it "cascadeStep 6623 = 0" $ Cascade.cascadeStep 6623 `shouldBe` 0
+    context "轨迹" $ do
+      it "huangzhongCascade 长度 = 6624" $
+        length Cascade.huangzhongCascade `shouldBe` 6624
+      it "trajectory starts at 0" $
+        head Cascade.huangzhongCascade `shouldBe` 0
+      it "trajectory ends at 6623" $
+        last Cascade.huangzhongCascade `shouldBe` 6623
+    context "对齐" $ do
+      it "huangzhong (idx 0) is aligned" $
+        Cascade.isAligned 0 `shouldBe` True
 
