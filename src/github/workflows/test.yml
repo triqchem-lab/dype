@@ -1,0 +1,160 @@
+name: Build, Test, and Benchmark
+
+on:
+  push:
+    branches:
+    - main
+    - ci-*
+    - release*
+
+    paths: &path_list
+    - '**'
+    - '!.github/**'
+    - '.github/workflows/test.yml'
+    - '!src/github/**'
+    - 'src/github/workflows/test.yml'
+    - '!doc/**'
+    - '!.mailmap'
+    - '!.gitignore'
+    - '!CHANGELOG.md'
+    - '!LICENSE'
+    - '!README.md'
+    - '!CITATION.cff'
+
+  pull_request:
+    paths: *path_list
+
+  workflow_dispatch:
+
+  # Run weekly 0:00am on Sunday.
+  schedule:
+    - cron: '0 0 * * 0'
+
+env:
+  GHC_VER: "9.14.1"
+  PARALLEL_TESTS: 2
+  TASTY_ANSI_TRICKS: "false"
+
+jobs:
+
+  # Step 1: Building dype
+  ###########################################################################
+
+  build:
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]')
+         && !contains(github.event.head_commit.message, '[ci skip]')
+         && !contains(github.event.head_commit.message, '[github skip]')
+         && !contains(github.event.head_commit.message, '[skip github]')
+      || github.event_name == 'schedule'
+      || github.event_name == 'workflow_dispatch'
+
+    runs-on: &runs_on ubuntu-24.04
+
+    steps:
+    - name: Info about the context
+      run: |
+        echo "github.base_ref   = ${{ github.base_ref   }}"
+        echo "github.head_ref   = ${{ github.head_ref   }}"
+        echo "github.event_name = ${{ github.event_name }}"
+        echo "github.ref        = ${{ github.ref        }}"
+        echo "github.ref_name   = ${{ github.ref_name   }}"
+        echo "github.ref_type   = ${{ github.ref_type   }}"
+
+    - name: Possibly cancel workflow early
+      uses: styfle/cancel-workflow-action@0.13.1
+      if: github.ref != 'refs/heads/main'
+      with:
+        access_token: ${{ github.token }}
+
+    - &checkout
+      name: Checkout repo
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
+
+    - &haskell_setup
+      name: Detect Haskell toolchain
+      id: setup-haskell
+      run: |
+        echo "ghc-version=$(ghc --numeric-version)" >> "${GITHUB_OUTPUT}"
+        echo "stack-version=$(stack --numeric-version)" >> "${GITHUB_OUTPUT}"
+        echo "stack-root=$(stack path --stack-root)" >> "${GITHUB_OUTPUT}"
+        echo "STACK_ROOT=$(stack path --stack-root)" >> "${GITHUB_ENV}"
+
+    - name: Update package index
+      run: |
+        stack --system-ghc update
+
+    - name: List dependencies and versions
+      run: |
+        ${STACK} ls dependencies | tee deps.txt
+      env:
+        STACK: "stack --system-ghc --stack-yaml=${{ github.workspace }}/config/stack-9.14.1.yaml"
+
+    - name: Restore cache from approximate key
+      uses: actions/cache/restore@v6
+      id: cache
+      with:
+        path: &cache_path ${{ steps.setup-haskell.outputs.stack-root }}
+        key: &cache_key test.yml-1-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-stack-${{ steps.setup-haskell.outputs.stack-version }}-plan-${{ hashFiles('dype.cabal','config/stack-9.14.1.yaml','deps.txt') }}
+        restore-keys: test.yml-1-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-stack-${{ steps.setup-haskell.outputs.stack-version }}-
+
+    - name: Build dype and dependencies
+      run: |
+        stack --system-ghc --stack-yaml=${{ github.workspace }}/config/stack-9.14.1.yaml build --test --bench --no-run-tests
+
+    - name: Pack artifacts
+      run: |
+        tar --use-compress-program zstd --absolute-names -cvf stack.tzst ${{ steps.setup-haskell.outputs.stack-root }}
+        ln -sf config/stack-${{ env.GHC_VER }}.yaml stack.yaml
+        tar --use-compress-program zstd -cvf stack-work.tzst .stack-work config/.stack-work stack.yaml deps.txt
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        if-no-files-found: error
+        retention-days: 1
+        name: dype-${{ runner.os }}-${{ github.sha }}
+        path: |
+          stack.tzst
+          stack-work.tzst
+
+    - name: Save cache
+      uses: actions/cache/save@v6
+      if:   steps.cache.outputs.cache-hit != 'true'
+      with:
+        key:  *cache_key
+        path: *cache_path
+        retention-days: 30
+
+  # Step 2: Tests and benchmarks
+  ###########################################################################
+
+  test:
+    needs: build
+    runs-on: *runs_on
+
+    steps:
+    - *checkout
+
+    - &download_artifact
+      name: Download artifacts
+      uses: actions/download-artifact@v7
+      with:
+        name: dype-${{ runner.os }}-${{ github.sha }}
+
+    - &unpack_artifact
+      name: Unpack artifacts
+      run: |
+        tar --use-compress-program zstd --absolute-names -xvf stack.tzst
+        tar --use-compress-program zstd -xvf stack-work.tzst
+
+    - name: Run tests
+      run: |
+        stack --system-ghc --stack-yaml=${{ github.workspace }}/config/stack-9.14.1.yaml test
+
+    - name: Run benchmarks
+      run: |
+        stack --system-ghc --stack-yaml=${{ github.workspace }}/config/stack-9.14.1.yaml bench
+      if: always()

@@ -1,0 +1,23 @@
+name: Whitespace
+on:
+  push:
+    branches:
+    - main
+    - ci-*
+    - release*
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout dype sources
+      uses: actions/checkout@v7
+
+    - name: Check for whitespace violations
+      uses: andreasabel/fix-whitespace-action@v1
+
+    - name: Check building the source tarball
+      run: |
+        cabal sdist

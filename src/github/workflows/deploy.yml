@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - v[0-9]+.*
+
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out sources
+      uses: actions/checkout@v7
+
+    - uses: clearnature/setup@main
+      with:
+        ghc-version: '9.14.1'
+        cabal-version: latest
+
+    - name: Build source tarball
+      run: |
+        cabal sdist
+        mkdir dist
+        cp dist-newstyle/sdist/*.tar.gz dist/
+
+    - uses: actions/upload-artifact@v7
+      with:
+        path: dist/*.tar.gz
+        name: dype-source-tarball
+        if-no-files-found: error
+        retention-days: 3
+
+  deploy:
+    needs: sdist
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/download-artifact@v8
+      with:
+        path: artifacts
+
+    - name: Create release
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        gh release delete "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --yes || true
+        gh release create "${GITHUB_REF_NAME}" -d --notes-file CHANGELOG.md --title "${GITHUB_REF_NAME}"
+        gh release upload "${GITHUB_REF_NAME}" artifacts/**/* --repo "${GITHUB_REPOSITORY}"

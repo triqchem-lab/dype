@@ -1,0 +1,93 @@
+# This workflow tests whether we can build dype from the sdist tarball.
+
+name: Install (v2-cabal)
+
+on:
+  push:
+    branches:
+    - main
+    - ci-*
+    - release*
+    paths: &trigger_path_list
+    - '.github/workflows/cabal-install.yml'
+    - 'dype.cabal'
+    - 'src/Dayan/**'
+  pull_request:
+    paths: *trigger_path_list
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  auto-cancel:
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]')
+      && !contains(github.event.head_commit.message, '[ci skip]')
+      && !contains(github.event.head_commit.message, '[github skip]')
+      && !contains(github.event.head_commit.message, '[skip github]')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: styfle/cancel-workflow-action@0.13.1
+      with:
+        access_token: ${{ github.token }}
+
+  cabal-install:
+    needs: auto-cancel
+
+    timeout-minutes: 60
+
+    name: cabal install ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name:  ""
+          install_flags: ""
+        - name:  "--lib"
+          install_flags: "--lib"
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - id: setup-haskell
+      name: Detect Haskell toolchain
+      run: |
+        cabal update
+        echo "ghc-version=$(ghc --numeric-version)" >> "${GITHUB_OUTPUT}"
+        echo "cabal-version=$(cabal --numeric-version)" >> "${GITHUB_OUTPUT}"
+        echo "cabal-store=$(cabal path --store-dir)" >> "${GITHUB_OUTPUT}"
+
+    - name: Configure the build plan
+      run: |
+        cabal configure -O0
+        cabal build --dry-run
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v6
+      id: cache
+      env:
+        key: cabal-install.yml-${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ steps.setup-haskell.outputs.cabal-version }}
+      with:
+        path: &cache_path ${{ steps.setup-haskell.outputs.cabal-store }}
+        key:          ${{ env.key }}-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ env.key }}-
+
+    - name: Install dependencies
+      run: |
+        cabal build --only-dependencies
+
+    - name: Install dype
+      run: |
+        # shellcheck disable=SC2086
+        cabal install -O0 ${{ matrix.install_flags }}
+
+    - name: Save cache
+      uses: actions/cache/save@v6
+      if:   always() && steps.cache.outputs.cache-hit != 'true'
+      with:
+        key:  ${{ steps.cache.outputs.cache-primary-key }}
+        path: *cache_path
