@@ -19,6 +19,7 @@ on:
     - '.github/workflows/haddock.yml'
   pull_request:
     paths: *trigger_path_list
+  workflow_dispatch:
 
 jobs:
   build:
