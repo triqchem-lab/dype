@@ -1,0 +1,8 @@
+resolver: lts-21.25
+compiler: ghc-9.4.8
+compiler-check: match-exact
+
+allow-newer: true
+
+packages:
+- '..'
