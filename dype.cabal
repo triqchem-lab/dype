@@ -23,6 +23,7 @@ library
     import:           warnings
     hs-source-dirs:   src
     exposed-modules:
+        Dayan.Parse.Dy
         Dayan
         Dayan.Core.Trit
         Dayan.Core.Tryte

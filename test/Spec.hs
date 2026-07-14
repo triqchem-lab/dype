@@ -19,6 +19,8 @@ import qualified Dayan.Compute.Cascade as Cascade
 import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
+import Dayan.Parse.Dy (parseDy, parseOpts)
+import Data.Either (isLeft)
 import Dayan.Compute.Orbit
 
 main :: IO ()
@@ -336,3 +338,19 @@ main = hspec $ do
       it "轨道总数 > 0" $ orbitCount decomp `shouldSatisfy` (> 0)
       it "覆盖所有 729 格点" $ verifyCoverage decomp `shouldBe` True
       it "最大轨道 ≤ 12" $ maxOrbitSize decomp `shouldSatisfy` (<= 12)
+
+  describe "Parse.Dy — .dy 文件解析器" $ do
+    context "空文件" $ do
+      it "empty" $ parseDy "" `shouldSatisfy` isLeft
+    context "OPTIONS" $ do
+      it "parse opts" $ parseOpts "{-# OPTIONS --rewriting #-}" `shouldBe` Just "{-# OPTIONS --rewriting #-}"
+    context "postulate" $ do
+      it "simple postulate" $
+        case parseDy "postulate x : Set" of
+          Right f -> length (fileDecls f) `shouldSatisfy` (> 0)
+          Left _  -> expectationFailure "parse failed"
+    context "defs" $ do
+      it "definition" $
+        case parseDy "-- test\np0 : 0 = 0\np0 = refl" of
+          Right f -> length (fileDecls f) `shouldBe` 2  -- 1 comment + 1 def
+          Left _  -> expectationFailure "parse failed"
