@@ -5,8 +5,7 @@ import Test.Hspec
 import Data.Word (Word8, Word16)
 import qualified Data.Text as T
 import Dayan.Core.Trit
-import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe,
-  minTryte, maxTryte, balanceTryte, tryteCardinality,
+import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe, minTryte, maxTryte, balanceTryte,
   encode, decode, decodeRaw, tritAt, setTrit,
   allTrytes, findTryte)
 import qualified Dayan.Core.Tryte as Tryte
@@ -20,8 +19,6 @@ import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
 import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729)
-import Dayan.Core.Tryte (mkTryte)
-import Dayan.Core.Torus (TorusPoint(..))
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
@@ -239,7 +236,7 @@ main = hspec $ do
     context "枚举" $ do
       it "allPoints count" $ length allPoints `shouldBe` Torus.holographicCardinality
       it "trajectory from huangzhong starts at origin" $
-        head (trajectory huangzhong) `shouldBe` huangzhong
+        let t = trajectory huangzhong in t !! 0 `shouldBe` huangzhong
       it "trajectory length = 6624" $
         length (trajectory huangzhong) `shouldBe` Torus.holographicCardinality
 
@@ -311,7 +308,7 @@ main = hspec $ do
       it "huangzhongCascade 长度 = 6624" $
         length Cascade.huangzhongCascade `shouldBe` 6624
       it "trajectory starts at 0" $
-        head Cascade.huangzhongCascade `shouldBe` 0
+        let c = Cascade.huangzhongCascade in c !! 0 `shouldBe` 0
       it "trajectory ends at 6623" $
         last Cascade.huangzhongCascade `shouldBe` 6623
     context "对齐" $ do
