@@ -1,18 +1,22 @@
 module Main where
-import Criterion.Main
-import Dayan.Core.Tryte (mkTryte, decode)
+import System.CPUTime
 import Dayan.Core.Trit
-import Data.Word (Word16)
+import Dayan.Core.Tryte (mkTryte, decode)
+import Dayan.Compute.CRT (lookupCrt)
+import Data.Word (Word8)
 
-main :: IO ()
-main = defaultMain
-  [ bgroup "Trit"
-      [ bench "add N Z" $ whnf (add N) Z
-      , bench "mul P P" $ whnf (mul P) P
-      , bench "superpose N P" $ whnf (superpose N) P
-      ]
-  , bgroup "Tryte"
-      [ bench "mkTryte 365" $ whnf mkTryte (365 :: Word16)
-      , bench "decode 365" $ whnf (length . decode . mkTryte) (365 :: Word16)
-      ]
-  ]
+main = do
+  putStrLn "=== Da-Yan Benchmarks ==="
+  bench "CRT lookupCrt"  500000  (lookupCrt 3312 :: (Word8, Word8))
+  bench "Tryte decode"   100000  (length (decode (mkTryte 364)))
+  bench "Trit add"      1000000  (add N Z)
+
+bench :: String -> Int -> a -> IO ()
+bench name n f = do
+  start <- getCPUTime
+  let go 0 = return ()
+      go k = f `seq` go (k-1)
+  go n
+  end <- getCPUTime
+  let ns = (end - start) `div` fromIntegral n
+  putStrLn $ name ++ replicate (20 - length name) ' ' ++ show ns ++ " ns/op"
