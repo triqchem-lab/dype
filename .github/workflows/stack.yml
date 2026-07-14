@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04]
-        ghc-ver: [9.14.1, 9.12.4, 9.10.3, 9.8.4, 9.6.7, 9.4.8, 9.2.8]
+        ghc-ver: [9.14.1, 9.12.4, 9.10.3, 9.8.4, 9.6.7, 9.4.8]
         include:
         - os: macos-15
           ghc-ver: 9.14.1
