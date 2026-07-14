@@ -1,0 +1,6 @@
+# fix-whitespace config for dype
+excluded-dirs:
+  - ".git"
+  - ".stack-work"
+  - "config/.stack-work"
+  - "dist-newstyle"
