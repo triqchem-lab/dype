@@ -20,7 +20,7 @@ jobs:
 
     steps:
     - name: Checkout dype sources
-      uses: actions/checkout@v7
+      uses: actions/checkout@v8
 
     - name: Check for whitespace violations
       uses: andreasabel/fix-whitespace-action@v1

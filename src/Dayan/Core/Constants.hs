@@ -49,7 +49,7 @@ holographicPi = 144.0 / 46.0
 
 -- | 离散曲率 κ = √(144² + 46²) = √(20736 + 2116) = √22852 ≈ 151.17
 discreteCurvature :: Double
-discreteCurvature = sqrt $ fromIntegral (144*144 + 46*46)
+discreteCurvature = sqrt $ fromIntegral ((144*144 + 46*46) :: Int)
 
 ----------------------------------------------------------------------
 -- 3. 群论常数

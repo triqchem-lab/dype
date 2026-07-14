@@ -1,11 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 import Dayan.ProofGen.AST
-import Dayan.ProofGen.Emit (emitFile)
 import Dayan.Parse.Dy (parseDy)
 import Dayan.Verify.Agda (verify)
-import qualified Data.Text.IO as TIO
 
+main :: IO ()
 main = do
   let f = AgdaFile "" "Generated.DyTest"
             [ DOpen "Agda.Builtin.Nat"

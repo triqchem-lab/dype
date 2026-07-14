@@ -102,8 +102,9 @@ encode ts
 --   ...
 --   v5 = n₅ % 3
 decode :: Tryte -> [Trit]
-decode (Tryte n) = go n 6
+decode (Tryte n) = go (fromIntegral n :: Int) (6 :: Int)
   where
+    go :: Int -> Int -> [Trit]
     go _ 0 = []
     go m k = case fromNat (fromIntegral (m `mod` 3)) of
                Just t  -> t : go (m `div` 3) (k - 1)
@@ -111,8 +112,9 @@ decode (Tryte n) = go n 6
 
 -- | 解码为 Word8 列表 (N→0, Z→1, P→2)
 decodeRaw :: Tryte -> [Word8]
-decodeRaw (Tryte n) = go n 6
+decodeRaw (Tryte n) = go (fromIntegral n :: Int) (6 :: Int)
   where
+    go :: Int -> Int -> [Word8]
     go _ 0 = []
     go m k = fromIntegral (m `mod` 3) : go (m `div` 3) (k - 1)
 

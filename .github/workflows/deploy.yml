@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out sources
-      uses: actions/checkout@v7
+      uses: actions/checkout@v8
 
     - uses: clearnature/setup@main
       with:
@@ -47,7 +47,7 @@ jobs:
     needs: sdist
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v8
 
     - uses: actions/download-artifact@v8
       with:

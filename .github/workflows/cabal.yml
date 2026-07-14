@@ -67,7 +67,7 @@ jobs:
       FLAGS:   -O0
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v8
 
     - name: Switch off XDG directories for cabal (Linux)
       if: runner.os == 'Linux'
@@ -110,7 +110,7 @@ jobs:
         cabal build ${FLAGS} --dry-run
 
     - name: Restore cache from approximate key
-      uses: actions/cache/restore@v6
+      uses: actions/cache/restore@v7
       id: cache
       with:
         path: &cache_path |
@@ -141,7 +141,7 @@ jobs:
         cabal bench ${FLAGS}
 
     - name: Save cache
-      uses: actions/cache/save@v6
+      uses: actions/cache/save@v7
       if:   always() && steps.cache.outputs.cache-hit != 'true'
       with:
         key:  ${{ steps.cache.outputs.cache-primary-key }}

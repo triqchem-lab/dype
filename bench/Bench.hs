@@ -5,6 +5,7 @@ import Dayan.Core.Tryte (mkTryte, decode)
 import Dayan.Compute.CRT (lookupCrt)
 import Data.Word (Word8)
 
+main :: IO ()
 main = do
   putStrLn "=== Da-Yan Benchmarks ==="
   bench "CRT lookupCrt"  500000  (lookupCrt 3312 :: (Word8, Word8))

@@ -73,7 +73,7 @@ a4Action perm (Tryte n) = Tryte result
 
 -- | 将 Word16 解码为 6 个 Trit (0,1,2)
 decode6 :: Word16 -> [Int]
-decode6 n = [ fromIntegral ((n `div` (3^i)) `mod` 3) | i <- [0..5] ]
+decode6 n = [ fromIntegral ((n `div` (3^i)) `mod` 3) | i <- [(0::Int)..5] ]
 
 -- | 将 6 个 Trit 编码为 Word16
 encode6 :: [Int] -> Word16
