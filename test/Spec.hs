@@ -2,7 +2,14 @@ module Main where
 
 import Test.Hspec
 import Dayan.Core.Trit
-import Dayan.Core.Tryte
+import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe,
+  minTryte, maxTryte, balanceTryte, tryteCardinality,
+  encode, decode, decodeRaw, tritAt, setTrit,
+  allTrytes, findTryte)
+import qualified Dayan.Core.Tryte as Tryte
+import Dayan.Core.Torus
+import qualified Dayan.Core.Torus as Torus
+import qualified Dayan.Core.Constants as C
 
 main :: IO ()
 main = hspec $ do
@@ -113,9 +120,9 @@ main = hspec $ do
         mkTryteSafe 728 `shouldNotBe` Nothing
         mkTryteSafe 729 `shouldBe` Nothing
       it "isValid" $ do
-        isValid (Tryte 0)   `shouldBe` True
-        isValid (Tryte 728) `shouldBe` True
-        isValid (Tryte 729) `shouldBe` False
+        Tryte.isValid (Tryte 0)   `shouldBe` True
+        Tryte.isValid (Tryte 728) `shouldBe` True
+        Tryte.isValid (Tryte 729) `shouldBe` False
       it "minTryte" $ unTryte minTryte `shouldBe` 0
       it "maxTryte" $ unTryte maxTryte `shouldBe` 728
       it "balanceTryte" $ unTryte balanceTryte `shouldBe` 364
@@ -165,6 +172,80 @@ main = hspec $ do
     context "枚举" $ do
       it "allTrytes count" $ length allTrytes `shouldBe` 729
       it "allTrytes are valid" $
-        mapM_ (\t -> isValid t `shouldBe` True) (take 50 allTrytes)
+        mapM_ (\t -> Tryte.isValid t `shouldBe` True) (take 50 allTrytes)
       it "findTryte" $ do
         findTryte (\t -> unTryte t == 364) `shouldBe` Just balanceTryte
+
+  describe "Torus — 离散环面 T⁶ (144×46)" $ do
+
+    context "常数" $ do
+      it "polarWinding"   $ polarWinding `shouldBe` 144
+      it "toroidalWinding" $ toroidalWinding `shouldBe` 46
+      it "holographicCardinality" $ holographicCardinality `shouldBe` 6624
+      it "gcd = 2" $ gcdPolarToroidal `shouldBe` 2
+
+    context "构造" $ do
+      it "mkTorusPoint valid" $ do
+        mkTorusPoint 0 0    `shouldNotBe` Nothing
+        mkTorusPoint 143 45 `shouldNotBe` Nothing
+      it "mkTorusPoint invalid" $ do
+        mkTorusPoint 144 0  `shouldBe` Nothing
+        mkTorusPoint 0 46   `shouldBe` Nothing
+      it "huangzhong" $ do
+        polar huangzhong `shouldBe` 0
+        toroidal huangzhong `shouldBe` 0
+      it "isValid" $ do
+        Torus.isValid (TorusPoint 0 0)     `shouldBe` True
+        Torus.isValid (TorusPoint 143 45)  `shouldBe` True
+        Torus.isValid (TorusPoint 144 0)   `shouldBe` False
+
+    context "步进" $ do
+      it "stepPolar wrap" $ stepPolar 143 `shouldBe` 0
+      it "stepPolar normal" $ stepPolar 0 `shouldBe` 1
+      it "stepToroidal wrap" $ stepToroidal 45 `shouldBe` 0
+      it "step both" $ do
+        let s1 = step huangzhong
+        polar s1 `shouldBe` 1
+        toroidal s1 `shouldBe` 1
+      it "stepN 144" $ do
+        let s144 = stepN 144 huangzhong
+        polar s144 `shouldBe` 0   -- 回到极向起点
+        toroidal s144 `shouldBe` 144 `mod` 46  -- = 6
+
+    context "对齐" $ do
+      it "huangzhong is aligned" $ isAligned huangzhong `shouldBe` True
+      it "step 1 is not aligned" $ isAligned (step huangzhong) `shouldBe` False
+      it "6624 steps returns to aligned" $ do
+        let s6624 = stepN 6624 huangzhong
+        polar s6624 `shouldBe` 0
+        toroidal s6624 `shouldBe` 0
+        isAligned s6624 `shouldBe` True
+
+    context "枚举" $ do
+      it "allPoints count" $ length allPoints `shouldBe` Torus.holographicCardinality
+      it "trajectory from huangzhong starts at origin" $
+        head (trajectory huangzhong) `shouldBe` huangzhong
+      it "trajectory length = 6624" $
+        length (trajectory huangzhong) `shouldBe` Torus.holographicCardinality
+
+  describe "Constants — 大衍体系核心常数" $ do
+    context "缠绕数" $ do
+      it "polarWinding"    $ C.polarWinding `shouldBe` 144
+      it "toroidalWinding" $ C.toroidalWinding `shouldBe` 46
+      it "polarHalf"       $ C.polarHalf `shouldBe` 72
+    context "格点常数" $ do
+      it "t6Cardinality"            $ C.t6Cardinality `shouldBe` 729
+      it "holographicCardinality"   $ C.holographicCardinality `shouldBe` 6624
+    context "群论" $ do
+      it "a4GroupOrder"    $ C.a4GroupOrder `shouldBe` 12
+      it "c3GroupOrder"    $ C.c3GroupOrder `shouldBe` 3
+      it "ihGroupOrder"    $ C.ihGroupOrder `shouldBe` 120
+    context "算术" $ do
+      it "sovereignLCM"    $ C.sovereignLCM `shouldBe` 11609505792
+      it "factor3pow11"    $ C.factor3pow11 `shouldBe` 177147
+      it "factor2pow16"    $ C.factor2pow16 `shouldBe` 65536
+      it "holographicPi ≈ 3.13" $ C.holographicPi `shouldSatisfy` (\x -> x > 3.1 && x < 3.14)
+    context "幻方" $ do
+      it "magicSum4x4" $ C.magicSum4x4 `shouldBe` 34
+      it "twelveTones" $ C.twelveTones `shouldBe` 12
+
