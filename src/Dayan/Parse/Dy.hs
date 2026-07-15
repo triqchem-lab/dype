@@ -2,9 +2,11 @@
 --
 -- 支持完整 .dy 语法:
 --   pragma, module, open import, postulate, data, rewrite, defs
---   类型: Set, ℕ, Nat, Fin n, Vec A n, A → B, (x : A) → B
---   项: refl, 字面量, 变量, 应用, λ 抽象, {!!}
---   运算符: _≡_, _+_, _*_, _%_, _/_, _,_
+--   类型: Set, Nat, Fin n, Vec A n, A -> B, (x : A) -> B
+--   项: refl, 字面量, 变量, 应用, {!!}
+--   运算符: _===_, _+_, _*_, _%_, _/_
+--
+-- 不支持的语法会报 ParseError, 而非静默跳过。
 
 {-# LANGUAGE OverloadedStrings #-}
 module Dayan.Parse.Dy where
@@ -14,72 +16,132 @@ import qualified Data.Text as T
 import Dayan.ProofGen.AST
 import Dayan.Parse.Lexer (Token(..), lexDy)
 
+data ParseError = ParseError
+  { peLine :: !Int
+  , peToken :: !Text
+  , peMessage :: !Text
+  } deriving (Show, Eq)
+
 ----------------------------------------------------------------------
 -- Top-level
 ----------------------------------------------------------------------
 
-parseDy :: Text -> Either String (AgdaModuleName, AgdaFile)
+parseDy :: Text -> Either [ParseError] (AgdaModuleName, AgdaFile)
 parseDy input =
   let toks = lexDy input
       (pragmas, toks') = scanPragmas toks
-  in case toks' of
-    TokModule : TokName modName : TokWhere : rest ->
-      let (morePragmas, decls) = parseTopLevel rest
-      in Right (AgdaModuleName modName, AgdaFile (pragmas <> morePragmas) modName decls)
-    _ -> Right (AgdaModuleName "Main", AgdaFile pragmas "Main" (parseDecls toks'))
+      (errs, result) = case toks' of
+        TokModule : TokName modName : TokWhere : rest ->
+          let (moreErrs, (morePragmas, decls)) = parseTopLevel rest
+          in (moreErrs, Right (AgdaModuleName modName, AgdaFile (pragmas <> morePragmas) modName decls))
+        _ ->
+          let (e, decls) = parseDecls toks'
+          in (e, Right (AgdaModuleName "Main", AgdaFile pragmas "Main" decls))
+  in case errs of
+    [] -> result
+    _  -> Left errs
 
 scanPragmas :: [Token] -> (Text, [Token])
 scanPragmas (TokPragma p : rest) = let (more, rest') = scanPragmas rest in (p <> more, rest')
 scanPragmas rest = ("", rest)
 
 ----------------------------------------------------------------------
--- Module body
+-- Module body — 错误累积
 ----------------------------------------------------------------------
 
-parseTopLevel :: [Token] -> (Text, [Decl])
-parseTopLevel [] = ("", [])
+parseTopLevel :: [Token] -> ([ParseError], (Text, [Decl]))
+parseTopLevel [] = ([], ("", []))
 parseTopLevel (TokPragma p : rest) =
-  let (more, decls) = parseTopLevel rest in (p <> more, decls)
+  let (errs, (more, decls)) = parseTopLevel rest
+  in (errs, (p <> more, decls))
 parseTopLevel (TokOpen : TokImport : TokName mod : rest) =
   let (decl, rest') = parseOpen mod rest
-      (opts, decls) = parseTopLevel rest'
-  in (opts, decl : decls)
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
 parseTopLevel (TokPostulate : rest) =
   let (decls, rest') = parsePostulates rest
-      (opts, more) = parseTopLevel rest'
-  in (opts, decls <> more)
+      (errs, (opts, more)) = parseTopLevel rest'
+  in (errs, (opts, decls <> more))
 parseTopLevel (TokData : rest) =
   let (decl, rest') = parseDataDecl rest
-      (opts, decls) = parseTopLevel rest'
-  in (opts, decl : decls)
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
 parseTopLevel (TokRewrite : rest) =
   let (decl, rest') = parseRewrite rest
-      (opts, decls) = parseTopLevel rest'
-  in (opts, decl : decls)
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
 parseTopLevel (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
       (body, rest'') = parseBody rest'
-      (opts, decls) = parseTopLevel rest''
-  in (opts, DDef name ty [Clause [] body] : decls)
+      (errs, (opts, decls)) = parseTopLevel rest''
+  in (errs, (opts, DDef name ty [Clause [] body] : decls))
 parseTopLevel (TokComment c : rest) =
-  let (opts, decls) = parseTopLevel rest
-  in (opts, DComment c : decls)
-parseTopLevel (_ : rest) = parseTopLevel rest
+  let (errs, (opts, decls)) = parseTopLevel rest
+  in (errs, (opts, DComment c : decls))
+parseTopLevel (t : rest) =
+  let (errs, result) = parseTopLevel rest
+  in (unsupported t : errs, result)
 
-parseDecls :: [Token] -> [Decl]
-parseDecls [] = []
-parseDecls (TokComment c : rest) = DComment c : parseDecls rest
+parseDecls :: [Token] -> ([ParseError], [Decl])
+parseDecls [] = ([], [])
+parseDecls (TokComment c : rest) =
+  let (errs, ds) = parseDecls rest in (errs, DComment c : ds)
 parseDecls (TokPostulate : rest) =
-  let (ds, rest') = parsePostulates rest in ds ++ parseDecls rest'
+  let (ds, rest') = parsePostulates rest
+      (errs, more) = parseDecls rest'
+  in (errs, ds ++ more)
 parseDecls (TokData : rest) =
-  let (d, rest') = parseDataDecl rest in d : parseDecls rest'
+  let (d, rest') = parseDataDecl rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
 parseDecls (TokRewrite : rest) =
-  let (d, rest') = parseRewrite rest in d : parseDecls rest'
+  let (d, rest') = parseRewrite rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
 parseDecls (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
       (body, rest'') = parseBody rest'
-  in DDef name ty [Clause [] body] : parseDecls rest''
-parseDecls (_ : rest) = parseDecls rest
+      (errs, ds) = parseDecls rest''
+  in (errs, DDef name ty [Clause [] body] : ds)
+parseDecls (t : rest) =
+  let (errs, ds) = parseDecls rest
+  in (unsupported t : errs, ds)
+
+unsupported :: Token -> ParseError
+unsupported t = ParseError 0 (tokenText t) ("unsupported syntax: " <> tokenText t)
+
+tokenText :: Token -> Text
+tokenText (TokModule {})    = "module"
+tokenText TokWhere          = "where"
+tokenText TokOpen           = "open"
+tokenText TokImport         = "import"
+tokenText TokUsing          = "using"
+tokenText TokPostulate      = "postulate"
+tokenText (TokData)         = "data"
+tokenText TokRewrite        = "rewrite"
+tokenText (TokPragma p)     = "{-# " <> p <> " #-}"
+tokenText TokSet            = "Set"
+tokenText TokNat            = "Nat"
+tokenText TokFin            = "Fin"
+tokenText TokVec            = "Vec"
+tokenText TokRefl           = "refl"
+tokenText TokHole           = "{!!}"
+tokenText TokArrow          = "->"
+tokenText TokColon          = ":"
+tokenText TokEqual          = "="
+tokenText TokLParen         = "("
+tokenText TokRParen         = ")"
+tokenText TokDColon         = "::"
+tokenText TokVBar           = "|"
+tokenText TokSemi           = ";"
+tokenText TokUnderscore     = "_"
+tokenText (TokName n)       = n
+tokenText (TokNum n)        = T.pack (show n)
+tokenText (TokComment _)    = "--"
+
+-- 保留函数 (简化为不累积错误的版本, 供其他地方使用)
+parseDecls' :: [Token] -> [Decl]
+parseDecls' = snd . parseDecls
 
 ----------------------------------------------------------------------
 -- Import
@@ -154,6 +216,7 @@ parseBody :: [Token] -> (Term, [Token])
 parseBody (TokEqual : TokRefl : rest) = (Refl, rest)
 parseBody (TokEqual : TokHole : rest) = (Hole, rest)
 parseBody (TokEqual : rest) = parseTerm rest
+parseBody (TokName _ : rest) = parseBody rest  -- 跳过函数名, 进入 = body
 parseBody rest = (Hole, rest)
 
 ----------------------------------------------------------------------
@@ -201,7 +264,7 @@ parseTypeApp rest = (TSet, rest)
 
 parseTypeAppMore :: Type -> [Token] -> (Type, [Token])
 parseTypeAppMore acc (TokName n : rest)
-  | restStartsDecl rest = (acc, TokName n : rest)  -- n 后是 : → 新声明
+  | restStartsDecl rest = (acc, TokName n : rest)
   | otherwise = parseTypeAppMore (TApp acc (Def n)) rest
 parseTypeAppMore acc (TokNum n : rest)
   | restStartsDecl rest = (acc, TokNum n : rest)
@@ -209,7 +272,7 @@ parseTypeAppMore acc (TokNum n : rest)
 parseTypeAppMore acc rest = (acc, rest)
 
 restStartsDecl :: [Token] -> Bool
-restStartsDecl (TokColon : _) = True   -- name : type
+restStartsDecl (TokColon : _) = True
 restStartsDecl _ = False
 
 ----------------------------------------------------------------------

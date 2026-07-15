@@ -25,7 +25,7 @@ data VerifyResult = VerifyOk | VerifyFail [Text]
 runPipeline :: Text -> IO (Text, Text, VerifyResult)
 runPipeline dySource = do
   case parseDy dySource of
-    Left err -> pure (T.pack err, "", VerifyFail [T.pack err])
+    Left errs -> pure (T.pack (show errs), "", VerifyFail [T.pack (show errs)])
     Right (modName, agdaFile) -> do
       let agdaSrc = emitFile agdaFile
       result <- withSystemTempDirectory "dayan-verify" $ \tmp -> do

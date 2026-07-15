@@ -20,8 +20,8 @@ import Dayan.Parse.Dy (parseDy)
 -- | .dy 文本 → Agda AST (AgdaFile)
 dyToAgda :: Text -> Either String AgdaFile
 dyToAgda input = case parseDy input of
+  Left errs -> Left (show errs)
   Right (_, f) -> Right f
-  Left err -> Left err
 
 -- | .dy 文件 → AgdaFile (文件路径版本)
 dyToAgdaFile :: FilePath -> IO (Either String AgdaFile)

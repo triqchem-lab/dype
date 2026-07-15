@@ -66,6 +66,21 @@ test-suite dype-test
         text
     default-language: Haskell2010
 
+test-suite agda-compat
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          AgdaCompat.hs
+    build-depends:
+        base,
+        dype,
+        process,
+        temporary,
+        directory,
+        filepath,
+        text
+    default-language: Haskell2010
+
 benchmark dype-bench
     import:           warnings
     type:             exitcode-stdio-1.0
