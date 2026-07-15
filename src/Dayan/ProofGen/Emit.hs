@@ -5,6 +5,7 @@ import qualified Data.Text as T
 import Dayan.ProofGen.AST
 
 emitFile :: AgdaFile -> Text
+emitFile (AgdaFile _opts _modName [DPassThrough t]) = t  -- 全量透传: 直接输出原始源文本
 emitFile (AgdaFile opts modName decls) = T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl decls
 
 emitDecl :: Decl -> [Text]
@@ -16,6 +17,7 @@ emitDecl = \case
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
   DRewrite n eq -> ["{-# REWRITE " <> n <> " #-}\n" <> "postulate\n  " <> n <> " : " <> emitTerm eq]
   DComment t -> ["-- " <> t]
+  DPassThrough t -> [t]
 
 emitClause :: Clause -> Text
 emitClause (Clause pats body) = T.intercalate " " (map emitPattern pats) <> " = " <> emitTerm body

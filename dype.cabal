@@ -26,8 +26,6 @@ library
         Dayan.Verify.Agda
         Dayan.Adapter.Agda
         Dayan.Kernel.Conversion
-        Dayan.Parse.Dy
-        Dayan.Parse.Lexer
         Dayan
         Dayan.Algebra.GF9
         Dayan.Core.Trit
@@ -42,8 +40,12 @@ library
         Dayan.ProofGen.Emit
         Dayan.ProofGen.Templates
         Dayan.Verify.Pipeline
+        Dayan.Parse.Dy
+        Dayan.Parse.Lexer
+        Dayan.Parse.Agda
     build-depends:
         base >=4.17 && <5,
+        agda-syntax,
         process,
         temporary,
         directory,
@@ -71,6 +73,21 @@ test-suite agda-compat
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          AgdaCompat.hs
+    build-depends:
+        base,
+        dype,
+        process,
+        temporary,
+        directory,
+        filepath,
+        text
+    default-language: Haskell2010
+
+test-suite dype-succeed
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Succeed.hs
     build-depends:
         base,
         dype,
