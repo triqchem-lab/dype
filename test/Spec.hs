@@ -19,7 +19,8 @@ import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
 import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729,
-  t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus)
+  t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus,
+  convTerm, convType, convAlgebraic, convGeometric, convTopological)
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
@@ -380,5 +381,29 @@ main = hspec $ do
         in t6CrtEqual t (a4Action g t) `shouldBe` True
       it "t6CrtEqual 不同格点 False" $
         t6CrtEqual (mkTryte 0) (mkTryte 1) `shouldBe` False
+    context "三极等价 (4320D+CRT+A4)" $ do
+      it "convAlgebraic: 同值 True" $
+        convAlgebraic (Lit (LNat 144)) (Lit (LNat 144)) `shouldBe` True
+      it "convAlgebraic: 144 ≠ 0 (CRT投影不同: (0,6) vs (0,0))" $
+        convAlgebraic (Lit (LNat 144)) (Lit (LNat 0)) `shouldBe` False
+      it "convAlgebraic: 4320D reduce 18/3 ≈ 6" $
+        let six = Lit (LNat 6)
+            expr = App (App (Def "/") (Lit (LNat 18))) (Lit (LNat 3))
+        in convTerm six expr `shouldBe` True
+      it "convAlgebraic: 4320D reduce 9%3 ≈ 0" $
+        let zero = Lit (LNat 0)
+            expr = App (App (Def "%") (Lit (LNat 9))) (Lit (LNat 3))
+        in convTerm zero expr `shouldBe` True
+      it "convGeometric: A4 同轨道格点等价" $
+        let t = mkTryte 364; g = a4Group !! 1
+            a = Lit (LNat (unTryte t))
+            b = Lit (LNat (unTryte (a4Action g t)))
+        in convGeometric a b `shouldBe` True
+      it "convType: Fin 5 ≈ Fin 5 (同CRT基数)" $
+        convType (TFin (Lit (LNat 5))) (TFin (Lit (LNat 5))) `shouldBe` True
+      it "convType: Fin 144 ≠ Fin 0 (基数不同, CRT区分)" $
+        convType (TFin (Lit (LNat 144))) (TFin (Lit (LNat 0))) `shouldBe` False
+      it "convType: TSet ≈ TSet (结构回退)" $
+        convType TSet TSet `shouldBe` True
     context "穷举" $ do
       it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True
