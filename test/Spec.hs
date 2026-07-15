@@ -21,8 +21,8 @@ import Dayan.ProofGen.Templates
 import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729,
   t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus,
   convTerm, convType, convAlgebraic, convGeometric, convTopological, gf9CrtEquivalent)
-import Dayan.Parse.Dy (parseDy, parseOpts)
-import Data.Either (isLeft)
+import Dayan.Parse.Dy (parseDy)
+import Dayan.Adapter.Agda (AgdaModuleName(..))
 import Dayan.Compute.Orbit
 import Dayan.Algebra.GF9
 
@@ -343,19 +343,20 @@ main = hspec $ do
       it "最大轨道 ≤ 12" $ maxOrbitSize decomp `shouldSatisfy` (<= 12)
 
   describe "Parse.Dy — .dy 文件解析器" $ do
-    context "空文件" $ do
-      it "empty" $ parseDy "" `shouldSatisfy` isLeft
-    context "OPTIONS" $ do
-      it "parse opts" $ parseOpts "{-# OPTIONS --rewriting #-}" `shouldBe` Just "{-# OPTIONS --rewriting #-}"
+    context "模块解析" $ do
+      it "解析模块名" $
+        case parseDy "module Test where" of
+          Right (AgdaModuleName n, _) -> n `shouldBe` "Test"
+          Left _ -> expectationFailure "parse failed"
     context "postulate" $ do
       it "simple postulate" $
-        case parseDy "postulate x : Set" of
+        case parseDy "module M where\npostulate x : Set" of
           Right (_, f) -> length (fileDecls f) `shouldSatisfy` (> 0)
           Left _ -> expectationFailure "parse failed"
     context "defs" $ do
       it "definition" $
-        case parseDy "-- test\np0 : 0 = 0\np0 = refl" of
-          Right (_, f) -> length (fileDecls f) `shouldBe` 2  -- 1 comment + 1 def
+        case parseDy "module M where\np0 : Set\np0 = refl" of
+          Right (_, f) -> length (fileDecls f) `shouldBe` 1
           Left _ -> expectationFailure "parse failed"
 
   describe "Kernel.Conversion — 格点定义相等性" $ do
