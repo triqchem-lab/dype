@@ -106,11 +106,24 @@ stepFullToroidal = stepN (fromIntegral toroidalWinding)
 -- 5. 相位信息
 ----------------------------------------------------------------------
 
--- | 极向相位角 (弧度): p / 144 × 2π
+-- | 离散极向相位: Word16 值 [0, 143] 直接作为相位索引
+--   替代连续弧度的纯离散表示
+discretePolarPhase :: TorusPoint -> Word16
+discretePolarPhase = polar
+
+-- | 离散环向相位: Word8 值 [0, 45] 直接作为相位索引
+discreteToroidalPhase :: TorusPoint -> Word8
+discreteToroidalPhase = toroidal
+
+-- | [DEPRECATED: 连续统污染] 极向相位角 (弧度): p / 144 × 2π
+--   使用 discretePolarPhase 替代
+{-# DEPRECATED polarPhase "使用 discretePolarPhase (纯离散 Word16 相位索引)" #-}
 polarPhase :: TorusPoint -> Double
 polarPhase tp = fromIntegral (polar tp) / 144.0 * 2 * pi
 
--- | 环向相位角: t / 46 × 2π
+-- | [DEPRECATED: 连续统污染] 环向相位角: t / 46 × 2π
+--   使用 discreteToroidalPhase 替代
+{-# DEPRECATED toroidalPhase "使用 discreteToroidalPhase (纯离散 Word8 相位索引)" #-}
 toroidalPhase :: TorusPoint -> Double
 toroidalPhase tp = fromIntegral (toroidal tp) / 46.0 * 2 * pi
 

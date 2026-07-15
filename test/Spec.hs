@@ -406,6 +406,17 @@ main = hspec $ do
         convType (TFin (Lit (LNat 144))) (TFin (Lit (LNat 0))) `shouldBe` False
       it "convType: TSet ≈ TSet (结构回退)" $
         convType TSet TSet `shouldBe` True
+    context "拓扑极 (6624对齐parity)" $ do
+      it "0 ≈ 6624 (两者都是对齐点)" $
+        convTopological (Lit (LNat 0)) (Lit (LNat 6624)) `shouldBe` True
+      it "0 ≈ 3312 (对齐 vs 碰头, parity不同)" $
+        -- 0 mod 6624 = 0 (对齐), 3312 mod 6624 = 3312 (非对齐)
+        -- parity: isAligned(0)=True, isAligned(3312)=False → 不同
+        convTopological (Lit (LNat 0)) (Lit (LNat 3312)) `shouldBe` False
+      it "6624 ≈ 13248 (两者都是对齐点倍数)" $
+        convTopological (Lit (LNat 6624)) (Lit (LNat 13248)) `shouldBe` True
+      it "1 ≈ 2 (两者都不是对齐点)" $
+        convTopological (Lit (LNat 1)) (Lit (LNat 2)) `shouldBe` True
     context "穷举" $ do
       it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True
 
