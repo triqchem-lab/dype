@@ -13,7 +13,7 @@
 
 module Dayan.Core.Constants where
 
-import Data.Word (Word16, Word64)
+import Data.Word (Word8, Word16, Word64)
 
 ----------------------------------------------------------------------
 -- 1. 缠绕数
@@ -43,11 +43,16 @@ t6Cardinality = 729
 holographicCardinality :: Int
 holographicCardinality = 144 * 46
 
--- | 全息 π_H = 144/46 (不可通约比)
+-- | 全息比 = 144/46 (不可通约, 非数学 π)
+holographicRatio :: (Word16, Word8)
+holographicRatio = (144, 46)
+
+-- | [DEPRECATED] 全息比浮点近似 (仅文档用途)
+{-# DEPRECATED holographicPi "使用 holographicRatio (纯整数对)" #-}
 holographicPi :: Double
 holographicPi = 144.0 / 46.0
 
--- | 离散曲率 κ = √(144² + 46²) = √(20736 + 2116) = √22852 ≈ 151.17
+-- | 离散曲率 κ = √(144² + 46²) (仅文档用途)
 discreteCurvature :: Double
 discreteCurvature = sqrt $ fromIntegral ((144*144 + 46*46) :: Int)
 

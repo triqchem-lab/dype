@@ -44,7 +44,8 @@ toroidalWinding = 46
 holographicCardinality :: Int
 holographicCardinality = 144 * 46  -- = 6624
 
--- | 不可通约比 = 144/46 ≈ 3.1304... (全息 π_H)
+-- | [DEPRECATED] 不可通约比 144/46 (使用 Constants.holographicRatio)
+{-# DEPRECATED holographicRatio "使用 Constants.holographicRatio (纯整数对)" #-}
 holographicRatio :: Double
 holographicRatio = 144.0 / 46.0
 
@@ -127,7 +128,9 @@ polarPhase tp = fromIntegral (polar tp) / 144.0 * 2 * pi
 toroidalPhase :: TorusPoint -> Double
 toroidalPhase tp = fromIntegral (toroidal tp) / 46.0 * 2 * pi
 
--- | 组合相位 (极向 - 环向的相位差)
+-- | [DEPRECATED: 连续统污染] 组合相位差 (极向 - 环向)
+--   使用 discretePolarPhase / discreteToroidalPhase 替代
+{-# DEPRECATED phaseDifference "使用 discretePolarPhase/discreteToroidalPhase" #-}
 phaseDifference :: TorusPoint -> Double
 phaseDifference tp = polarPhase tp - toroidalPhase tp
 
