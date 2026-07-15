@@ -471,4 +471,6 @@ main = hspec $ do
       T.unpack modName `shouldSatisfy` ("T6Base" `isInfixOf`)
       let src = T.unpack agdaSrc
       src `shouldSatisfy` ("module T6Base where" `isInfixOf`)
-      src `shouldSatisfy` ("open import Agda.Builtin.Nat" `isInfixOf`)
+      src `shouldSatisfy` ("postulate" `isInfixOf`)
+      src `shouldSatisfy` ("Trit : Set" `isInfixOf`)
+      src `shouldSatisfy` ("T2 : Trit" `isInfixOf`)

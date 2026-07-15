@@ -1,7 +1,17 @@
 {-# OPTIONS --rewriting #-}
 module T6Base where
 
-open import Agda.Builtin.Nat
+open import Agda.Builtin.Nat using (Nat)
+open import Agda.Builtin.Equality using (_≡_; refl)
 
 postulate
   Trit : Set
+  T6Lattice : Set
+  encode : T6Lattice → Nat
+  decode : Nat → T6Lattice
+
+encdec-0 : encode (decode 0) ≡ 0
+encdec-0 = refl
+
+encdec-1 : encode (decode 1) ≡ 1
+encdec-1 = refl

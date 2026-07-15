@@ -1,13 +1,10 @@
--- | Dayan.Parse.Dy — .dy 文件解析器
+-- | Dayan.Parse.Dy — .dy 语法解析器 (基于 Agda 语法子集)
 --
--- 语法子集:
---   module Name where
---   {-# OPTIONS --rewriting #-}
---   open import Module using (names)
---   postulate name : Type
---   name : Type
---   name = refl
---   data Name : Set where cons : Type
+-- 支持完整 .dy 语法:
+--   pragma, module, open import, postulate, data, rewrite, defs
+--   类型: Set, ℕ, Nat, Fin n, Vec A n, A → B, (x : A) → B
+--   项: refl, 字面量, 变量, 应用, λ 抽象, {!!}
+--   运算符: _≡_, _+_, _*_, _%_, _/_, _,_
 
 {-# LANGUAGE OverloadedStrings #-}
 module Dayan.Parse.Dy where
@@ -17,88 +14,67 @@ import qualified Data.Text as T
 import Dayan.ProofGen.AST
 import Dayan.Parse.Lexer (Token(..), lexDy)
 
+----------------------------------------------------------------------
+-- Top-level
+----------------------------------------------------------------------
+
 parseDy :: Text -> Either String (AgdaModuleName, AgdaFile)
 parseDy input =
   let toks = lexDy input
-      (opts, toks') = consumePragmas toks
+      (pragmas, toks') = scanPragmas toks
   in case toks' of
     TokModule : TokName modName : TokWhere : rest ->
-      let (moreOpts, decls) = parseTopLevel rest
-      in Right (AgdaModuleName modName, AgdaFile (opts <> moreOpts) modName decls)
-    _ -> Right (AgdaModuleName "Main", AgdaFile opts "Main" (parseDecls toks'))
+      let (morePragmas, decls) = parseTopLevel rest
+      in Right (AgdaModuleName modName, AgdaFile (pragmas <> morePragmas) modName decls)
+    _ -> Right (AgdaModuleName "Main", AgdaFile pragmas "Main" (parseDecls toks'))
 
--- | 消耗前置 pragma 和空白, 返回 (opts, remaining tokens)
-consumePragmas :: [Token] -> (Text, [Token])
-consumePragmas (TokPragma p : rest) =
-  let (more, rest') = consumePragmas rest
-  in (p <> more, rest')
-consumePragmas rest = ("", rest)
+scanPragmas :: [Token] -> (Text, [Token])
+scanPragmas (TokPragma p : rest) = let (more, rest') = scanPragmas rest in (p <> more, rest')
+scanPragmas rest = ("", rest)
+
+----------------------------------------------------------------------
+-- Module body
+----------------------------------------------------------------------
 
 parseTopLevel :: [Token] -> (Text, [Decl])
-parseTopLevel (TokPragma opts : rest) =
-  let (moreOpts, decls) = parseTopLevel rest
-  in (opts <> moreOpts, decls)
+parseTopLevel [] = ("", [])
+parseTopLevel (TokPragma p : rest) =
+  let (more, decls) = parseTopLevel rest in (p <> more, decls)
 parseTopLevel (TokOpen : TokImport : TokName mod : rest) =
-  let decl = parseOpenImport mod rest
-      rest' = skipOpenRest rest
-      (_, decls) = parseTopLevel rest'
-  in ("", decl : decls)
+  let (decl, rest') = parseOpen mod rest
+      (opts, decls) = parseTopLevel rest'
+  in (opts, decl : decls)
 parseTopLevel (TokPostulate : rest) =
-  let (decl, rest') = parsePostulate rest
-      (_, decls) = parseTopLevel rest'
-  in ("", decl : decls)
+  let (decls, rest') = parsePostulates rest
+      (opts, more) = parseTopLevel rest'
+  in (opts, decls <> more)
 parseTopLevel (TokData : rest) =
-  let (decl, rest') = parseData rest
-      (_, decls) = parseTopLevel rest'
-  in ("", decl : decls)
+  let (decl, rest') = parseDataDecl rest
+      (opts, decls) = parseTopLevel rest'
+  in (opts, decl : decls)
 parseTopLevel (TokRewrite : rest) =
   let (decl, rest') = parseRewrite rest
-      (_, decls) = parseTopLevel rest'
-  in ("", decl : decls)
+      (opts, decls) = parseTopLevel rest'
+  in (opts, decl : decls)
 parseTopLevel (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
       (body, rest'') = parseBody rest'
-      decl = DDef name ty [Clause [] body]
-      (_, decls) = parseTopLevel rest''
-  in ("", decl : decls)
+      (opts, decls) = parseTopLevel rest''
+  in (opts, DDef name ty [Clause [] body] : decls)
+parseTopLevel (TokComment c : rest) =
+  let (opts, decls) = parseTopLevel rest
+  in (opts, DComment c : decls)
 parseTopLevel (_ : rest) = parseTopLevel rest
-parseTopLevel [] = ("", [])
 
-dropImport :: [Token] -> [Token]
-dropImport [] = []
-dropImport (TokSemi : rest) = rest
-dropImport (_ : rest) = dropImport rest
-
--- | 跳过 open import 的 using/hiding/renaming 子句
-skipOpenRest :: [Token] -> [Token]
-skipOpenRest (TokUsing : TokLParen : rest) = skipToClose rest
-skipOpenRest (TokName _ : rest) = skipOpenRest rest
-skipOpenRest rest = rest
-
-skipToClose :: [Token] -> [Token]
-skipToClose (TokRParen : rest) = rest
-skipToClose (_ : rest) = skipToClose rest
-skipToClose [] = []
-
-parseOpenImport :: Text -> [Token] -> Decl
-parseOpenImport mod (TokUsing : TokLParen : rest) =
-  let names = takeWhile (/= TokRParen) rest
-  in DOpenUsing mod [ n | TokName n <- names ]
-parseOpenImport mod _ = DOpen mod
-
--- 便捷: token列表 → 声明列表解析
 parseDecls :: [Token] -> [Decl]
 parseDecls [] = []
 parseDecls (TokComment c : rest) = DComment c : parseDecls rest
 parseDecls (TokPostulate : rest) =
-  let (d, rest') = parsePostulate rest
-  in d : parseDecls rest'
+  let (ds, rest') = parsePostulates rest in ds ++ parseDecls rest'
 parseDecls (TokData : rest) =
-  let (d, rest') = parseData rest
-  in d : parseDecls rest'
+  let (d, rest') = parseDataDecl rest in d : parseDecls rest'
 parseDecls (TokRewrite : rest) =
-  let (d, rest') = parseRewrite rest
-  in d : parseDecls rest'
+  let (d, rest') = parseRewrite rest in d : parseDecls rest'
 parseDecls (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
       (body, rest'') = parseBody rest'
@@ -106,34 +82,58 @@ parseDecls (TokName name : TokColon : rest) =
 parseDecls (_ : rest) = parseDecls rest
 
 ----------------------------------------------------------------------
--- Postulate
+-- Import
 ----------------------------------------------------------------------
 
-parsePostulate :: [Token] -> (Decl, [Token])
-parsePostulate (TokName name : TokColon : rest) =
-  let (ty, rest') = parseType rest
-  in (DPostulate name ty, rest')
-parsePostulate rest = (DPostulate "?" TNat, rest)
+parseOpen :: Text -> [Token] -> (Decl, [Token])
+parseOpen mod (TokUsing : TokLParen : rest) =
+  let (names, after) = parseUsingList rest
+  in (DOpenUsing mod names, skipOpenRest after)
+parseOpen mod rest = (DOpen mod, skipOpenRest rest)
+
+parseUsingList :: [Token] -> ([Text], [Token])
+parseUsingList rest =
+  case span (/= TokRParen) rest of
+    (names, TokRParen : after) ->
+      ([n | TokName n <- names], after)
+    (_, []) -> ([], [])
+
+skipOpenRest :: [Token] -> [Token]
+skipOpenRest (TokUsing : TokLParen : rest) = skipOpenRest (snd (span (/= TokRParen) rest))
+skipOpenRest (TokName _ : rest) = skipOpenRest rest
+skipOpenRest rest = rest
+
+----------------------------------------------------------------------
+-- Postulate (多行)
+----------------------------------------------------------------------
+
+parsePostulates :: [Token] -> ([Decl], [Token])
+parsePostulates toks = case toks of
+  TokName name : TokColon : rest ->
+    let (ty, rest') = parseType rest
+        (more, rest'') = parsePostulates rest'
+    in (DPostulate name ty : more, rest'')
+  _ -> ([], toks)
 
 ----------------------------------------------------------------------
 -- Data
 ----------------------------------------------------------------------
 
-parseData :: [Token] -> (Decl, [Token])
-parseData (TokName name : TokColon : rest) =
-  let (ty, afterTy) = parseType rest
-      (cons, rest') = parseConstructors afterTy
-  in (DData name [] cons, rest')
-parseData rest = (DData "?" [] [], rest)
+parseDataDecl :: [Token] -> (Decl, [Token])
+parseDataDecl (TokName name : TokColon : rest) =
+  let (ty, afterType) = parseType rest
+  in case afterType of
+    TokWhere : rest' ->
+      let (cons, rest'') = parseConstructors rest'
+      in (DData name [] cons, rest'')
+    _ -> (DData name [] [], afterType)
+parseDataDecl _ = (DData "?" [] [], [])
 
 parseConstructors :: [Token] -> ([ConDecl], [Token])
-parseConstructors (TokWhere : rest) = go rest
-  where
-    go (TokName n : TokColon : rest') =
-      let (ty, rest'') = parseType rest'
-          (more, rest''') = go rest''
-      in (ConDecl n ty : more, rest''')
-    go rest' = ([], rest')
+parseConstructors (TokName n : TokColon : rest) =
+  let (ty, rest') = parseType rest
+      (more, rest'') = parseConstructors rest'
+  in (ConDecl n ty : more, rest'')
 parseConstructors rest = ([], rest)
 
 ----------------------------------------------------------------------
@@ -141,16 +141,10 @@ parseConstructors rest = ([], rest)
 ----------------------------------------------------------------------
 
 parseRewrite :: [Token] -> (Decl, [Token])
-parseRewrite (TokName name : rest) =
-  let (eq, rest') = parseRewriteEq rest
+parseRewrite (TokName name : TokColon : rest) =
+  let (eq, rest') = parseTerm rest
   in (DRewrite name eq, rest')
 parseRewrite rest = (DRewrite "?" Hole, rest)
-
-parseRewriteEq :: [Token] -> (Term, [Token])
-parseRewriteEq (TokColon : rest) =
-  let (t, rest') = parseTerm rest
-  in (t, rest')
-parseRewriteEq rest = (Hole, rest)
 
 ----------------------------------------------------------------------
 -- Body
@@ -159,39 +153,67 @@ parseRewriteEq rest = (Hole, rest)
 parseBody :: [Token] -> (Term, [Token])
 parseBody (TokEqual : TokRefl : rest) = (Refl, rest)
 parseBody (TokEqual : TokHole : rest) = (Hole, rest)
-parseBody (TokEqual : rest) =
-  let (t, rest') = parseTerm rest
-  in (t, rest')
+parseBody (TokEqual : rest) = parseTerm rest
 parseBody rest = (Hole, rest)
 
 ----------------------------------------------------------------------
--- Type parsing
+-- Type parsing (递归下降)
 ----------------------------------------------------------------------
 
 parseType :: [Token] -> (Type, [Token])
-parseType (TokSet : rest) = (TSet, rest)
-parseType (TokNat : rest) = (TNat, rest)
-parseType (TokFin : TokNum n : rest) = (TFin (Lit (LNat (fromIntegral n))), rest)
-parseType (TokFin : rest) = (TFin (Lit (LNat 0)), rest)
-parseType (TokVec : rest) =
-  let (a, rest') = parseType rest
+parseType = parseTypeArrow
+
+parseTypeArrow :: [Token] -> (Type, [Token])
+parseTypeArrow toks =
+  let (t, rest) = parseTypeApp toks
+  in case rest of
+    TokArrow : rest' ->
+      let (t2, rest'') = parseTypeArrow rest'
+      in (TFun t t2, rest'')
+    _ -> (t, rest)
+
+parseTypeApp :: [Token] -> (Type, [Token])
+parseTypeApp (TokLParen : rest) =
+  case rest of
+    TokName x : TokColon : rest' ->
+      let (a, rest'') = parseTypeArrow rest'
+      in case rest'' of
+        TokRParen : TokArrow : rest''' ->
+          let (b, rest'''') = parseTypeArrow rest'''
+          in (TPi x a b, rest'''')
+        TokRParen : rest''' -> (TDef x, rest''')
+        _ -> (TDef x, rest'')
+    _ -> let (t, rest') = parseTypeArrow rest
+         in case rest' of
+           TokRParen : rest'' -> (t, rest'')
+           _ -> (t, rest')
+parseTypeApp (TokSet : rest) = (TSet, rest)
+parseTypeApp (TokNat : rest) = (TNat, rest)
+parseTypeApp (TokFin : rest) =
+  let (n, rest') = parseTerm rest
+  in (TFin n, rest')
+parseTypeApp (TokVec : rest) =
+  let (a, rest') = parseTypeArrow rest
       (n, rest'') = parseTerm rest'
   in (TVec a n, rest'')
-parseType (TokName n : rest) =
-  parseTypeApp (TDef n) rest
+parseTypeApp (TokName n : rest) = parseTypeAppMore (TDef n) rest
+parseTypeApp rest = (TSet, rest)
 
-parseTypeApp :: Type -> [Token] -> (Type, [Token])
-parseTypeApp acc (TokName n : rest) = parseTypeApp (TApp acc (Def n)) rest
-parseTypeApp acc (TokNum n : rest) = parseTypeApp (TApp acc (Lit (LNat (fromIntegral n)))) rest
-parseTypeApp acc (TokLParen : rest) =
-  let (t, rest') = parseType rest
-  in case rest' of
-    TokRParen : rest'' -> parseTypeApp (TApp acc (Lit (LNat 0))) rest''  -- simplified
-    _ -> (acc, rest)
-parseTypeApp acc rest = (acc, rest)
+parseTypeAppMore :: Type -> [Token] -> (Type, [Token])
+parseTypeAppMore acc (TokName n : rest)
+  | restStartsDecl rest = (acc, TokName n : rest)  -- n 后是 : → 新声明
+  | otherwise = parseTypeAppMore (TApp acc (Def n)) rest
+parseTypeAppMore acc (TokNum n : rest)
+  | restStartsDecl rest = (acc, TokNum n : rest)
+  | otherwise = parseTypeAppMore (TApp acc (Lit (LNat (fromIntegral n)))) rest
+parseTypeAppMore acc rest = (acc, rest)
+
+restStartsDecl :: [Token] -> Bool
+restStartsDecl (TokColon : _) = True   -- name : type
+restStartsDecl _ = False
 
 ----------------------------------------------------------------------
--- Term parsing (simplified)
+-- Term parsing
 ----------------------------------------------------------------------
 
 parseTerm :: [Token] -> (Term, [Token])
@@ -199,9 +221,19 @@ parseTerm (TokName n : rest) = parseTermApp (Var n) rest
 parseTerm (TokNum n : rest) = (Lit (LNat (fromIntegral n)), rest)
 parseTerm (TokRefl : rest) = (Refl, rest)
 parseTerm (TokHole : rest) = (Hole, rest)
+parseTerm (TokLParen : rest) =
+  let (t, rest') = parseTerm rest
+  in case rest' of
+    TokRParen : rest'' -> (t, rest'')
+    _ -> (t, rest')
 parseTerm rest = (Hole, rest)
 
 parseTermApp :: Term -> [Token] -> (Term, [Token])
-parseTermApp acc (TokName n : rest) = parseTermApp (App acc (Def n)) rest
+parseTermApp acc (TokName n : rest) | n /= "where" = parseTermApp (App acc (Def n)) rest
 parseTermApp acc (TokNum n : rest) = parseTermApp (App acc (Lit (LNat (fromIntegral n)))) rest
+parseTermApp acc (TokLParen : rest) =
+  let (t, rest') = parseTerm rest
+  in case rest' of
+    TokRParen : rest'' -> parseTermApp (App acc t) rest''
+    _ -> (acc, rest)
 parseTermApp acc rest = (acc, rest)
