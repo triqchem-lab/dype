@@ -31,6 +31,8 @@ import Dayan.Algebra.GF9
 import Dayan.Verify.Pipeline (runPipeline, report, VerifyResult(..))
 import qualified Data.Text.IO as TIO
 
+import Dayan.Parse.Lexer (Token(..), lexDy)
+
 main :: IO ()
 main = hspec $ do
   describe "Trit — GF(3) 三进制基本单元" $ do
@@ -348,6 +350,16 @@ main = hspec $ do
       it "最大轨道 ≤ 12" $ maxOrbitSize decomp `shouldSatisfy` (<= 12)
 
   describe "Parse.Dy — .dy 文件解析器" $ do
+    context "Lexer — token边界" $ do
+      it "_≡_; refl 正常分词" $
+        lexDy "(_≡_; refl)" `shouldBe`
+          [TokLParen, TokName "_≡_", TokSemi, TokRefl, TokRParen]
+      it "refl) 后接括号 正常分词" $
+        lexDy "refl)" `shouldBe`
+          [TokRefl, TokRParen]
+      it "module M where 正常分词" $
+        lexDy "module M where" `shouldBe`
+          [TokModule, TokName "M", TokWhere]
     context "模块解析" $ do
       it "解析模块名" $
         case parseDy "module Test where" of
