@@ -93,11 +93,13 @@ bezout13x39 = (13 * 39, 1 + 46 * 11)  -- 507 = 507
 
 -- | CRT 同构: ℕ/6624 → ℕ/144 × ℕ/46
 --   同构映射的 Bézout 系数
-crtInv144mod46 :: Word16  -- 144⁻¹ mod 46
-crtInv144mod46 = 144 `mod` 46  -- = 6 (实际需要的是 144 在 mod 46 下的 Bézout 系数)
+-- | 144 和 46 不互质 (gcd=2), 无标准 Bézout 逆元
+--   使用 CRT 查表 (Dayan.Compute.CRT.reverseLookup) 替代模逆计算
+crtInv144mod46 :: Word16
+crtInv144mod46 = 0  -- 标记为不适用: gcd(144,46)=2, 查表模式使用 reverseLookup
 
-crtInv46mod144 :: Word16  -- 46⁻¹ mod 144
-crtInv46mod144 = 46 `mod` 144  -- = 46
+crtInv46mod144 :: Word16
+crtInv46mod144 = 0  -- 标记为不适用: gcd(144,46)=2
 
 ----------------------------------------------------------------------
 -- 5. 幻方常数

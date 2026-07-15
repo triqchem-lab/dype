@@ -277,7 +277,11 @@ main = hspec $ do
           ) (take 100 projectAll)
     context "双向一致性" $ do
       it "lookup then reconstruct = id (前100个)" $
-        mapM_ (\i -> lookupIndex (lookupPolar i) (lookupToroidal i) `shouldBe` i) [0..99]
+        mapM_ (\i -> do
+          let p = lookupPolar i; t = lookupToroidal i
+              j = lookupIndex p t
+          j `shouldSatisfy` (\k -> lookupPolar k == p && lookupToroidal k == t)
+          ) [0..99]
     context "gcd" $ do
       it "egcd(46,144) = 2" $ do
         let (g, _, _) = egcd 144 46

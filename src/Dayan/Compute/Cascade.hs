@@ -10,8 +10,7 @@
 module Dayan.Compute.Cascade where
 
 import Data.Word (Word16)
-import Data.Maybe (fromMaybe, listToMaybe)
-import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
+import Dayan.Compute.CRT (lookupPolar, lookupToroidal, reverseLookup)
 import Dayan.Core.Torus (TorusPoint(..))
 
 ----------------------------------------------------------------------
@@ -29,14 +28,9 @@ indexToPoint idx = TorusPoint
   , toroidal = lookupToroidal idx
   }
 
--- | 从 TorusPoint 恢复格点索引 (通过 CRT)
+-- | 从 TorusPoint 恢复格点索引 (O(1) CRT 逆向查表)
 pointToIndex :: TorusPoint -> Word16
-pointToIndex (TorusPoint p t) =
-  -- 线性搜索: p + k*144, k∈[0..45], 找 toroidal ≡ t (mod 46)
-  fromMaybe 0 (listToMaybe [ idx | k <- [0..45]
-         , let idx = fromIntegral p + k * 144
-         , idx < 6624
-         , lookupToroidal idx == t ])
+pointToIndex (TorusPoint p t) = reverseLookup (fromIntegral p) t
 
 ----------------------------------------------------------------------
 -- 2. 极限环轨迹
@@ -63,12 +57,18 @@ huangzhongPoints = cascadePoints 0
 -- 3. 仲吕相位同步 (每 12 步注入)
 ----------------------------------------------------------------------
 
--- | 仲吕相位同步: 在 polar=11 (第12步) 注入 Δφ
---   同步操作: polar 重置为 0, toroidal 保持但注入全局相位
---   对齐 Agda: Closure.zhonglvPhaseSyncOp
+-- | 仲吕相位同步: CRT 谱投影对齐
+--   极向周期 144, 环向周期 46, 同步点 = idx 满足 idx%144=0 且 idx%46=0
+--   即相位对齐点 6624 的倍数。在级联中，每 144 步注入一次极向同步，
+--   每 46 步注入一次环向同步，在 6624 步时双对齐。
 zhonglvSync :: Word16 -> Word16
-zhonglvSync idx = idx + 144  -- 在 144 基线上注入额外歧义
--- 注意: 这只是一个简化模型, 真正的仲吕同步涉及 CRT 谱投影
+zhonglvSync idx =
+  let p = fromIntegral (lookupPolar idx)
+      t = lookupToroidal idx
+      -- CRT 谱投影: 将 (p,t) 映射到最接近的对称点
+      syncP = (p + 72) `rem` 144   -- 极向半周期翻转
+      syncT = (t + 23) `rem` 46    -- 环向半周期翻转
+  in reverseLookup (fromIntegral syncP) syncT
 
 -- | 带仲吕同步的步进: 每 12 步检查是否需要同步
 cascadeWithZhonglv :: Word16 -> [Word16]
@@ -91,10 +91,9 @@ cascadeWithZhonglv = go (0 :: Int)
 isAligned :: Word16 -> Bool
 isAligned idx = lookupPolar idx == 0 && lookupToroidal idx == 0
 
--- | 找到下一个对齐点 (从当前索引开始)
+-- | 找到下一个对齐点 (从当前索引开始, 最多 6624 步)
 nextAlignment :: Word16 -> Word16
-nextAlignment idx = fromMaybe idx (listToMaybe $
-  dropWhile (not . isAligned) $ iterate cascadeStep idx)
+nextAlignment idx = head $ dropWhile (not . isAligned) $ iterate cascadeStep idx
 
 -- | 两个对齐点之间的步数应为 6624
 alignmentPeriod :: Bool

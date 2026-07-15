@@ -18,6 +18,8 @@ module Dayan.Compute.CRT where
 import Data.Word (Word8, Word16)
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as VM
+import Control.Monad (forM_)
 
 ----------------------------------------------------------------------
 -- 1. 常数
@@ -44,9 +46,7 @@ data CrtTable = CrtTable
 
 -- | CRT 逆向: 余数对 → 格点索引 (O(1))
 crtReconstruct :: CrtTable -> Word8 -> Word8 -> Word16
-crtReconstruct t p t' =
-  let i = fromIntegral p * 46 + fromIntegral t'
-  in reverseTable (forward t) V.! i
+crtReconstruct _t p t' = reverseLookup p t'
 
 -- | 逆向查表: (极向余数, 环向余数) → 格点索引
 lookupIndex :: Word8 -> Word8 -> Word16
@@ -88,17 +88,27 @@ crtTable :: CrtTable
 crtTable = buildCrtTable
 {-# NOINLINE crtTable #-}
 
--- | 反向查表: (polar, toroidal) → 格点索引
---   注意: gcd(144,46)=2，只有 polar%2 == toroidal%2 的组合有效
-reverseTable :: Vector (Word8, Word8) -> Vector Word16
-reverseTable fwd = V.generate (144 * 46) $ \i ->
-  let p = fromIntegral (i `div` 46) :: Word8
-      t = fromIntegral (i `mod` 46) :: Word8
-      matches = [ idx | idx <- [0..6623]
-                 , V.unsafeIndex fwd (fromIntegral idx) == (p, t) ]
-  in case matches of
-       (x:_) -> x
-       []    -> 0  -- 无效组合, 回退到 0
+-- | 构建反向表: (polar, toroidal) → 格点索引 (O(1) 直接索引)
+--   遍历 0..6623, 对每个 idx 计算其 (p,t), 存入 table[p*46+t]
+--   注意: gcd(144,46)=2, 无效 (p,t) 组合保持默认值 0
+buildReverseTable :: Vector Word16
+buildReverseTable = V.create $ do
+  v <- VM.replicate 6624 0
+  forM_ [(0 :: Int)..6623] $ \idx -> do
+    let p = fromIntegral (idx `rem` 144) :: Word8
+        t = fromIntegral (idx `rem` 46)  :: Word8
+        pos = fromIntegral p * 46 + fromIntegral t
+    VM.write v pos (fromIntegral idx)
+  pure v
+{-# NOINLINE buildReverseTable #-}
+
+-- | 全局反向表 (惰性, 首次使用构建)
+reverseVec :: Vector Word16
+reverseVec = buildReverseTable
+
+-- | O(1) 逆向查表: (polar, toroidal) → 格点索引
+reverseLookup :: Word8 -> Word8 -> Word16
+reverseLookup p t = reverseVec V.! (fromIntegral p * 46 + fromIntegral t)
 
 ----------------------------------------------------------------------
 -- 5. 查表操作 (O(1))
