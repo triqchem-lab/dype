@@ -19,7 +19,7 @@ import Data.Word (Word8, Word16)
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as VM
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 
 ----------------------------------------------------------------------
 -- 1. 常数
@@ -88,17 +88,19 @@ crtTable :: CrtTable
 crtTable = buildCrtTable
 {-# NOINLINE crtTable #-}
 
--- | 构建反向表: (polar, toroidal) → 格点索引 (O(1) 直接索引)
---   遍历 0..6623, 对每个 idx 计算其 (p,t), 存入 table[p*46+t]
---   注意: gcd(144,46)=2, 无效 (p,t) 组合保持默认值 0
+-- | 构建反向表: (polar, toroidal) → 格点索引 (规范代表元)
+--   gcd(144,46)=2, 每个合法 (p,t) 有 2 个前像 {x, x+3312}。
+--   本表存储较小者 (x), 对应几何相位原点 — 非随机选择。
+--   遍历 0→6623, 仅当 cell 为哨兵 (6624) 时写入 — 保证首次(最小)idx 被保存。
 buildReverseTable :: Vector Word16
 buildReverseTable = V.create $ do
-  v <- VM.replicate 6624 0
+  v <- VM.replicate 6624 6624  -- 哨兵值: 6624 > max idx (6623)
   forM_ [(0 :: Int)..6623] $ \idx -> do
     let p = fromIntegral (idx `rem` 144) :: Word8
         t = fromIntegral (idx `rem` 46)  :: Word8
         pos = fromIntegral p * 46 + fromIntegral t
-    VM.write v pos (fromIntegral idx)
+    current <- VM.read v pos
+    when (current == 6624) $ VM.write v pos (fromIntegral idx)
   pure v
 {-# NOINLINE buildReverseTable #-}
 
