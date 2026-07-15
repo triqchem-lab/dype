@@ -1,70 +1,34 @@
-{-# LANGUAGE OverloadedStrings #-}
--- | Dayan.Adapter.Agda — Agda 类型兼容适配层
+-- | Dayan.Adapter.Agda — 大衍→Agda 编译管线
 --
--- Phase 4 的桥梁: 在大衍 AST 和 Agda.Syntax 之间建立类型映射。
--- 当前用独立定义 (轻量桩), Phase 4 后期替换为 vendor/agda-src 的真实类型。
---
--- vendor/agda-src 对应:
---   Range      → Agda.Syntax.Position.Range
---   ModuleName → Agda.Syntax.TopLevelModuleName
---   QName      → Agda.Syntax.Abstract.Name.QName
+-- Clang/LLVM 模型: 大衍前端生成 Agda AST → Agda 后端验证
+--   管线: .dy → Parse(Dy) → Emit(AgdaFile) → write .agda → agda verify
 
-module Dayan.Adapter.Agda where
+{-# LANGUAGE OverloadedStrings #-}
+module Dayan.Adapter.Agda
+  ( dyToAgda
+  , dyToAgdaFile
+  , writeAgdaFile
+  ) where
 
 import Data.Text (Text)
-import qualified Dayan.ProofGen.AST as D
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import Dayan.ProofGen.AST (AgdaFile(..), AgdaModuleName(..))
+import Dayan.ProofGen.Emit (emitFile)
+import Dayan.Parse.Dy (parseDy)
 
-----------------------------------------------------------------------
--- 1. Agda 兼容类型 (轻量定义)
-----------------------------------------------------------------------
+-- | .dy 文本 → Agda AST (AgdaFile)
+dyToAgda :: Text -> Either String AgdaFile
+dyToAgda input = case parseDy input of
+  Right (_, f) -> Right f
+  Left err -> Left err
 
--- | Agda 区间 (对应 Agda.Syntax.Position.Range)
-newtype AgdaRange = AgdaRange Text deriving (Show, Eq)
+-- | .dy 文件 → AgdaFile (文件路径版本)
+dyToAgdaFile :: FilePath -> IO (Either String AgdaFile)
+dyToAgdaFile fp = do
+  txt <- TIO.readFile fp
+  pure (dyToAgda txt)
 
--- | Agda 限定名 (对应 Agda.Syntax.Abstract.Name.QName)
-newtype AgdaQName = AgdaQName Text deriving (Show, Eq)
-
--- | Agda 模块名 (对应 Agda.Syntax.TopLevelModuleName)
-newtype AgdaModuleName = AgdaModuleName Text deriving (Show, Eq)
-
-----------------------------------------------------------------------
--- 2. 大衍 → Agda 类型转换
-----------------------------------------------------------------------
-
--- | 大衍 AST → Agda QName
-toAgdaQName :: D.Term -> Maybe AgdaQName
-toAgdaQName (D.Def n) = Just (AgdaQName n)
-toAgdaQName _         = Nothing
-
--- | 大衍模块名 → Agda 模块名
-toAgdaModule :: Text -> AgdaModuleName
-toAgdaModule = AgdaModuleName
-
--- | Agda 模块名 → 大衍 Text
-fromAgdaModule :: AgdaModuleName -> Text
-fromAgdaModule (AgdaModuleName n) = n
-
-----------------------------------------------------------------------
--- 3. Type synonym bridge (Phase 4 full integration)
-----------------------------------------------------------------------
-
--- | 当前用 Text, 后期用 Agda.Syntax.Abstract
-type AgdaTerm = D.Term
-
--- | 当前用 Text, 后期用 Agda.Syntax.Internal
-type AgdaType = D.Type
-
--- | 大衍 AST → Agda Internal (占位)
-toAgdaTerm :: D.Term -> AgdaTerm
-toAgdaTerm = id
-
-toAgdaType :: D.Type -> AgdaType
-toAgdaType = id
-
-----------------------------------------------------------------------
--- 4. Parse.Dy 集成点
-----------------------------------------------------------------------
-
--- | 解析 .dy 文件返回 (模块名, Agda声明列表)
---   后期替换为 Agda.Syntax.Parser 的真实解析
-type DyParseResult = Either Text (AgdaModuleName, [D.Decl])
+-- | AgdaFile → 写出 .agda 文件
+writeAgdaFile :: FilePath -> AgdaFile -> IO ()
+writeAgdaFile fp f = TIO.writeFile fp (emitFile f)

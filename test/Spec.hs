@@ -22,7 +22,7 @@ import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual,
   t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus,
   convTerm, convType, convAlgebraic, convGeometric, convTopological, gf9CrtEquivalent)
 import Dayan.Parse.Dy (parseDy)
-import Dayan.Adapter.Agda (AgdaModuleName(..))
+import Dayan.ProofGen.AST (AgdaModuleName(..))
 import Dayan.Compute.Orbit
 import Dayan.Algebra.GF9
 

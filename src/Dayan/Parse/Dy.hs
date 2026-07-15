@@ -15,7 +15,6 @@ module Dayan.Parse.Dy where
 import Data.Text (Text)
 import qualified Data.Text as T
 import Dayan.ProofGen.AST
-import Dayan.Adapter.Agda (AgdaModuleName(..))
 import Dayan.Parse.Lexer (Token(..), lexDy)
 
 parseDy :: Text -> Either String (AgdaModuleName, AgdaFile)
@@ -41,6 +40,10 @@ parseTopLevel (TokPostulate : rest) =
   in ("", decl : decls)
 parseTopLevel (TokData : rest) =
   let (decl, rest') = parseData rest
+      (_, decls) = parseTopLevel rest'
+  in ("", decl : decls)
+parseTopLevel (TokRewrite : rest) =
+  let (decl, rest') = parseRewrite rest
       (_, decls) = parseTopLevel rest'
   in ("", decl : decls)
 parseTopLevel (TokName name : TokColon : rest) =
@@ -72,6 +75,9 @@ parseDecls (TokPostulate : rest) =
   in d : parseDecls rest'
 parseDecls (TokData : rest) =
   let (d, rest') = parseData rest
+  in d : parseDecls rest'
+parseDecls (TokRewrite : rest) =
+  let (d, rest') = parseRewrite rest
   in d : parseDecls rest'
 parseDecls (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
@@ -109,6 +115,22 @@ parseConstructors (TokWhere : rest) = go rest
       in (ConDecl n ty : more, rest''')
     go rest' = ([], rest')
 parseConstructors rest = ([], rest)
+
+----------------------------------------------------------------------
+-- Rewrite
+----------------------------------------------------------------------
+
+parseRewrite :: [Token] -> (Decl, [Token])
+parseRewrite (TokName name : rest) =
+  let (eq, rest') = parseRewriteEq rest
+  in (DRewrite name eq, rest')
+parseRewrite rest = (DRewrite "?" Hole, rest)
+
+parseRewriteEq :: [Token] -> (Term, [Token])
+parseRewriteEq (TokColon : rest) =
+  let (t, rest') = parseTerm rest
+  in (t, rest')
+parseRewriteEq rest = (Hole, rest)
 
 ----------------------------------------------------------------------
 -- Body

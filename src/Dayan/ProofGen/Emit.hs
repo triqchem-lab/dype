@@ -14,6 +14,7 @@ emitDecl = \case
   DImport n -> ["open import " <> n]; DPostulate n ty -> ["postulate", "  " <> n <> " : " <> emitType ty]
   DDef n ty cls -> map (\c -> n <> " : " <> emitType ty <> "\n" <> n <> " " <> emitClause c) cls
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
+  DRewrite n eq -> ["{-# REWRITE " <> n <> " #-}\n" <> "postulate\n  " <> n <> " : " <> emitTerm eq]
   DComment t -> ["-- " <> t]
 
 emitClause :: Clause -> Text
