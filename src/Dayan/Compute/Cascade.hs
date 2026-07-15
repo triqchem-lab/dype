@@ -57,13 +57,14 @@ huangzhongPoints = cascadePoints 0
 -- 3. 仲吕相位同步 (每 12 步注入)
 ----------------------------------------------------------------------
 
--- | 仲吕相位同步: 极向整周推进, 环向跟随
---   极向: +144 → mod 144 归零 (极向不变)
---   环向: 144 mod 46 = 6 → 环向推进 6 步
---   数学: 同步操作为 (p,t) → (p, (t+6) mod 46), 保持奇偶匹配
---   对齐 Agda: Closure.zhonglvPhaseSyncOp (每 12 步注入 Δφ)
+-- | 仲吕相位同步: 极向归零, 环向 +1
+--   对齐 Agda: Closure.zhonglvPhaseSyncOp
+--     zhonglvPhaseSyncOp s = mkState zero (toroidal s +ℕ 1)
+--   语义: 每 12 步 A4 巡游后, 极向重置, 环向推进 1 步
 zhonglvSync :: Word16 -> Word16
-zhonglvSync idx = (idx + 144) `mod` 6624
+zhonglvSync idx =
+  let t = (lookupToroidal idx + 1) `rem` 46
+  in reverseLookup 0 t
 
 -- | 带仲吕同步的步进: 每 12 步检查是否需要同步
 cascadeWithZhonglv :: Word16 -> [Word16]
