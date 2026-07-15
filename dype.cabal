@@ -41,10 +41,12 @@ library
         Dayan.ProofGen.AST
         Dayan.ProofGen.Emit
         Dayan.ProofGen.Templates
+        Dayan.Verify.Pipeline
     build-depends:
         base >=4.17 && <5,
         process,
         temporary,
+        directory,
         filepath,
         containers,
         text,

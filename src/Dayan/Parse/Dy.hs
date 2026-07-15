@@ -20,11 +20,19 @@ import Dayan.Parse.Lexer (Token(..), lexDy)
 parseDy :: Text -> Either String (AgdaModuleName, AgdaFile)
 parseDy input =
   let toks = lexDy input
-  in case toks of
+      (opts, toks') = consumePragmas toks
+  in case toks' of
     TokModule : TokName modName : TokWhere : rest ->
-      let (opts, decls) = parseTopLevel rest
-      in Right (AgdaModuleName modName, AgdaFile opts modName decls)
-    _ -> Right (AgdaModuleName "Main", AgdaFile "" "Main" (parseDecls toks))
+      let (moreOpts, decls) = parseTopLevel rest
+      in Right (AgdaModuleName modName, AgdaFile (opts <> moreOpts) modName decls)
+    _ -> Right (AgdaModuleName "Main", AgdaFile opts "Main" (parseDecls toks'))
+
+-- | 消耗前置 pragma 和空白, 返回 (opts, remaining tokens)
+consumePragmas :: [Token] -> (Text, [Token])
+consumePragmas (TokPragma p : rest) =
+  let (more, rest') = consumePragmas rest
+  in (p <> more, rest')
+consumePragmas rest = ("", rest)
 
 parseTopLevel :: [Token] -> (Text, [Decl])
 parseTopLevel (TokPragma opts : rest) =
@@ -32,7 +40,8 @@ parseTopLevel (TokPragma opts : rest) =
   in (opts <> moreOpts, decls)
 parseTopLevel (TokOpen : TokImport : TokName mod : rest) =
   let decl = parseOpenImport mod rest
-      (_, decls) = parseTopLevel (dropImport rest)
+      rest' = skipOpenRest rest
+      (_, decls) = parseTopLevel rest'
   in ("", decl : decls)
 parseTopLevel (TokPostulate : rest) =
   let (decl, rest') = parsePostulate rest
@@ -59,6 +68,17 @@ dropImport :: [Token] -> [Token]
 dropImport [] = []
 dropImport (TokSemi : rest) = rest
 dropImport (_ : rest) = dropImport rest
+
+-- | 跳过 open import 的 using/hiding/renaming 子句
+skipOpenRest :: [Token] -> [Token]
+skipOpenRest (TokUsing : TokLParen : rest) = skipToClose rest
+skipOpenRest (TokName _ : rest) = skipOpenRest rest
+skipOpenRest rest = rest
+
+skipToClose :: [Token] -> [Token]
+skipToClose (TokRParen : rest) = rest
+skipToClose (_ : rest) = skipToClose rest
+skipToClose [] = []
 
 parseOpenImport :: Text -> [Token] -> Decl
 parseOpenImport mod (TokUsing : TokLParen : rest) =

@@ -3,6 +3,7 @@ module Main where
 
 import Test.Hspec
 import Data.Word (Word8, Word16)
+import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Dayan.Core.Trit
 import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe, minTryte, maxTryte, balanceTryte,
@@ -25,6 +26,9 @@ import Dayan.Parse.Dy (parseDy)
 import Dayan.ProofGen.AST (AgdaModuleName(..))
 import Dayan.Compute.Orbit
 import Dayan.Algebra.GF9
+
+import Dayan.Verify.Pipeline (runPipeline, report, VerifyResult(..))
+import qualified Data.Text.IO as TIO
 
 main :: IO ()
 main = hspec $ do
@@ -454,3 +458,17 @@ main = hspec $ do
     it "convTerm: 不同实部 GF9元素 全极False" $
       let a = Lit (LNat 0); b = Lit (LNat 3)
       in convTerm a b `shouldBe` False
+
+  describe "Pipeline — 跨层验证: .dy → parse → emit → verify" $ do
+    it "T6Lattice.dy → .agda → agda verify" $ do
+      dySource <- TIO.readFile "test/T6Lattice.dy"
+      (modName, agdaSrc, result) <- runPipeline dySource
+      case result of
+        VerifyOk -> pure ()
+        VerifyFail errs ->
+          let msg = T.unpack (T.intercalate "\n" (take 3 errs))
+          in expectationFailure ("agda verify failed:\n" ++ msg)
+      T.unpack modName `shouldSatisfy` ("T6Base" `isInfixOf`)
+      let src = T.unpack agdaSrc
+      src `shouldSatisfy` ("module T6Base where" `isInfixOf`)
+      src `shouldSatisfy` ("open import Agda.Builtin.Nat" `isInfixOf`)

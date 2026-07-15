@@ -1,0 +1,7 @@
+{-# OPTIONS --rewriting #-}
+module T6Base where
+
+open import Agda.Builtin.Nat
+
+postulate
+  Trit : Set
