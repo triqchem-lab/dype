@@ -57,18 +57,13 @@ huangzhongPoints = cascadePoints 0
 -- 3. 仲吕相位同步 (每 12 步注入)
 ----------------------------------------------------------------------
 
--- | 仲吕相位同步: CRT 谱投影对齐
---   极向周期 144, 环向周期 46, 同步点 = idx 满足 idx%144=0 且 idx%46=0
---   即相位对齐点 6624 的倍数。在级联中，每 144 步注入一次极向同步，
---   每 46 步注入一次环向同步，在 6624 步时双对齐。
+-- | 仲吕相位同步: 极向整周推进, 环向跟随
+--   极向: +144 → mod 144 归零 (极向不变)
+--   环向: 144 mod 46 = 6 → 环向推进 6 步
+--   数学: 同步操作为 (p,t) → (p, (t+6) mod 46), 保持奇偶匹配
+--   对齐 Agda: Closure.zhonglvPhaseSyncOp (每 12 步注入 Δφ)
 zhonglvSync :: Word16 -> Word16
-zhonglvSync idx =
-  let p = fromIntegral (lookupPolar idx)
-      t = lookupToroidal idx
-      -- CRT 谱投影: 将 (p,t) 映射到最接近的对称点
-      syncP = (p + 72) `rem` 144   -- 极向半周期翻转
-      syncT = (t + 23) `rem` 46    -- 环向半周期翻转
-  in reverseLookup (fromIntegral syncP) syncT
+zhonglvSync idx = (idx + 144) `mod` 6624
 
 -- | 带仲吕同步的步进: 每 12 步检查是否需要同步
 cascadeWithZhonglv :: Word16 -> [Word16]
