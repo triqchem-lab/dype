@@ -41,6 +41,8 @@ module Dayan.Kernel.Conversion
   -- * 三极等价判定 (替代 Agda βη 归约)
   , convTerm, convAlgebraic, convGeometric, convTopological
   , convType, convTypeByCRT, convTypeStruct
+  -- * GF9 幻方正交等价
+  , gf9CrtEquivalent
   -- * 穷举验证
   , forall729
   ) where
@@ -49,6 +51,7 @@ import Data.Word (Word8, Word16)
 import Dayan.Core.Trit   (Trit(..))
 import Dayan.Core.Tryte  (Tryte(..), allTrytes, tritAt, sortedPolarCRT, sortedToroidalCRT)
 import Dayan.Core.Torus  (TorusPoint(..))
+import Dayan.Algebra.GF9 (Gf9(..), gf9CrtProject, allGf9, frobenius)
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
 import Dayan.Compute.Orbit (a4Group, a4Action)
 import Dayan.ProofGen.AST (Type(..), Term(..), Lit(..))
@@ -173,9 +176,11 @@ t6CrtEqual a b =
 ----------------------------------------------------------------------
 
 -- | 三极等价判定: 任意两极通过则等价
+--   GF9 扩展: 幻方正交 i²+1²=0² 余数向量等价
 convTerm :: Term -> Term -> Bool
 convTerm a b =
   convAlgebraic a b || convGeometric a b || convTopological a b
+  || gf9CrtEquivalent a b
 
 -- | 类型等价: CRT 投影基数 + 三极递推
 convType :: Type -> Type -> Bool
@@ -285,6 +290,27 @@ convTopological a b =
   -- 幻方正交: 检查 CRT 投影后的相位对齐
   -- 拓扑不变量在有限模型中退化为 CRT 格点等价
   convAlgebraic (reduce4320D a) (reduce4320D b)
+
+----------------------------------------------------------------------
+-- 6g. GF9 幻方正交代价 (i²+1²=0²)
+----------------------------------------------------------------------
+
+-- | GF9 CRT 余数向量等价: 两个 GF9 元素在幻方正交投影下等价
+--   i²+1²=0²: M4 本征向量 v16⁺ ⊥ v16⁻
+--   GF9 的 9 个元素映射到 9 个不同的 CRT 坐标 (gf9CrtProject 单射)
+--   Frobenius 共轭在 CRT 域中为 ±16 手征交换 (坐标不同, 拓扑等价)
+gf9CrtEquivalent :: Term -> Term -> Bool
+gf9CrtEquivalent a b =
+  case (evalToNat a, evalToNat b) of
+    (Just na, Just nb)
+      | na < 9 && nb < 9 ->  -- GF9 域内: 0..8 编码值
+          let ga = idxToGf9 na; gb = idxToGf9 nb
+          in gf9CrtProject ga == gf9CrtProject gb  -- CRT 投影等价
+    _ -> False
+
+-- | 编码值 → GF9 元素 (0→8)
+idxToGf9 :: Word16 -> Gf9
+idxToGf9 n = allGf9 !! fromIntegral n
 
 ----------------------------------------------------------------------
 -- 6f. 类型等价 (CRT 投影基数)

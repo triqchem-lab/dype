@@ -20,7 +20,7 @@ import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
 import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729,
   t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus,
-  convTerm, convType, convAlgebraic, convGeometric, convTopological)
+  convTerm, convType, convAlgebraic, convGeometric, convTopological, gf9CrtEquivalent)
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
@@ -422,3 +422,23 @@ main = hspec $ do
     it "GF3固定点的CRT投影不变 (σ(a)=a)" $
       let x = Gf9 Z N  -- 1 + 0α: GF3固定点
       in gf9CrtProject x == gf9CrtProject (frobenius x) `shouldBe` True
+
+  describe "Conversion.GF9 — GF9 集成到三极框架" $ do
+    it "gf9CrtEquivalent: 同GF9元素等值" $
+      let a = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α
+          b = Lit (LNat 4)
+      in gf9CrtEquivalent a b `shouldBe` True
+    it "gf9CrtEquivalent: 不同GF9元素不等值" $
+      let a = Lit (LNat 0)  -- allGf9!!0 = Gf9 N N = 0
+          b = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α
+      in gf9CrtEquivalent a b `shouldBe` False
+    it "gf9CrtEquivalent: Frobenius共轭 CRT投影不同" $
+      let a = Lit (LNat 5)  -- allGf9!!5 = Gf9 Z P = 1+2α, encode=33, CRT=(33,33)
+          b = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α, encode=17, CRT=(17,17)
+      in gf9CrtEquivalent a b `shouldBe` False
+    it "convTerm: GF9同元素 任一极通过" $
+      let a = Lit (LNat 4); b = Lit (LNat 4)
+      in convTerm a b `shouldBe` True
+    it "convTerm: GF9不同元素 全极False" $
+      let a = Lit (LNat 0); b = Lit (LNat 4)
+      in convTerm a b `shouldBe` False
