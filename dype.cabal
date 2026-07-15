@@ -28,6 +28,7 @@ library
         Dayan.Kernel.Conversion
         Dayan.Parse.Dy
         Dayan
+        Dayan.Algebra.GF9
         Dayan.Core.Trit
         Dayan.Core.Tryte
         Dayan.Core.Torus

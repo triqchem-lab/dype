@@ -24,6 +24,7 @@ import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual,
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
+import Dayan.Algebra.GF9
 
 main :: IO ()
 main = hspec $ do
@@ -407,3 +408,17 @@ main = hspec $ do
         convType TSet TSet `shouldBe` True
     context "穷举" $ do
       it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True
+
+  describe "Algebra.GF9 — i²+1²=0² 幻方正交表示" $ do
+    it "9元素 → 9个不同CRT坐标 (单射)" $
+      gf9CrtInjective `shouldBe` True
+    it "Frobenius is involutive (σ²=id)" $
+      all frobeniusInvolutive allGf9 `shouldBe` True
+    it "Frobenius preserves addition" $
+      and [frobeniusAddHom x y | x <- allGf9, y <- allGf9] `shouldBe` True
+    it "共轭对的CRT投影不同 (非平凡手征)" $
+      let x = Gf9 Z P  -- 1 + α: 非固定点
+      in gf9CrtProject x /= gf9CrtProject (frobenius x) `shouldBe` True
+    it "GF3固定点的CRT投影不变 (σ(a)=a)" $
+      let x = Gf9 Z N  -- 1 + 0α: GF3固定点
+      in gf9CrtProject x == gf9CrtProject (frobenius x) `shouldBe` True
