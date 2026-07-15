@@ -410,35 +410,35 @@ main = hspec $ do
       it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True
 
   describe "Algebra.GF9 — i²+1²=0² 幻方正交表示" $ do
-    it "9元素 → 9个不同CRT坐标 (单射)" $
-      gf9CrtInjective `shouldBe` True
+    it "Frobenius共轭对 CRT投影相同 (crtLabel e16⁺≡e16⁻)" $
+      gf9ConjugateCrtSame `shouldBe` True
     it "Frobenius is involutive (σ²=id)" $
       all frobeniusInvolutive allGf9 `shouldBe` True
     it "Frobenius preserves addition" $
       and [frobeniusAddHom x y | x <- allGf9, y <- allGf9] `shouldBe` True
-    it "共轭对的CRT投影不同 (非平凡手征)" $
-      let x = Gf9 Z P  -- 1 + α: 非固定点
-      in gf9CrtProject x /= gf9CrtProject (frobenius x) `shouldBe` True
-    it "GF3固定点的CRT投影不变 (σ(a)=a)" $
-      let x = Gf9 Z N  -- 1 + 0α: GF3固定点
+    it "C3 手征翻转 (1→2, 2→1, 0→0)" $
+      gf9ChiralityFlip `shouldBe` True
+    it "共轭对 CRT投影相同 (a,1)↔(a,2)" $
+      let x = Gf9 Z P  -- 1+2α, C3手征=2
+          y = frobenius x  -- 1+α,  C3手征=1
+      in (gf9CrtProject x == gf9CrtProject y, chirality x, chirality y)
+         `shouldBe` (True, 2, 1)
+    it "GF3固定点 CRT投影不变 (σ(a)=a)" $
+      let x = Gf9 Z N  -- 1+0α: GF3固定点
       in gf9CrtProject x == gf9CrtProject (frobenius x) `shouldBe` True
 
   describe "Conversion.GF9 — GF9 集成到三极框架" $ do
-    it "gf9CrtEquivalent: 同GF9元素等值" $
-      let a = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α
-          b = Lit (LNat 4)
+    it "gf9CrtEquivalent: Frobenius共轭对 CRT等价 (相同投影)" $
+      let a = Lit (LNat 4)  -- allGf9!!4 = 1+α
+          b = Lit (LNat 5)  -- allGf9!!5 = 1+2α = frobenius(1+α)
       in gf9CrtEquivalent a b `shouldBe` True
-    it "gf9CrtEquivalent: 不同GF9元素不等值" $
-      let a = Lit (LNat 0)  -- allGf9!!0 = Gf9 N N = 0
-          b = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α
+    it "gf9CrtEquivalent: 不同实部 GF9元素不等值" $
+      let a = Lit (LNat 0)  -- allGf9!!0 = 0
+          b = Lit (LNat 3)  -- allGf9!!3 = 1 (不同实部)
       in gf9CrtEquivalent a b `shouldBe` False
-    it "gf9CrtEquivalent: Frobenius共轭 CRT投影不同" $
-      let a = Lit (LNat 5)  -- allGf9!!5 = Gf9 Z P = 1+2α, encode=33, CRT=(33,33)
-          b = Lit (LNat 4)  -- allGf9!!4 = Gf9 Z Z = 1+α, encode=17, CRT=(17,17)
-      in gf9CrtEquivalent a b `shouldBe` False
-    it "convTerm: GF9同元素 任一极通过" $
-      let a = Lit (LNat 4); b = Lit (LNat 4)
+    it "convTerm: Frobenius共轭对通过 GF9极判定" $
+      let a = Lit (LNat 4); b = Lit (LNat 5)
       in convTerm a b `shouldBe` True
-    it "convTerm: GF9不同元素 全极False" $
-      let a = Lit (LNat 0); b = Lit (LNat 4)
+    it "convTerm: 不同实部 GF9元素 全极False" $
+      let a = Lit (LNat 0); b = Lit (LNat 3)
       in convTerm a b `shouldBe` False
