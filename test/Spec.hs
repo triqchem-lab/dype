@@ -351,15 +351,78 @@ main = hspec $ do
 
   describe "Parse.Dy — .dy 文件解析器" $ do
     context "Lexer — token边界" $ do
+      -- 无空格邻接
       it "_≡_; refl 正常分词" $
         lexDy "(_≡_; refl)" `shouldBe`
           [TokLParen, TokName "_≡_", TokSemi, TokRefl, TokRParen]
-      it "refl) 后接括号 正常分词" $
-        lexDy "refl)" `shouldBe`
-          [TokRefl, TokRParen]
-      it "module M where 正常分词" $
+      it "refl) 后接括号" $
+        lexDy "refl)" `shouldBe` [TokRefl, TokRParen]
+      it "(T1 前接括号" $
+        lexDy "(T1" `shouldBe` [TokLParen, TokName "T1"]
+      it "T2) 后接括号" $
+        lexDy "T2)" `shouldBe` [TokName "T2", TokRParen]
+      -- 关键字边界
+      it "module M where" $
         lexDy "module M where" `shouldBe`
           [TokModule, TokName "M", TokWhere]
+      it "open import A using (B)" $
+        lexDy "open import A using (B)" `shouldBe`
+          [TokOpen, TokImport, TokName "A", TokUsing, TokLParen, TokName "B", TokRParen]
+      -- 点号模块名
+      it "Agda.Builtin.Nat 整体" $
+        lexDy "Agda.Builtin.Nat" `shouldBe`
+          [TokName "Agda.Builtin.Nat"]
+      -- 破折号标识符
+      it "encdec-0 整体" $
+        lexDy "encdec-0" `shouldBe` [TokName "encdec-0"]
+      it "all-729-bounded 整体" $
+        lexDy "all-729-bounded" `shouldBe` [TokName "all-729-bounded"]
+      -- 下划线标识符
+      it "_ 单独" $
+        lexDy "_" `shouldBe` [TokUnderscore]
+      it "_≡_ 运算符" $
+        lexDy "_≡_" `shouldBe` [TokName "_≡_"]
+      it "_+_ 运算符" $
+        lexDy "_+_" `shouldBe` [TokName "_+_"]
+      -- 数字
+      it "6624 数字" $
+        lexDy "6624" `shouldBe` [TokNum 6624]
+      it "729 数字" $
+        lexDy "729" `shouldBe` [TokNum 729]
+      -- 数字+标识符邻接
+      it "Fin 729 类型" $
+        lexDy "Fin 729" `shouldBe` [TokFin, TokNum 729]
+      it "x:729 边界" $
+        lexDy "x:729" `shouldBe` [TokName "x", TokColon, TokNum 729]
+      -- Hole
+      it "{!!} hole" $
+        lexDy "{!!}" `shouldBe` [TokHole]
+      -- 注释
+      it "-- comment" $
+        lexDy "-- test" `shouldBe` [TokComment " test"]
+      -- Pragma
+      it "{-# OPTIONS --rewriting #-}" $
+        lexDy "{-# OPTIONS --rewriting #-}" `shouldBe`
+          [TokPragma "{-# OPTIONS --rewriting #-}"]
+      -- → 箭头
+      it "A → B 函数类型" $
+        lexDy "A → B" `shouldBe`
+          [TokName "A", TokArrow, TokName "B"]
+      -- 混合邻接
+      it "T0:Trit 紧邻" $
+        lexDy "T0:Trit" `shouldBe`
+          [TokName "T0", TokColon, TokName "Trit"]
+      it "=refl 紧邻" $
+        lexDy "=refl" `shouldBe` [TokEqual, TokRefl]
+      -- 空输入
+      it "空字符串" $
+        lexDy "" `shouldBe` []
+      it "仅空格" $
+        lexDy "   \n  " `shouldBe` []
+      -- 完整声明
+      it "完整 postulate 行" $
+        lexDy "postulate T0 : Trit" `shouldBe`
+          [TokPostulate, TokName "T0", TokColon, TokName "Trit"]
     context "模块解析" $ do
       it "解析模块名" $
         case parseDy "module Test where" of

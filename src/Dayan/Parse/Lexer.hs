@@ -49,6 +49,7 @@ lexDy = topLevel . T.unpack
     scanToken ('→' : cs) = (TokArrow, cs)
     scanToken ('|' : cs) = (TokVBar, cs)
     scanToken (';' : cs) = (TokSemi, cs)
+    scanToken ('{' : '!' : '!' : '}' : cs) = (TokHole, cs)  -- {!!}
     scanToken ('_' : cs)
       | null name = (TokUnderscore, rest)
       | otherwise = (TokName (T.pack ('_':name)), rest)
