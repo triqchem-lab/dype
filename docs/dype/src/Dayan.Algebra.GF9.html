@@ -1,0 +1,417 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | Dayan.Algebra.GF9 &#8212; GF(3&#178;) &#30340; CRT &#20313;&#25968;&#21521;&#37327;&#34920;&#31034;</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- &#24187;&#26041;&#27491;&#20132;&#25299;&#25169;&#22522;&#30707;: i&#178; + 1&#178; = 0&#178;</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   M4 &#27491;&#20132;&#26412;&#24449;&#26041;&#21521;: v16&#8314; (&#21491;&#25163;&#24449;) &#8869; v16&#8315; (&#24038;&#25163;&#24449;)</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   crtLabel e16&#8314; = crtLabel e16&#8315; = 16 (CRT&#25237;&#24433;&#30456;&#21516;!)</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   &#24046;&#24322;&#22312; C3 &#23618;: crt-to-trit e16&#8314; = T&#8321; (&#21491;&#26059;), e16&#8315; = T&#8322; (&#24038;&#26059;)</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--   eigen-conjugate: e16&#8314; &#8596; e16&#8315;</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- GF(9) &#30340; 9 &#20010;&#20803;&#32032; &#8594; CRT &#20313;&#25968;&#21521;&#37327;:</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   &#23454;&#37096; a &#8712; {0,1,2} &#8594; CRT &#25237;&#24433; (a % 144, a % 46)</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--   &#34394;&#37096; b &#8712; {0,1,2} &#8594; C3 &#25163;&#24449;: 0=&#20013;&#24615;, 1=&#21491;&#26059;(T&#8321;), 2=&#24038;&#26059;(T&#8322;)</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   Frobenius &#963;(a,b)=(a,-b): &#25163;&#24449;&#32763;&#36716;, CRT&#25237;&#24433;&#19981;&#21464;</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--   &#20849;&#36717;&#23545; (a,1)&#8596;(a,2) &#20849;&#20139;&#21516;&#19968; CRT &#22352;&#26631;</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- &#23545;&#40784; Agda: Algebra/GF9.agda, QuantumBridge &#167;24 (crtLabel/crt-to-trit)</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html"><span class="hs-identifier">Dayan.Algebra.GF9</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html"><span class="hs-identifier">Dayan.Core.Trit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier">Trit</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier">toNat</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier">neg</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- 1. GF(9) &#26680;&#24515;&#31867;&#22411;</span><span>
+</span><span id="line-24"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="annot"><span class="hs-comment">-- | GF(9) &#20803;&#32032;: a + b&#183;&#945;, &#20854;&#20013; &#945;&#178; = -1</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">data</span><span> </span><span id="Gf9"><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Gf9"><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="realPart"><span class="annot"><span class="annottext">Gf9 -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#realPart"><span class="hs-identifier hs-var hs-var">realPart</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span class="hs-special">,</span><span> </span><span id="imagPart"><span class="annot"><span class="annottext">Gf9 -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#imagPart"><span class="hs-identifier hs-var hs-var">imagPart</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679097835"><span id="local-6989586621679097842"><span id="local-6989586621679097846"><span class="annot"><span class="annottext">Int -&gt; Gf9 -&gt; ShowS
+[Gf9] -&gt; ShowS
+Gf9 -&gt; String
+(Int -&gt; Gf9 -&gt; ShowS)
+-&gt; (Gf9 -&gt; String) -&gt; ([Gf9] -&gt; ShowS) -&gt; Show Gf9
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Gf9 -&gt; ShowS
+showsPrec :: Int -&gt; Gf9 -&gt; ShowS
+$cshow :: Gf9 -&gt; String
+show :: Gf9 -&gt; String
+$cshowList :: [Gf9] -&gt; ShowS
+showList :: [Gf9] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097851"><span id="local-6989586621679097856"><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Bool
+(Gf9 -&gt; Gf9 -&gt; Bool) -&gt; (Gf9 -&gt; Gf9 -&gt; Bool) -&gt; Eq Gf9
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Gf9 -&gt; Gf9 -&gt; Bool
+== :: Gf9 -&gt; Gf9 -&gt; Bool
+$c/= :: Gf9 -&gt; Gf9 -&gt; Bool
+/= :: Gf9 -&gt; Gf9 -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097862"><span id="local-6989586621679097867"><span id="local-6989586621679097871"><span id="local-6989586621679097875"><span id="local-6989586621679097878"><span id="local-6989586621679097881"><span id="local-6989586621679097884"><span class="annot"><span class="annottext">Eq Gf9
+Eq Gf9 =&gt;
+(Gf9 -&gt; Gf9 -&gt; Ordering)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Bool)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Bool)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Bool)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Bool)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Gf9)
+-&gt; (Gf9 -&gt; Gf9 -&gt; Gf9)
+-&gt; Ord Gf9
+Gf9 -&gt; Gf9 -&gt; Bool
+Gf9 -&gt; Gf9 -&gt; Ordering
+Gf9 -&gt; Gf9 -&gt; Gf9
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Gf9 -&gt; Gf9 -&gt; Ordering
+compare :: Gf9 -&gt; Gf9 -&gt; Ordering
+$c&lt; :: Gf9 -&gt; Gf9 -&gt; Bool
+&lt; :: Gf9 -&gt; Gf9 -&gt; Bool
+$c&lt;= :: Gf9 -&gt; Gf9 -&gt; Bool
+&lt;= :: Gf9 -&gt; Gf9 -&gt; Bool
+$c&gt; :: Gf9 -&gt; Gf9 -&gt; Bool
+&gt; :: Gf9 -&gt; Gf9 -&gt; Bool
+$c&gt;= :: Gf9 -&gt; Gf9 -&gt; Bool
+&gt;= :: Gf9 -&gt; Gf9 -&gt; Bool
+$cmax :: Gf9 -&gt; Gf9 -&gt; Gf9
+max :: Gf9 -&gt; Gf9 -&gt; Gf9
+$cmin :: Gf9 -&gt; Gf9 -&gt; Gf9
+min :: Gf9 -&gt; Gf9 -&gt; Gf9
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="annot"><span class="hs-comment">-- | &#20840;&#37096; 9 &#20010; GF(9) &#20803;&#32032;</span></span><span>
+</span><span id="line-31"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-type">allGf9</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-32"></span><span id="allGf9"><span class="annot"><span class="annottext">allGf9 :: [Gf9]
+</span><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-var hs-var">allGf9</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097892"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097893"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679097892"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097892"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097893"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097893"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- 2. GF(9) &#20195;&#25968;&#36816;&#31639; (&#23545;&#40784; x&#178;+1=0 &#22495;&#23450;&#20041;)</span><span>
+</span><span id="line-36"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><span class="hs-comment">-- | Frobenius &#33258;&#21516;&#26500;: &#963;(a + b&#945;) = a + (-b)&#183;&#945; = a - b&#945;</span></span><span>
+</span><span id="line-39"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-type">frobenius</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span>
+</span><span id="line-40"></span><span id="frobenius"><span class="annot"><span class="annottext">frobenius :: Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var hs-var">frobenius</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097898"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097898"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097899"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097899"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097898"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-var">neg</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097899"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="annot"><span class="hs-comment">-- | GF(9) &#21152;&#27861;</span></span><span>
+</span><span id="line-43"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#addGf9"><span class="hs-identifier hs-type">addGf9</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span>
+</span><span id="line-44"></span><span id="addGf9"><span class="annot"><span class="annottext">addGf9 :: Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#addGf9"><span class="hs-identifier hs-var hs-var">addGf9</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097901"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097901"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097902"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097902"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097903"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097903"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679097904"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097904"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-var">tritAdd</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097901"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097903"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-var">tritAdd</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097902"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097904"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><span class="hs-comment">-- | GF(9) &#20056;&#27861;: (a+b&#945;)(c+d&#945;) = (ac-bd)+(ad+bc)&#945;, &#945;&#178;=-1</span></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#mulGf9"><span class="hs-identifier hs-type">mulGf9</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span>
+</span><span id="line-48"></span><span id="mulGf9"><span class="annot"><span class="annottext">mulGf9 :: Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#mulGf9"><span class="hs-identifier hs-var hs-var">mulGf9</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097907"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097907"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097908"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097908"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097909"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097909"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679097910"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097910"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097911"><span class="annot"><span class="annottext">ac :: Trit
+</span><a href="#local-6989586621679097911"><span class="hs-identifier hs-var hs-var">ac</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-var">tritMul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097907"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097909"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">;</span><span> </span><span id="local-6989586621679097913"><span class="annot"><span class="annottext">bd :: Trit
+</span><a href="#local-6989586621679097913"><span class="hs-identifier hs-var hs-var">bd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-var">tritMul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097908"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097910"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-50"></span><span>      </span><span id="local-6989586621679097914"><span class="annot"><span class="annottext">ad :: Trit
+</span><a href="#local-6989586621679097914"><span class="hs-identifier hs-var hs-var">ad</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-var">tritMul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097907"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097910"><span class="hs-identifier hs-var">d</span></a></span><span class="hs-special">;</span><span> </span><span id="local-6989586621679097915"><span class="annot"><span class="annottext">bc :: Trit
+</span><a href="#local-6989586621679097915"><span class="hs-identifier hs-var hs-var">bc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-var">tritMul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097908"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097909"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-var">Gf9</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritSub"><span class="hs-identifier hs-var">tritSub</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097911"><span class="hs-identifier hs-var">ac</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097913"><span class="hs-identifier hs-var">bd</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-var">tritAdd</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097914"><span class="hs-identifier hs-var">ad</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097915"><span class="hs-identifier hs-var">bc</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-type">tritAdd</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-type">tritMul</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#tritSub"><span class="hs-identifier hs-type">tritSub</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-54"></span><span id="tritAdd"><span class="annot"><span class="annottext">tritAdd :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-var hs-var">tritAdd</span></a></span></span><span> </span><span id="local-6989586621679097917"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097917"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097918"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097918"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-var">fromIntegralTrit</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097917"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097918"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span id="tritMul"><span class="annot"><span class="annottext">tritMul :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritMul"><span class="hs-identifier hs-var hs-var">tritMul</span></a></span></span><span> </span><span id="local-6989586621679097922"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097922"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097923"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097923"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-var">fromIntegralTrit</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097922"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097923"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span id="tritSub"><span class="annot"><span class="annottext">tritSub :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritSub"><span class="hs-identifier hs-var hs-var">tritSub</span></a></span></span><span> </span><span id="local-6989586621679097925"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097925"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097926"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097926"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#tritAdd"><span class="hs-identifier hs-var">tritAdd</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097925"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-var">neg</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097926"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-type">fromIntegralTrit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-59"></span><span id="fromIntegralTrit"><span class="annot"><span class="annottext">fromIntegralTrit :: Int -&gt; Trit
+</span><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-var hs-var">fromIntegralTrit</span></a></span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-var">fromIntegralTrit</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#fromIntegralTrit"><span class="hs-identifier hs-var">fromIntegralTrit</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- 3. M4 &#24187;&#26041;&#27491;&#20132;: &#177;16 &#30340; CRT &#25237;&#24433;&#30456;&#21516;, C3 &#23618;&#21306;&#20998;</span><span>
+</span><span id="line-63"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- | C3 &#25163;&#24449;&#25351;&#31034;</span><span>
+</span><span id="line-66"></span><span class="hs-comment">--   0 = T&#8320; (&#20013;&#24615;, e0)</span><span>
+</span><span id="line-67"></span><span class="hs-comment">--   1 = T&#8321; (&#21491;&#26059;, e16&#8314;: crt-to-trit e16&#8314; = T&#8321;)</span><span>
+</span><span id="line-68"></span><span class="hs-comment">--   2 = T&#8322; (&#24038;&#26059;, e16&#8315;: crt-to-trit e16&#8315; = T&#8322;)</span><span>
+</span><span id="line-69"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#chirality"><span class="hs-identifier hs-type">chirality</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-70"></span><span id="chirality"><span class="annot"><span class="annottext">chirality :: Gf9 -&gt; Word8
+</span><a href="Dayan.Algebra.GF9.html#chirality"><span class="hs-identifier hs-var hs-var">chirality</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679097928"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097928"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097928"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">-- | &#20803;&#32032;&#32034;&#24341; (0..8): a + 3&#183;b &#22522;3&#32534;&#30721;, &#20165;&#29992;&#20110;&#36941;&#21382;</span></span><span>
+</span><span id="line-73"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#encodeGf9"><span class="hs-identifier hs-type">encodeGf9</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-74"></span><span id="encodeGf9"><span class="annot"><span class="annottext">encodeGf9 :: Gf9 -&gt; Word16
+</span><a href="Dayan.Algebra.GF9.html#encodeGf9"><span class="hs-identifier hs-var hs-var">encodeGf9</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097930"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097930"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679097931"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097931"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-75"></span><span>  </span><span class="annot"><span class="annottext">Word8 -&gt; Word16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097930"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097931"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- | CRT &#20313;&#25968;&#21521;&#37327;&#25237;&#24433;</span><span>
+</span><span id="line-78"></span><span class="hs-comment">--   &#20165;&#29992;&#23454;&#37096; a &#8594; &#23545;&#40784; crtLabel e16&#8314; &#8801; crtLabel e16&#8315; (refl)</span><span>
+</span><span id="line-79"></span><span class="hs-comment">--   Frobenius&#20849;&#36717;&#23545; (a,1)&#8596;(a,2) &#25237;&#24433;&#30456;&#21516; &#8212; CRT&#23618;&#19981;&#21487;&#21306;&#20998;</span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-type">gf9CrtProject</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span id="gf9CrtProject"><span class="annot"><span class="annottext">gf9CrtProject :: Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var hs-var">gf9CrtProject</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span id="local-6989586621679097933"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097933"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097936"><span class="annot"><span class="annottext">n :: Word8
+</span><a href="#local-6989586621679097936"><span class="hs-identifier hs-var hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097933"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>  </span><span class="hs-comment">-- &#20165;&#23454;&#37096;: 0,1,2</span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097936"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097936"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span>  </span><span class="hs-comment">-- polar = toroidal = a</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">-- | 9 &#20010; GF(9) &#20803;&#32032; &#8594; CRT &#22352;&#26631;&#34920;</span></span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#gf9CrtTable"><span class="hs-identifier hs-type">gf9CrtTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span id="gf9CrtTable"><span class="annot"><span class="annottext">gf9CrtTable :: [(Gf9, (Word8, Word8))]
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtTable"><span class="hs-identifier hs-var hs-var">gf9CrtTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097938"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var">gf9CrtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097938"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679097938"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097938"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Gf9]
+</span><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-var">allGf9</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- 4. &#39564;&#35777;</span><span>
+</span><span id="line-91"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- | Frobenius &#20849;&#36717;&#23545; CRT &#25237;&#24433;&#30456;&#21516; (&#23545;&#40784; crtLabel e16&#8314; &#8801; e16&#8315;)</span><span>
+</span><span id="line-94"></span><span class="hs-comment">--   &#20849;&#36717;&#23545;&#20165;&#22312; C3 &#25163;&#24449;&#23618;&#21306;&#20998;, CRT &#23618;&#19981;&#21487;&#21306;</span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#gf9ConjugateCrtSame"><span class="hs-identifier hs-type">gf9ConjugateCrtSame</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-96"></span><span id="gf9ConjugateCrtSame"><span class="annot"><span class="annottext">gf9ConjugateCrtSame :: Bool
+</span><a href="Dayan.Algebra.GF9.html#gf9ConjugateCrtSame"><span class="hs-identifier hs-var hs-var">gf9ConjugateCrtSame</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>  </span><span class="annot"><span class="annottext">(Gf9 -&gt; Bool) -&gt; [Gf9] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679097941"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097941"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var">gf9CrtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097941"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">(Word8, Word8) -&gt; (Word8, Word8) -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var">gf9CrtProject</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097941"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Gf9]
+</span><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-var">allGf9</span></a></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="hs-comment">-- | C3 &#25163;&#24449;&#26144;&#23556;: &#20849;&#36717;&#23545;&#32763;&#36716;&#25163;&#24449;</span><span>
+</span><span id="line-100"></span><span class="hs-comment">--   (a,1) &#8594; (a,2): chirality 1&#8594;2 (&#21491;&#8594;&#24038;)</span><span>
+</span><span id="line-101"></span><span class="hs-comment">--   (a,2) &#8594; (a,1): chirality 2&#8594;1 (&#24038;&#8594;&#21491;)</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--   (a,0) &#8594; (a,0): &#33258;&#20849;&#36717; (&#20013;&#24615;)</span><span>
+</span><span id="line-103"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#gf9ChiralityFlip"><span class="hs-identifier hs-type">gf9ChiralityFlip</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-104"></span><span id="gf9ChiralityFlip"><span class="annot"><span class="annottext">gf9ChiralityFlip :: Bool
+</span><a href="Dayan.Algebra.GF9.html#gf9ChiralityFlip"><span class="hs-identifier hs-var hs-var">gf9ChiralityFlip</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-105"></span><span>  </span><span class="annot"><span class="annottext">(Gf9 -&gt; Bool) -&gt; [Gf9] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679097943"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097943"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097944"><span class="annot"><span class="annottext">c :: Word8
+</span><a href="#local-6989586621679097944"><span class="hs-identifier hs-var hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Word8
+</span><a href="Dayan.Algebra.GF9.html#chirality"><span class="hs-identifier hs-var">chirality</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097943"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">;</span><span> </span><span id="local-6989586621679097945"><span class="annot"><span class="annottext">fc :: Word8
+</span><a href="#local-6989586621679097945"><span class="hs-identifier hs-var hs-var">fc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Word8
+</span><a href="Dayan.Algebra.GF9.html#chirality"><span class="hs-identifier hs-var">chirality</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097943"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097944"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097945"><span class="hs-identifier hs-var">fc</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span>          </span><span class="hs-comment">-- &#20013;&#24615;&#22266;&#23450;</span><span>
+</span><span id="line-108"></span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097944"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097945"><span class="hs-identifier hs-var">fc</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span>          </span><span class="hs-comment">-- &#21491;&#8594;&#24038;</span><span>
+</span><span id="line-109"></span><span>       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097944"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097945"><span class="hs-identifier hs-var">fc</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>             </span><span class="hs-comment">-- &#24038;&#8594;&#21491;</span><span>
+</span><span id="line-110"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Gf9]
+</span><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-var">allGf9</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="annot"><span class="hs-comment">-- | Frobenius &#24179;&#26041; = &#24658;&#31561;</span></span><span>
+</span><span id="line-113"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#frobeniusInvolutive"><span class="hs-identifier hs-type">frobeniusInvolutive</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-114"></span><span id="frobeniusInvolutive"><span class="annot"><span class="annottext">frobeniusInvolutive :: Gf9 -&gt; Bool
+</span><a href="Dayan.Algebra.GF9.html#frobeniusInvolutive"><span class="hs-identifier hs-var hs-var">frobeniusInvolutive</span></a></span></span><span> </span><span id="local-6989586621679097949"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097949"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097949"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097949"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="annot"><span class="hs-comment">-- | Frobenius &#20445;&#21152;&#27861;&#21516;&#24577;</span></span><span>
+</span><span id="line-117"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#frobeniusAddHom"><span class="hs-identifier hs-type">frobeniusAddHom</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-118"></span><span id="frobeniusAddHom"><span class="annot"><span class="annottext">frobeniusAddHom :: Gf9 -&gt; Gf9 -&gt; Bool
+</span><a href="Dayan.Algebra.GF9.html#frobeniusAddHom"><span class="hs-identifier hs-var hs-var">frobeniusAddHom</span></a></span></span><span> </span><span id="local-6989586621679097951"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097951"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679097952"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097952"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#addGf9"><span class="hs-identifier hs-var">addGf9</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097951"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097952"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#addGf9"><span class="hs-identifier hs-var">addGf9</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097951"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097952"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><span class="hs-comment">-- | Frobenius &#20445;&#20056;&#27861;&#21516;&#24577;</span></span><span>
+</span><span id="line-122"></span><span class="annot"><a href="Dayan.Algebra.GF9.html#frobeniusMulHom"><span class="hs-identifier hs-type">frobeniusMulHom</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-123"></span><span id="frobeniusMulHom"><span class="annot"><span class="annottext">frobeniusMulHom :: Gf9 -&gt; Gf9 -&gt; Bool
+</span><a href="Dayan.Algebra.GF9.html#frobeniusMulHom"><span class="hs-identifier hs-var hs-var">frobeniusMulHom</span></a></span></span><span> </span><span id="local-6989586621679097954"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097954"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679097955"><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097955"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-124"></span><span>  </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#mulGf9"><span class="hs-identifier hs-var">mulGf9</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097954"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097955"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#mulGf9"><span class="hs-identifier hs-var">mulGf9</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097954"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Gf9 -&gt; Gf9
+</span><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier hs-var">frobenius</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679097955"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span></pre></body></html>

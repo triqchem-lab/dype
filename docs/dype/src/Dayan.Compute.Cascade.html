@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | Dayan.Compute.Cascade &#8212; &#26497;&#38480;&#29615;&#32423;&#32852; (6624 &#27493;&#26684;&#28857;&#24033;&#28216;)</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- &#26497;&#38480;&#29615;: &#26497;&#21521; 144 &#27493; + &#29615;&#21521; 46 &#27493;&#30340;&#19981;&#21487;&#36890;&#32422;&#32423;&#32852;</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- &#23545;&#40784;&#28857;: 6624 = 144 &#215; 46 &#27493;&#21518;&#30456;&#20301;&#24402;&#38646;</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- &#19981;&#38381;&#21512;: &#32423;&#32852;&#27704;&#19981;&#20572;&#27490;, &#21482;&#22312;&#23545;&#40784;&#28857;&#22349;&#32553;</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- &#23545;&#40784; Agda: XuanwuAbsorption cycleN-adds</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--   &#20210;&#21525;&#30456;&#20301;&#21516;&#27493;&#27599; 12 &#27493;&#27880;&#20837; &#916;&#966;</span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.Compute.Cascade.html"><span class="hs-identifier">Dayan.Compute.Cascade</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Compute.CRT.html"><span class="hs-identifier">Dayan.Compute.CRT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier">lookupPolar</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier">lookupToroidal</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Compute.CRT.html#reverseLookup"><span class="hs-identifier">reverseLookup</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html"><span class="hs-identifier">Dayan.Core.Torus</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier">TorusPoint</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- 1. &#27493;&#36827;&#23450;&#20041;</span><span>
+</span><span id="line-18"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><span class="hs-comment">-- | &#21333;&#27493;&#32423;&#32852;: &#26497;&#21521; +1 (mod 144), &#29615;&#21521; +1 (mod 46)</span></span><span>
+</span><span id="line-21"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#cascadeStep"><span class="hs-identifier hs-type">cascadeStep</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-22"></span><span id="cascadeStep"><span class="annot"><span class="annottext">cascadeStep :: Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#cascadeStep"><span class="hs-identifier hs-var hs-var">cascadeStep</span></a></span></span><span> </span><span id="local-6989586621679097402"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097402"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097402"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">6624</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><span class="hs-comment">-- | &#20174;&#26684;&#28857;&#32034;&#24341;&#25552;&#21462; TorusPoint</span></span><span>
+</span><span id="line-25"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#indexToPoint"><span class="hs-identifier hs-type">indexToPoint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span>
+</span><span id="line-26"></span><span id="indexToPoint"><span class="annot"><span class="annottext">indexToPoint :: Word16 -&gt; TorusPoint
+</span><a href="Dayan.Compute.Cascade.html#indexToPoint"><span class="hs-identifier hs-var hs-var">indexToPoint</span></a></span></span><span> </span><span id="local-6989586621679097406"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097406"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">polar :: Word16
+</span><a href="Dayan.Core.Torus.html#polar"><span class="hs-identifier hs-var">polar</span></a></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word16
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier hs-var">lookupPolar</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097406"><span class="hs-identifier hs-var">idx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">toroidal :: Word8
+</span><a href="Dayan.Core.Torus.html#toroidal"><span class="hs-identifier hs-var">toroidal</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier hs-var">lookupToroidal</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097406"><span class="hs-identifier hs-var">idx</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="annot"><span class="hs-comment">-- | &#20174; TorusPoint &#24674;&#22797;&#26684;&#28857;&#32034;&#24341; (O(1) CRT &#36870;&#21521;&#26597;&#34920;)</span></span><span>
+</span><span id="line-32"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#pointToIndex"><span class="hs-identifier hs-type">pointToIndex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-33"></span><span id="pointToIndex"><span class="annot"><span class="annottext">pointToIndex :: TorusPoint -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#pointToIndex"><span class="hs-identifier hs-var hs-var">pointToIndex</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span id="local-6989586621679097411"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097411"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679097412"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097412"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word16
+</span><a href="Dayan.Compute.CRT.html#reverseLookup"><span class="hs-identifier hs-var">reverseLookup</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097411"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097412"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- 2. &#26497;&#38480;&#29615;&#36712;&#36857;</span><span>
+</span><span id="line-37"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- | &#20174;&#36215;&#22987;&#32034;&#24341;&#24320;&#22987;, 6624 &#27493;&#30340;&#23436;&#25972;&#26497;&#38480;&#29615;&#36712;&#36857;</span><span>
+</span><span id="line-40"></span><span class="hs-comment">--   &#36820;&#22238;: [start, step(start), step&#178;(start), ..., step&#8310;&#8310;&#178;&#179;(start)]</span><span>
+</span><span id="line-41"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#cascade"><span class="hs-identifier hs-type">cascade</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span class="hs-special">]</span><span>
+</span><span id="line-42"></span><span id="cascade"><span class="annot"><span class="annottext">cascade :: Word16 -&gt; [Word16]
+</span><a href="Dayan.Compute.Cascade.html#cascade"><span class="hs-identifier hs-var hs-var">cascade</span></a></span></span><span> </span><span id="local-6989586621679097414"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097414"><span class="hs-identifier hs-var">start</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; [Word16] -&gt; [Word16]
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">6624</span></span><span> </span><span class="annot"><span class="annottext">([Word16] -&gt; [Word16]) -&gt; [Word16] -&gt; [Word16]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16) -&gt; Word16 -&gt; [Word16]
+forall a. (a -&gt; a) -&gt; a -&gt; [a]
+</span><span class="hs-identifier hs-var">iterate</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#cascadeStep"><span class="hs-identifier hs-var">cascadeStep</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097414"><span class="hs-identifier hs-var">start</span></a></span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">-- | &#20174;&#40644;&#38047;&#21021;&#22987;&#24577; (polar=0, toroidal=0) &#24320;&#22987;&#30340;&#36712;&#36857;</span></span><span>
+</span><span id="line-45"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#huangzhongCascade"><span class="hs-identifier hs-type">huangzhongCascade</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span class="hs-special">]</span><span>
+</span><span id="line-46"></span><span id="huangzhongCascade"><span class="annot"><span class="annottext">huangzhongCascade :: [Word16]
+</span><a href="Dayan.Compute.Cascade.html#huangzhongCascade"><span class="hs-identifier hs-var hs-var">huangzhongCascade</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; [Word16]
+</span><a href="Dayan.Compute.Cascade.html#cascade"><span class="hs-identifier hs-var">cascade</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">-- | &#36712;&#36857;&#30340; TorusPoint &#34920;&#31034;</span></span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#cascadePoints"><span class="hs-identifier hs-type">cascadePoints</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-50"></span><span id="cascadePoints"><span class="annot"><span class="annottext">cascadePoints :: Word16 -&gt; [TorusPoint]
+</span><a href="Dayan.Compute.Cascade.html#cascadePoints"><span class="hs-identifier hs-var hs-var">cascadePoints</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; TorusPoint) -&gt; [Word16] -&gt; [TorusPoint]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; TorusPoint
+</span><a href="Dayan.Compute.Cascade.html#indexToPoint"><span class="hs-identifier hs-var">indexToPoint</span></a></span><span> </span><span class="annot"><span class="annottext">([Word16] -&gt; [TorusPoint])
+-&gt; (Word16 -&gt; [Word16]) -&gt; Word16 -&gt; [TorusPoint]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; [Word16]
+</span><a href="Dayan.Compute.Cascade.html#cascade"><span class="hs-identifier hs-var">cascade</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="annot"><span class="hs-comment">-- | &#40644;&#38047;&#36712;&#36857;&#30340; TorusPoint &#34920;&#31034;</span></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#huangzhongPoints"><span class="hs-identifier hs-type">huangzhongPoints</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-54"></span><span id="huangzhongPoints"><span class="annot"><span class="annottext">huangzhongPoints :: [TorusPoint]
+</span><a href="Dayan.Compute.Cascade.html#huangzhongPoints"><span class="hs-identifier hs-var hs-var">huangzhongPoints</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; [TorusPoint]
+</span><a href="Dayan.Compute.Cascade.html#cascadePoints"><span class="hs-identifier hs-var">cascadePoints</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- 3. &#20210;&#21525;&#30456;&#20301;&#21516;&#27493; (&#27599; 12 &#27493;&#27880;&#20837;)</span><span>
+</span><span id="line-58"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- | &#20210;&#21525;&#30456;&#20301;&#21516;&#27493;: &#26497;&#21521;&#24402;&#38646;, &#29615;&#21521; +1</span><span>
+</span><span id="line-61"></span><span class="hs-comment">--   &#23545;&#40784; Agda: Closure.zhonglvPhaseSyncOp</span><span>
+</span><span id="line-62"></span><span class="hs-comment">--     zhonglvPhaseSyncOp s = mkState zero (toroidal s +&#8469; 1)</span><span>
+</span><span id="line-63"></span><span class="hs-comment">--   &#35821;&#20041;: &#27599; 12 &#27493; A4 &#24033;&#28216;&#21518;, &#26497;&#21521;&#37325;&#32622;, &#29615;&#21521;&#25512;&#36827; 1 &#27493;</span><span>
+</span><span id="line-64"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#zhonglvSync"><span class="hs-identifier hs-type">zhonglvSync</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-65"></span><span id="zhonglvSync"><span class="annot"><span class="annottext">zhonglvSync :: Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#zhonglvSync"><span class="hs-identifier hs-var hs-var">zhonglvSync</span></a></span></span><span> </span><span id="local-6989586621679097422"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097422"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097427"><span class="annot"><span class="annottext">t :: Word8
+</span><a href="#local-6989586621679097427"><span class="hs-identifier hs-var hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier hs-var">lookupToroidal</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097422"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word8
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word8
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">46</span></span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word16
+</span><a href="Dayan.Compute.CRT.html#reverseLookup"><span class="hs-identifier hs-var">reverseLookup</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679097427"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">-- | &#24102;&#20210;&#21525;&#21516;&#27493;&#30340;&#27493;&#36827;: &#27599; 12 &#27493;&#26816;&#26597;&#26159;&#21542;&#38656;&#35201;&#21516;&#27493;</span></span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#cascadeWithZhonglv"><span class="hs-identifier hs-type">cascadeWithZhonglv</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span class="hs-special">]</span><span>
+</span><span id="line-71"></span><span id="cascadeWithZhonglv"><span class="annot"><span class="annottext">cascadeWithZhonglv :: Word16 -&gt; [Word16]
+</span><a href="Dayan.Compute.Cascade.html#cascadeWithZhonglv"><span class="hs-identifier hs-var hs-var">cascadeWithZhonglv</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Word16 -&gt; [Word16]
+forall {t}. Integral t =&gt; t -&gt; Word16 -&gt; [Word16]
+</span><a href="#local-6989586621679097430"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621679097430"><span class="annot"><span class="annottext">go :: t -&gt; Word16 -&gt; [Word16]
+</span><a href="#local-6989586621679097430"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679097460"><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679097460"><span class="hs-identifier hs-var">steps</span></a></span></span><span> </span><span id="local-6989586621679097461"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span></span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679097460"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">6624</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-75"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier hs-var">lookupPolar</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">11</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679097460"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mod`</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">12</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">11</span></span><span>
+</span><span id="line-76"></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097463"><span class="annot"><span class="annottext">next :: Word16
+</span><a href="#local-6989586621679097463"><span class="hs-identifier hs-var hs-var">next</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#zhonglvSync"><span class="hs-identifier hs-var">zhonglvSync</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; [Word16] -&gt; [Word16]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; Word16 -&gt; [Word16]
+</span><a href="#local-6989586621679097430"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679097460"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097463"><span class="hs-identifier hs-var">next</span></a></span><span>
+</span><span id="line-78"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span>
+</span><span id="line-79"></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097464"><span class="annot"><span class="annottext">next :: Word16
+</span><a href="#local-6989586621679097464"><span class="hs-identifier hs-var hs-var">next</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#cascadeStep"><span class="hs-identifier hs-var">cascadeStep</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span><span>
+</span><span id="line-80"></span><span>        </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097461"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; [Word16] -&gt; [Word16]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">t -&gt; Word16 -&gt; [Word16]
+</span><a href="#local-6989586621679097430"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">t
+</span><a href="#local-6989586621679097460"><span class="hs-identifier hs-var">steps</span></a></span><span> </span><span class="annot"><span class="annottext">t -&gt; t -&gt; t
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">t
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097464"><span class="hs-identifier hs-var">next</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- 4. &#30456;&#20301;&#23545;&#40784;&#26816;&#27979;</span><span>
+</span><span id="line-84"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">-- | &#26159;&#21542;&#22312;&#30456;&#20301;&#23545;&#40784;&#28857;&#19978; (polar=0 &#19988; toroidal=0)</span></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#isAligned"><span class="hs-identifier hs-type">isAligned</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-88"></span><span id="isAligned"><span class="annot"><span class="annottext">isAligned :: Word16 -&gt; Bool
+</span><a href="Dayan.Compute.Cascade.html#isAligned"><span class="hs-identifier hs-var hs-var">isAligned</span></a></span></span><span> </span><span id="local-6989586621679097466"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097466"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier hs-var">lookupPolar</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097466"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier hs-var">lookupToroidal</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097466"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="annot"><span class="hs-comment">-- | &#25214;&#21040;&#19979;&#19968;&#20010;&#23545;&#40784;&#28857; (&#20174;&#24403;&#21069;&#32034;&#24341;&#24320;&#22987;, &#26368;&#22810; 6624 &#27493;)</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#nextAlignment"><span class="hs-identifier hs-type">nextAlignment</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-92"></span><span id="nextAlignment"><span class="annot"><span class="annottext">nextAlignment :: Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#nextAlignment"><span class="hs-identifier hs-var hs-var">nextAlignment</span></a></span></span><span> </span><span id="local-6989586621679097468"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097468"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Word16] -&gt; Word16
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">head</span></span><span> </span><span class="annot"><span class="annottext">([Word16] -&gt; Word16) -&gt; [Word16] -&gt; Word16
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Bool) -&gt; [Word16] -&gt; [Word16]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">dropWhile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (Word16 -&gt; Bool) -&gt; Word16 -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Bool
+</span><a href="Dayan.Compute.Cascade.html#isAligned"><span class="hs-identifier hs-var">isAligned</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">([Word16] -&gt; [Word16]) -&gt; [Word16] -&gt; [Word16]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16) -&gt; Word16 -&gt; [Word16]
+forall a. (a -&gt; a) -&gt; a -&gt; [a]
+</span><span class="hs-identifier hs-var">iterate</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#cascadeStep"><span class="hs-identifier hs-var">cascadeStep</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097468"><span class="hs-identifier hs-var">idx</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><span class="hs-comment">-- | &#20004;&#20010;&#23545;&#40784;&#28857;&#20043;&#38388;&#30340;&#27493;&#25968;&#24212;&#20026; 6624</span></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Dayan.Compute.Cascade.html#alignmentPeriod"><span class="hs-identifier hs-type">alignmentPeriod</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-96"></span><span id="alignmentPeriod"><span class="annot"><span class="annottext">alignmentPeriod :: Bool
+</span><a href="Dayan.Compute.Cascade.html#alignmentPeriod"><span class="hs-identifier hs-var hs-var">alignmentPeriod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679097474"><span class="annot"><span class="annottext">a0 :: Word16
+</span><a href="#local-6989586621679097474"><span class="hs-identifier hs-var hs-var">a0</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#nextAlignment"><span class="hs-identifier hs-var">nextAlignment</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-98"></span><span>      </span><span id="local-6989586621679097477"><span class="annot"><span class="annottext">a1 :: Word16
+</span><a href="#local-6989586621679097477"><span class="hs-identifier hs-var hs-var">a1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16
+</span><a href="Dayan.Compute.Cascade.html#nextAlignment"><span class="hs-identifier hs-var">nextAlignment</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097474"><span class="hs-identifier hs-var">a0</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097477"><span class="hs-identifier hs-var">a1</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679097474"><span class="hs-identifier hs-var">a0</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">6624</span></span><span>  </span><span class="hs-comment">-- &#20174; a0 &#21040; a1 &#27491;&#22909;&#26159; 6624 &#27493;</span><span>
+</span><span id="line-100"></span></pre></body></html>

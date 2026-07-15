@@ -1,0 +1,469 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="local-6989586621679097511"><span id="local-6989586621679097512"><span id="local-6989586621679097513"></span></span></span><span class="hs-comment">-- | Dayan.Core.Trit &#8212; GF(3) &#19977;&#36827;&#21046;&#22522;&#26412;&#21333;&#20803;</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- &#32534;&#30721;&#19982; Agda GF3.Trit &#19968;&#33268;:</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   N (T0) = 0  &#8594;  &#21560;&#25910;&#24577; / &#36127;&#26497;</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   Z (T1) = 1  &#8594;  &#24179;&#34913;&#24577; / &#38646;&#26497;</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--   P (T2) = 2  &#8594;  &#34920;&#36798;&#24577; / &#27491;&#26497;</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- &#21746;&#23398;&#32422;&#26463; (&#23466;&#27861;&#23618;&#32423;):</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   GF(3) &#30340;&#21512;&#27861;&#36523;&#20221; = &#27169; 3 &#25972;&#25968;&#31639;&#26415; + &#39547;&#27874;&#21472;&#21152;&#34920;</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--   &#31105;&#27490;: &quot;GF(3) &#26159;&#26377;&#38480;&#22495;&quot; / &quot;&#19977;&#36827;&#21046;&#35745;&#31639;&#26426;&quot; /</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--         &#23558;&#27169; 3 &#31639;&#26415;&#30452;&#25509;&#29992;&#20110;&#20027;&#26435;&#29366;&#24577;&#26426;&#28436;&#21270;</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- &#26469;&#28304;: /data/work/functional-programming/agda &#21442;&#32771;&#23454;&#29616;</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- &#23545;&#40784;: Agda GF3.Trit (Sovereign.Base.Trit.agda)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html"><span class="hs-identifier">Dayan.Core.Trit</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Ix</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Ix</span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- 1. &#26680;&#24515;&#31867;&#22411;&#23450;&#20041;</span><span>
+</span><span id="line-23"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- | GF(3) &#19977;&#36827;&#21046; Trit</span><span>
+</span><span id="line-26"></span><span class="hs-comment">--</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- &#19977;&#20010;&#29366;&#24577;&#30340;&#35821;&#20041;&#26144;&#23556; (&#19982; Agda &#23545;&#40784;):</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--   N (&#21560;&#25910;&#24577;)   &#8594;  -1  (&#36127;&#26497;&#24615;, &#25269;&#28040;&#21472;&#21152;)</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--   Z (&#24179;&#34913;&#24577;)   &#8594;   0  (&#20013;&#24615;, &#19981;&#21442;&#19982;&#21472;&#21152;)</span><span>
+</span><span id="line-30"></span><span class="hs-comment">--   P (&#34920;&#36798;&#24577;)   &#8594;  +1  (&#27491;&#26497;&#24615;, &#21152;&#24378;&#21472;&#21152;)</span><span>
+</span><span id="line-31"></span><span class="hs-comment">--</span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- &#25972;&#25968;&#32534;&#30721;:</span><span>
+</span><span id="line-33"></span><span class="hs-comment">--   N &#8594; 0, Z &#8594; 1, P &#8594; 2  &#8212; &#21305;&#37197; Agda GF3.Trit &#30340; to&#8469; &#32534;&#30721;</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">data</span><span> </span><span id="Trit"><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-var">Trit</span></a></span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="N"><span class="annot"><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ &#21560;&#25910;&#24577; (Absorption) &#8212; &#23545;&#24212; Agda &#30340; T0</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Z"><span class="annot"><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ &#24179;&#34913;&#24577; (Balance)    &#8212; &#23545;&#24212; Agda &#30340; T1</span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="P"><span class="annot"><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ &#34920;&#36798;&#24577; (Expression) &#8212; &#23545;&#24212; Agda &#30340; T2</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679097544"><span id="local-6989586621679097546"><span id="local-6989586621679097550"><span class="annot"><span class="annottext">Int -&gt; Trit -&gt; ShowS
+[Trit] -&gt; ShowS
+Trit -&gt; String
+(Int -&gt; Trit -&gt; ShowS)
+-&gt; (Trit -&gt; String) -&gt; ([Trit] -&gt; ShowS) -&gt; Show Trit
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Trit -&gt; ShowS
+showsPrec :: Int -&gt; Trit -&gt; ShowS
+$cshow :: Trit -&gt; String
+show :: Trit -&gt; String
+$cshowList :: [Trit] -&gt; ShowS
+showList :: [Trit] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097555"><span id="local-6989586621679097559"><span id="local-6989586621679097562"><span id="local-6989586621679097568"><span class="annot"><span class="annottext">ReadPrec [Trit]
+ReadPrec Trit
+Int -&gt; ReadS Trit
+ReadS [Trit]
+(Int -&gt; ReadS Trit)
+-&gt; ReadS [Trit] -&gt; ReadPrec Trit -&gt; ReadPrec [Trit] -&gt; Read Trit
+forall a.
+(Int -&gt; ReadS a)
+-&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
+$creadsPrec :: Int -&gt; ReadS Trit
+readsPrec :: Int -&gt; ReadS Trit
+$creadList :: ReadS [Trit]
+readList :: ReadS [Trit]
+$creadPrec :: ReadPrec Trit
+readPrec :: ReadPrec Trit
+$creadListPrec :: ReadPrec [Trit]
+readListPrec :: ReadPrec [Trit]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097575"><span id="local-6989586621679097580"><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Bool
+(Trit -&gt; Trit -&gt; Bool) -&gt; (Trit -&gt; Trit -&gt; Bool) -&gt; Eq Trit
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Trit -&gt; Trit -&gt; Bool
+== :: Trit -&gt; Trit -&gt; Bool
+$c/= :: Trit -&gt; Trit -&gt; Bool
+/= :: Trit -&gt; Trit -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097587"><span id="local-6989586621679097591"><span id="local-6989586621679097595"><span id="local-6989586621679097599"><span id="local-6989586621679097602"><span id="local-6989586621679097605"><span id="local-6989586621679097608"><span class="annot"><span class="annottext">Eq Trit
+Eq Trit =&gt;
+(Trit -&gt; Trit -&gt; Ordering)
+-&gt; (Trit -&gt; Trit -&gt; Bool)
+-&gt; (Trit -&gt; Trit -&gt; Bool)
+-&gt; (Trit -&gt; Trit -&gt; Bool)
+-&gt; (Trit -&gt; Trit -&gt; Bool)
+-&gt; (Trit -&gt; Trit -&gt; Trit)
+-&gt; (Trit -&gt; Trit -&gt; Trit)
+-&gt; Ord Trit
+Trit -&gt; Trit -&gt; Bool
+Trit -&gt; Trit -&gt; Ordering
+Trit -&gt; Trit -&gt; Trit
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Trit -&gt; Trit -&gt; Ordering
+compare :: Trit -&gt; Trit -&gt; Ordering
+$c&lt; :: Trit -&gt; Trit -&gt; Bool
+&lt; :: Trit -&gt; Trit -&gt; Bool
+$c&lt;= :: Trit -&gt; Trit -&gt; Bool
+&lt;= :: Trit -&gt; Trit -&gt; Bool
+$c&gt; :: Trit -&gt; Trit -&gt; Bool
+&gt; :: Trit -&gt; Trit -&gt; Bool
+$c&gt;= :: Trit -&gt; Trit -&gt; Bool
+&gt;= :: Trit -&gt; Trit -&gt; Bool
+$cmax :: Trit -&gt; Trit -&gt; Trit
+max :: Trit -&gt; Trit -&gt; Trit
+$cmin :: Trit -&gt; Trit -&gt; Trit
+min :: Trit -&gt; Trit -&gt; Trit
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097616"><span id="local-6989586621679097621"><span id="local-6989586621679097626"><span id="local-6989586621679097632"><span id="local-6989586621679097635"><span id="local-6989586621679097640"><span id="local-6989586621679097647"><span id="local-6989586621679097651"><span class="annot"><span class="annottext">Int -&gt; Trit
+Trit -&gt; Int
+Trit -&gt; [Trit]
+Trit -&gt; Trit
+Trit -&gt; Trit -&gt; [Trit]
+Trit -&gt; Trit -&gt; Trit -&gt; [Trit]
+(Trit -&gt; Trit)
+-&gt; (Trit -&gt; Trit)
+-&gt; (Int -&gt; Trit)
+-&gt; (Trit -&gt; Int)
+-&gt; (Trit -&gt; [Trit])
+-&gt; (Trit -&gt; Trit -&gt; [Trit])
+-&gt; (Trit -&gt; Trit -&gt; [Trit])
+-&gt; (Trit -&gt; Trit -&gt; Trit -&gt; [Trit])
+-&gt; Enum Trit
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: Trit -&gt; Trit
+succ :: Trit -&gt; Trit
+$cpred :: Trit -&gt; Trit
+pred :: Trit -&gt; Trit
+$ctoEnum :: Int -&gt; Trit
+toEnum :: Int -&gt; Trit
+$cfromEnum :: Trit -&gt; Int
+fromEnum :: Trit -&gt; Int
+$cenumFrom :: Trit -&gt; [Trit]
+enumFrom :: Trit -&gt; [Trit]
+$cenumFromThen :: Trit -&gt; Trit -&gt; [Trit]
+enumFromThen :: Trit -&gt; Trit -&gt; [Trit]
+$cenumFromTo :: Trit -&gt; Trit -&gt; [Trit]
+enumFromTo :: Trit -&gt; Trit -&gt; [Trit]
+$cenumFromThenTo :: Trit -&gt; Trit -&gt; Trit -&gt; [Trit]
+enumFromThenTo :: Trit -&gt; Trit -&gt; Trit -&gt; [Trit]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097659"><span id="local-6989586621679097661"><span class="annot"><span class="annottext">Trit
+Trit -&gt; Trit -&gt; Bounded Trit
+forall a. a -&gt; a -&gt; Bounded a
+$cminBound :: Trit
+minBound :: Trit
+$cmaxBound :: Trit
+maxBound :: Trit
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Bounded</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679097669"><span id="local-6989586621679097674"><span id="local-6989586621679097678"><span id="local-6989586621679097682"><span id="local-6989586621679097687"><span id="local-6989586621679097690"><span class="annot"><span class="annottext">Ord Trit
+Ord Trit =&gt;
+((Trit, Trit) -&gt; [Trit])
+-&gt; ((Trit, Trit) -&gt; Trit -&gt; Int)
+-&gt; ((Trit, Trit) -&gt; Trit -&gt; Int)
+-&gt; ((Trit, Trit) -&gt; Trit -&gt; Bool)
+-&gt; ((Trit, Trit) -&gt; Int)
+-&gt; ((Trit, Trit) -&gt; Int)
+-&gt; Ix Trit
+(Trit, Trit) -&gt; Int
+(Trit, Trit) -&gt; [Trit]
+(Trit, Trit) -&gt; Trit -&gt; Bool
+(Trit, Trit) -&gt; Trit -&gt; Int
+forall a.
+Ord a =&gt;
+((a, a) -&gt; [a])
+-&gt; ((a, a) -&gt; a -&gt; Int)
+-&gt; ((a, a) -&gt; a -&gt; Int)
+-&gt; ((a, a) -&gt; a -&gt; Bool)
+-&gt; ((a, a) -&gt; Int)
+-&gt; ((a, a) -&gt; Int)
+-&gt; Ix a
+$crange :: (Trit, Trit) -&gt; [Trit]
+range :: (Trit, Trit) -&gt; [Trit]
+$cindex :: (Trit, Trit) -&gt; Trit -&gt; Int
+index :: (Trit, Trit) -&gt; Trit -&gt; Int
+$cunsafeIndex :: (Trit, Trit) -&gt; Trit -&gt; Int
+unsafeIndex :: (Trit, Trit) -&gt; Trit -&gt; Int
+$cinRange :: (Trit, Trit) -&gt; Trit -&gt; Bool
+inRange :: (Trit, Trit) -&gt; Trit -&gt; Bool
+$crangeSize :: (Trit, Trit) -&gt; Int
+rangeSize :: (Trit, Trit) -&gt; Int
+$cunsafeRangeSize :: (Trit, Trit) -&gt; Int
+unsafeRangeSize :: (Trit, Trit) -&gt; Int
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ix</span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- 2. &#8469; &#32534;&#35299;&#30721;</span><span>
+</span><span id="line-42"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">-- | Trit &#8594; &#33258;&#28982;&#25968;&#32534;&#30721; (N&#8594;0, Z&#8594;1, P&#8594;2)</span></span><span>
+</span><span id="line-45"></span><span class="annot"><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-type">toNat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-46"></span><span id="toNat"><span class="annot"><span class="annottext">toNat :: Trit -&gt; Word8
+</span><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var hs-var">toNat</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-48"></span><span class="annot"><a href="Dayan.Core.Trit.html#toNat"><span class="hs-identifier hs-var">toNat</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- | &#33258;&#28982;&#25968;&#32534;&#30721; &#8594; Trit</span><span>
+</span><span id="line-51"></span><span class="hs-comment">--   0&#8594;N, 1&#8594;Z, 2&#8594;P, &#20854;&#20182;&#8594;Nothing</span><span>
+</span><span id="line-52"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNat"><span class="hs-identifier hs-type">fromNat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-53"></span><span id="fromNat"><span class="annot"><span class="annottext">fromNat :: Word8 -&gt; Maybe Trit
+</span><a href="Dayan.Core.Trit.html#fromNat"><span class="hs-identifier hs-var hs-var">fromNat</span></a></span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNat"><span class="hs-identifier hs-var">fromNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNat"><span class="hs-identifier hs-var">fromNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-56"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNat"><span class="hs-identifier hs-var">fromNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Trit
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">-- | &#24102;&#40664;&#35748;&#20540;&#30340;&#35299;&#30721; (&#36234;&#30028;&#36820;&#22238; Z)</span></span><span>
+</span><span id="line-59"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNatZ"><span class="hs-identifier hs-type">fromNatZ</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-60"></span><span id="fromNatZ"><span class="annot"><span class="annottext">fromNatZ :: Word8 -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#fromNatZ"><span class="hs-identifier hs-var hs-var">fromNatZ</span></a></span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-61"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNatZ"><span class="hs-identifier hs-var">fromNatZ</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">1</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromNatZ"><span class="hs-identifier hs-var">fromNatZ</span></a></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>  </span><span class="hs-comment">-- 2 &#21450;&#20197;&#19978;&#37117;&#35270;&#20026; P (&#23485;&#23481;&#27169;&#24335;)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">-- | Trit &#8594; &#26377;&#31526;&#21495;&#25972;&#25968; (N&#8594; -1, Z&#8594; 0, P&#8594; +1)</span></span><span>
+</span><span id="line-65"></span><span class="annot"><a href="Dayan.Core.Trit.html#toInt"><span class="hs-identifier hs-type">toInt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-66"></span><span id="toInt"><span class="annot"><span class="annottext">toInt :: Trit -&gt; Int
+</span><a href="Dayan.Core.Trit.html#toInt"><span class="hs-identifier hs-var hs-var">toInt</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-67"></span><span class="annot"><a href="Dayan.Core.Trit.html#toInt"><span class="hs-identifier hs-var">toInt</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span>  </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Dayan.Core.Trit.html#toInt"><span class="hs-identifier hs-var">toInt</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span>  </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">-- | &#26377;&#31526;&#21495;&#25972;&#25968; &#8594; Trit (-1&#8594;N, 0&#8594;Z, 1&#8594;P, &#20854;&#20182;&#8594;Nothing)</span></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromInt"><span class="hs-identifier hs-type">fromInt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-72"></span><span id="fromInt"><span class="annot"><span class="annottext">fromInt :: Int -&gt; Maybe Trit
+</span><a href="Dayan.Core.Trit.html#fromInt"><span class="hs-identifier hs-var hs-var">fromInt</span></a></span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-73"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromInt"><span class="hs-identifier hs-var">fromInt</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-74"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromInt"><span class="hs-identifier hs-var">fromInt</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Maybe Trit
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-75"></span><span class="annot"><a href="Dayan.Core.Trit.html#fromInt"><span class="hs-identifier hs-var">fromInt</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Trit
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- 3. &#27169; 3 &#31639;&#26415;&#36816;&#31639;</span><span>
+</span><span id="line-79"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="annot"><span class="hs-comment">-- | &#27169; 3 &#21152;&#27861; (N=0, Z=1, P=2)</span></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-type">add</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-83"></span><span id="add"><span class="annot"><span class="annottext">add :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var hs-var">add</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- (0+0) % 3 = 0</span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>   </span><span class="hs-comment">-- (0+1) % 3 = 1</span><span>
+</span><span id="line-85"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>   </span><span class="hs-comment">-- (0+2) % 3 = 2</span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>   </span><span class="hs-comment">-- (1+0) % 3 = 1</span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>   </span><span class="hs-comment">-- (1+1) % 3 = 2</span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- (1+2) % 3 = 0</span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>   </span><span class="hs-comment">-- (2+0) % 3 = 2</span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- (2+1) % 3 = 0</span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Dayan.Core.Trit.html#add"><span class="hs-identifier hs-var">add</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>   </span><span class="hs-comment">-- (2+2) % 3 = 1</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="annot"><span class="hs-comment">-- | &#27169; 3 &#20056;&#27861; (N=0, Z=1, P=2)</span></span><span>
+</span><span id="line-94"></span><span class="annot"><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-type">mul</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-95"></span><span id="mul"><span class="annot"><span class="annottext">mul :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-var hs-var">mul</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- 0 * x = 0</span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-var">mul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span id="local-6989586621679097703"><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097703"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="#local-6989586621679097703"><span class="hs-identifier hs-var">x</span></a></span><span>   </span><span class="hs-comment">-- 1 * x = x</span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-var">mul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- 2 * 0 = 0</span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-var">mul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>   </span><span class="hs-comment">-- 2 * 1 = 2</span><span>
+</span><span id="line-99"></span><span class="annot"><a href="Dayan.Core.Trit.html#mul"><span class="hs-identifier hs-var">mul</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>   </span><span class="hs-comment">-- 2 * 2 = 1</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">-- | &#27169; 3 &#21462;&#36127; (&#21152;&#27861;&#36870;&#20803;)</span></span><span>
+</span><span id="line-102"></span><span class="annot"><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-type">neg</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-103"></span><span id="neg"><span class="annot"><span class="annottext">neg :: Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-var hs-var">neg</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>   </span><span class="hs-comment">-- neg 0 = 0</span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-var">neg</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>   </span><span class="hs-comment">-- neg 1 = 2</span><span>
+</span><span id="line-105"></span><span class="annot"><a href="Dayan.Core.Trit.html#neg"><span class="hs-identifier hs-var">neg</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>   </span><span class="hs-comment">-- neg 2 = 1</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- 4. &#39547;&#27874;&#21472;&#21152;&#34920; (Standing Wave Superposition)</span><span>
+</span><span id="line-109"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- | &#39547;&#27874;&#21472;&#21152; &#8212; GF(3) &#30340;&quot;&#29289;&#29702;&#23618;&quot;&#36816;&#31639;</span><span>
+</span><span id="line-112"></span><span class="hs-comment">--</span><span>
+</span><span id="line-113"></span><span class="hs-comment">--   &#19981;&#21516;&#20110;&#32431;&#27169;&#36816;&#31639; add&#65292;&#39547;&#27874;&#21472;&#21152;&#32534;&#30721;&#20102;&#27874;&#21160;&#21147;&#23398;&#30340;</span><span>
+</span><span id="line-114"></span><span class="hs-comment">--   &#30456;&#28040;&#24178;&#28041;&#19982;&#30456;&#38271;&#24178;&#28041;:</span><span>
+</span><span id="line-115"></span><span class="hs-comment">--</span><span>
+</span><span id="line-116"></span><span class="hs-comment">--   N &#8853; Z = N  &#8212; &#21560;&#25910;&#24577;&#36935;&#24179;&#34913;&#24577;: &#24179;&#34913;&#24577;&#34987;&#21560;&#25910;</span><span>
+</span><span id="line-117"></span><span class="hs-comment">--   Z &#8853; P = P  &#8212; &#24179;&#34913;&#24577;&#36935;&#34920;&#36798;&#24577;: &#24179;&#34913;&#24577;&#34987;&#25512;&#24320;</span><span>
+</span><span id="line-118"></span><span class="hs-comment">--   N &#8853; P = Z  &#8212; &#21560;&#25910;&#24577;&#36935;&#34920;&#36798;&#24577;: &#23545;&#28040;&#24402;&#38646;</span><span>
+</span><span id="line-119"></span><span class="hs-comment">--</span><span>
+</span><span id="line-120"></span><span class="hs-comment">--   &#21472;&#21152;&#34920;:</span><span>
+</span><span id="line-121"></span><span class="hs-comment">--     &#8853; | N  Z  P</span><span>
+</span><span id="line-122"></span><span class="hs-comment">--    ---+--------</span><span>
+</span><span id="line-123"></span><span class="hs-comment">--     N | N  N  Z</span><span>
+</span><span id="line-124"></span><span class="hs-comment">--     Z | N  Z  P</span><span>
+</span><span id="line-125"></span><span class="hs-comment">--     P | Z  P  P</span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-type">superpose</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span>
+</span><span id="line-127"></span><span id="superpose"><span class="annot"><span class="annottext">superpose :: Trit -&gt; Trit -&gt; Trit
+</span><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var hs-var">superpose</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-128"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-129"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-130"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span>
+</span><span id="line-131"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-132"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-133"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-135"></span><span class="annot"><a href="Dayan.Core.Trit.html#superpose"><span class="hs-identifier hs-var">superpose</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="annot"><span class="hs-comment">-- | &#39547;&#27874;&#23545;&#28040;&#26816;&#27979;: N &#8853; P &#8594; Z (&#21560;&#25910;-&#34920;&#36798;&#23545;&#28040;)</span></span><span>
+</span><span id="line-138"></span><span class="annot"><a href="Dayan.Core.Trit.html#isCanceled"><span class="hs-identifier hs-type">isCanceled</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-139"></span><span id="isCanceled"><span class="annot"><span class="annottext">isCanceled :: Trit -&gt; Trit -&gt; Bool
+</span><a href="Dayan.Core.Trit.html#isCanceled"><span class="hs-identifier hs-var hs-var">isCanceled</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-140"></span><span class="annot"><a href="Dayan.Core.Trit.html#isCanceled"><span class="hs-identifier hs-var">isCanceled</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-141"></span><span class="annot"><a href="Dayan.Core.Trit.html#isCanceled"><span class="hs-identifier hs-var">isCanceled</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="annot"><span class="hs-comment">-- | &#26159;&#21542;&#20026;&#21560;&#25910;&#24577;</span></span><span>
+</span><span id="line-144"></span><span class="annot"><a href="Dayan.Core.Trit.html#isAbsorb"><span class="hs-identifier hs-type">isAbsorb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-145"></span><span id="isAbsorb"><span class="annot"><span class="annottext">isAbsorb :: Trit -&gt; Bool
+</span><a href="Dayan.Core.Trit.html#isAbsorb"><span class="hs-identifier hs-var hs-var">isAbsorb</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#N"><span class="hs-identifier hs-var">N</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-146"></span><span class="annot"><a href="Dayan.Core.Trit.html#isAbsorb"><span class="hs-identifier hs-var">isAbsorb</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-147"></span><span>
+</span><span id="line-148"></span><span class="annot"><span class="hs-comment">-- | &#26159;&#21542;&#20026;&#24179;&#34913;&#24577;</span></span><span>
+</span><span id="line-149"></span><span class="annot"><a href="Dayan.Core.Trit.html#isBalance"><span class="hs-identifier hs-type">isBalance</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-150"></span><span id="isBalance"><span class="annot"><span class="annottext">isBalance :: Trit -&gt; Bool
+</span><a href="Dayan.Core.Trit.html#isBalance"><span class="hs-identifier hs-var hs-var">isBalance</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#Z"><span class="hs-identifier hs-var">Z</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-151"></span><span class="annot"><a href="Dayan.Core.Trit.html#isBalance"><span class="hs-identifier hs-var">isBalance</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-152"></span><span>
+</span><span id="line-153"></span><span class="annot"><span class="hs-comment">-- | &#26159;&#21542;&#20026;&#34920;&#36798;&#24577;</span></span><span>
+</span><span id="line-154"></span><span class="annot"><a href="Dayan.Core.Trit.html#isExpress"><span class="hs-identifier hs-type">isExpress</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-155"></span><span id="isExpress"><span class="annot"><span class="annottext">isExpress :: Trit -&gt; Bool
+</span><a href="Dayan.Core.Trit.html#isExpress"><span class="hs-identifier hs-var hs-var">isExpress</span></a></span></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><a href="Dayan.Core.Trit.html#P"><span class="hs-identifier hs-var">P</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Dayan.Core.Trit.html#isExpress"><span class="hs-identifier hs-var">isExpress</span></a></span><span> </span><span class="annot"><span class="annottext">Trit
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-157"></span></pre></body></html>

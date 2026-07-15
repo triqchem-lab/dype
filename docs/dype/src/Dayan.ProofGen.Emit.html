@@ -1,0 +1,494 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE LambdaCase, OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.ProofGen.Emit.html"><span class="hs-identifier">Dayan.ProofGen.Emit</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html"><span class="hs-identifier">Dayan.ProofGen.AST</span></a></span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitFile"><span class="hs-identifier hs-type">emitFile</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaFile"><span class="hs-identifier hs-type">AgdaFile</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-8"></span><span id="emitFile"><span class="annot"><span class="annottext">emitFile :: AgdaFile -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitFile"><span class="hs-identifier hs-var hs-var">emitFile</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaFile"><span class="hs-identifier hs-type">AgdaFile</span></a></span><span> </span><span id="local-6989586621679100616"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100616"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span id="local-6989586621679100617"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100617"><span class="hs-identifier hs-var">modName</span></a></span></span><span> </span><span id="local-6989586621679100618"><span class="annot"><span class="annottext">[Decl]
+</span><a href="#local-6989586621679100618"><span class="hs-identifier hs-var">decls</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.unlines</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; Text) -&gt; [Text] -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100616"><span class="hs-identifier hs-var">opts</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;module &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100617"><span class="hs-identifier hs-var">modName</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; where&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; [Text]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">(Decl -&gt; [Text]) -&gt; [Decl] -&gt; [Text]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Decl -&gt; [Text]
+</span><a href="Dayan.ProofGen.Emit.html#emitDecl"><span class="hs-identifier hs-var">emitDecl</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl]
+</span><a href="#local-6989586621679100618"><span class="hs-identifier hs-var">decls</span></a></span><span>
+</span><span id="line-9"></span><span>
+</span><span id="line-10"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitDecl"><span class="hs-identifier hs-type">emitDecl</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Decl"><span class="hs-identifier hs-type">Decl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-11"></span><span id="emitDecl"><span class="annot"><span class="annottext">emitDecl :: Decl -&gt; [Text]
+</span><a href="Dayan.ProofGen.Emit.html#emitDecl"><span class="hs-identifier hs-var hs-var">emitDecl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-12"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DModule"><span class="hs-identifier hs-type">DModule</span></a></span><span> </span><span id="local-6989586621679100623"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100623"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100624"><span class="annot"><span class="annottext">[Decl]
+</span><a href="#local-6989586621679100624"><span class="hs-identifier hs-var">ds</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;module &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100623"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; where&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; [Text]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; [Text] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;  &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Decl -&gt; [Text]) -&gt; [Decl] -&gt; [Text]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="annot"><span class="annottext">Decl -&gt; [Text]
+</span><a href="Dayan.ProofGen.Emit.html#emitDecl"><span class="hs-identifier hs-var">emitDecl</span></a></span><span> </span><span class="annot"><span class="annottext">[Decl]
+</span><a href="#local-6989586621679100624"><span class="hs-identifier hs-var">ds</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DOpen"><span class="hs-identifier hs-type">DOpen</span></a></span><span> </span><span id="local-6989586621679100626"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100626"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;open import &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100626"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DOpenUsing"><span class="hs-identifier hs-type">DOpenUsing</span></a></span><span> </span><span id="local-6989586621679100628"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100628"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100629"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679100629"><span class="hs-identifier hs-var">ns</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;open import &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100628"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; using (&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;; &quot;</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679100629"><span class="hs-identifier hs-var">ns</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span class="hs-special">]</span><span>
+</span><span id="line-14"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DImport"><span class="hs-identifier hs-type">DImport</span></a></span><span> </span><span id="local-6989586621679100632"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100632"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;open import &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100632"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">]</span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DPostulate"><span class="hs-identifier hs-type">DPostulate</span></a></span><span> </span><span id="local-6989586621679100634"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100634"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100635"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100635"><span class="hs-identifier hs-var">ty</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;postulate&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;  &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100634"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100635"><span class="hs-identifier hs-var">ty</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-15"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DDef"><span class="hs-identifier hs-type">DDef</span></a></span><span> </span><span id="local-6989586621679100638"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100638"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100639"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100639"><span class="hs-identifier hs-var">ty</span></a></span></span><span> </span><span id="local-6989586621679100640"><span class="annot"><span class="annottext">[Clause]
+</span><a href="#local-6989586621679100640"><span class="hs-identifier hs-var">cls</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Clause -&gt; Text) -&gt; [Clause] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679100641"><span class="annot"><span class="annottext">Clause
+</span><a href="#local-6989586621679100641"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100638"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100639"><span class="hs-identifier hs-var">ty</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;\n&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100638"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Clause -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitClause"><span class="hs-identifier hs-var">emitClause</span></a></span><span> </span><span class="annot"><span class="annottext">Clause
+</span><a href="#local-6989586621679100641"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Clause]
+</span><a href="#local-6989586621679100640"><span class="hs-identifier hs-var">cls</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DData"><span class="hs-identifier hs-type">DData</span></a></span><span> </span><span id="local-6989586621679100644"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100644"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679100645"><span class="annot"><span class="annottext">[ConDecl]
+</span><a href="#local-6989586621679100645"><span class="hs-identifier hs-var">cons</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;data &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100644"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : Set where&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; [Text]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">(ConDecl -&gt; Text) -&gt; [ConDecl] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679100646"><span class="annot"><span class="annottext">ConDecl
+</span><a href="#local-6989586621679100646"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;  &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ConDecl -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitConDecl"><span class="hs-identifier hs-var">emitConDecl</span></a></span><span> </span><span class="annot"><span class="annottext">ConDecl
+</span><a href="#local-6989586621679100646"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ConDecl]
+</span><a href="#local-6989586621679100645"><span class="hs-identifier hs-var">cons</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DRewrite"><span class="hs-identifier hs-type">DRewrite</span></a></span><span> </span><span id="local-6989586621679100649"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100649"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100650"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100650"><span class="hs-identifier hs-var">eq</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;{-# REWRITE &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100649"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; #-}\n&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;postulate\n  &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100649"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100650"><span class="hs-identifier hs-var">eq</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-18"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#DComment"><span class="hs-identifier hs-type">DComment</span></a></span><span> </span><span id="local-6989586621679100653"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100653"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;-- &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100653"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitClause"><span class="hs-identifier hs-type">emitClause</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Clause"><span class="hs-identifier hs-type">Clause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-21"></span><span id="emitClause"><span class="annot"><span class="annottext">emitClause :: Clause -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitClause"><span class="hs-identifier hs-var hs-var">emitClause</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Clause"><span class="hs-identifier hs-type">Clause</span></a></span><span> </span><span id="local-6989586621679100655"><span class="annot"><span class="annottext">[Pattern]
+</span><a href="#local-6989586621679100655"><span class="hs-identifier hs-var">pats</span></a></span></span><span> </span><span id="local-6989586621679100656"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100656"><span class="hs-identifier hs-var">body</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Pattern -&gt; Text) -&gt; [Pattern] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Pattern -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitPattern"><span class="hs-identifier hs-var">emitPattern</span></a></span><span> </span><span class="annot"><span class="annottext">[Pattern]
+</span><a href="#local-6989586621679100655"><span class="hs-identifier hs-var">pats</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; = &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100656"><span class="hs-identifier hs-var">body</span></a></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitConDecl"><span class="hs-identifier hs-type">emitConDecl</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ConDecl"><span class="hs-identifier hs-type">ConDecl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-24"></span><span id="emitConDecl"><span class="annot"><span class="annottext">emitConDecl :: ConDecl -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitConDecl"><span class="hs-identifier hs-var hs-var">emitConDecl</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#ConDecl"><span class="hs-identifier hs-type">ConDecl</span></a></span><span> </span><span id="local-6989586621679100659"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100659"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679100660"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100660"><span class="hs-identifier hs-var">ty</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100659"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100660"><span class="hs-identifier hs-var">ty</span></a></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-type">emitType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-27"></span><span id="emitType"><span class="annot"><span class="annottext">emitType :: Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var hs-var">emitType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-28"></span><span>  </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TSet"><span class="hs-identifier hs-var">TSet</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Set&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TNat"><span class="hs-identifier hs-var">TNat</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Nat&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-type">TDef</span></a></span><span> </span><span id="local-6989586621679100664"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100664"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100664"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFun"><span class="hs-identifier hs-type">TFun</span></a></span><span> </span><span id="local-6989586621679100666"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100666"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100667"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100667"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100666"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8594; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100667"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TPi"><span class="hs-identifier hs-type">TPi</span></a></span><span> </span><span id="local-6989586621679100669"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100669"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679100670"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100670"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100671"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100671"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100669"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100670"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;) &#8594; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100671"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFin"><span class="hs-identifier hs-type">TFin</span></a></span><span> </span><span id="local-6989586621679100673"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100673"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Fin &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100673"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TVec"><span class="hs-identifier hs-type">TVec</span></a></span><span> </span><span id="local-6989586621679100675"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100675"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100676"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100676"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Vec &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100675"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100676"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-type">TApp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-type">TApp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-type">TDef</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&#8801;_&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100678"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100678"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100679"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100679"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100678"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8801; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100679"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-type">TApp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-type">TApp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-type">TDef</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&#8804;_&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100680"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100680"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100681"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100681"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100680"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8804; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100681"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-type">TApp</span></a></span><span> </span><span id="local-6989586621679100682"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100682"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621679100683"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100683"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100682"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100683"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-type">emitTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-36"></span><span id="emitTerm"><span class="annot"><span class="annottext">emitTerm :: Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var hs-var">emitTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-37"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621679100685"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100685"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100685"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span id="local-6989586621679100687"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100687"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100687"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="Dayan.ProofGen.AST.html#Refl"><span class="hs-identifier hs-var">Refl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;refl&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="Dayan.ProofGen.AST.html#Hole"><span class="hs-identifier hs-var">Hole</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;{!!}&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span id="local-6989586621679100691"><span class="annot"><span class="annottext">Lit
+</span><a href="#local-6989586621679100691"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitLit"><span class="hs-identifier hs-var">emitLit</span></a></span><span> </span><span class="annot"><span class="annottext">Lit
+</span><a href="#local-6989586621679100691"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span id="local-6989586621679100694"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100694"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679100695"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100695"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&#955; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100694"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8594; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100695"><span class="hs-identifier hs-var">e</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Sym"><span class="hs-identifier hs-type">Sym</span></a></span><span> </span><span id="local-6989586621679100697"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100697"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;sym &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100697"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Trans"><span class="hs-identifier hs-type">Trans</span></a></span><span> </span><span id="local-6989586621679100699"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100699"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679100700"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100700"><span class="hs-identifier hs-var">q</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;trans &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100699"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100700"><span class="hs-identifier hs-var">q</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Cong"><span class="hs-identifier hs-type">Cong</span></a></span><span> </span><span id="local-6989586621679100702"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100702"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679100703"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100703"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;cong &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100702"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100703"><span class="hs-identifier hs-var">p</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Subst"><span class="hs-identifier hs-type">Subst</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679100705"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100705"><span class="hs-identifier hs-var">eq</span></a></span></span><span> </span><span id="local-6989586621679100706"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100706"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;subst (&#955; _ &#8594; _) &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100705"><span class="hs-identifier hs-var">eq</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100706"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_,_&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100708"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100708"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100709"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100709"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100708"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; , &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100709"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679100710"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100710"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679100711"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100711"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100710"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100711"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Ann"><span class="hs-identifier hs-type">Ann</span></a></span><span> </span><span id="local-6989586621679100713"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100713"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679100714"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100714"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;(&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100713"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; : &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitType"><span class="hs-identifier hs-var">emitType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100714"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;)&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Pi"><span class="hs-identifier hs-type">Pi</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;{! Pi !}&quot;</span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitLit"><span class="hs-identifier hs-type">emitLit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-47"></span><span id="emitLit"><span class="annot"><span class="annottext">emitLit :: Lit -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitLit"><span class="hs-identifier hs-var hs-var">emitLit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100717"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100717"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100717"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">Lit
+</span><a href="Dayan.ProofGen.AST.html#LZero"><span class="hs-identifier hs-var">LZero</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;zero&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#LSuc"><span class="hs-identifier hs-type">LSuc</span></a></span><span> </span><span id="local-6989586621679100722"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100722"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;suc &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitTerm"><span class="hs-identifier hs-var">emitTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100722"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitPattern"><span class="hs-identifier hs-type">emitPattern</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Pattern"><span class="hs-identifier hs-type">Pattern</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-50"></span><span id="emitPattern"><span class="annot"><span class="annottext">emitPattern :: Pattern -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitPattern"><span class="hs-identifier hs-var hs-var">emitPattern</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#PVar"><span class="hs-identifier hs-type">PVar</span></a></span><span> </span><span id="local-6989586621679100724"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100724"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100724"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="annottext">Pattern
+</span><a href="Dayan.ProofGen.AST.html#PWild"><span class="hs-identifier hs-var">PWild</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_&quot;</span></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#PLit"><span class="hs-identifier hs-type">PLit</span></a></span><span> </span><span id="local-6989586621679100727"><span class="annot"><span class="annottext">Lit
+</span><a href="#local-6989586621679100727"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitLit"><span class="hs-identifier hs-var">emitLit</span></a></span><span> </span><span class="annot"><span class="annottext">Lit
+</span><a href="#local-6989586621679100727"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#PCon"><span class="hs-identifier hs-type">PCon</span></a></span><span> </span><span id="local-6989586621679100729"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100729"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100729"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#PCon"><span class="hs-identifier hs-type">PCon</span></a></span><span> </span><span id="local-6989586621679100730"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100730"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679100731"><span class="annot"><span class="annottext">[Pattern]
+</span><a href="#local-6989586621679100731"><span class="hs-identifier hs-var">ps</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100730"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.unwords</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Pattern -&gt; Text) -&gt; [Pattern] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Pattern -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitPattern"><span class="hs-identifier hs-var">emitPattern</span></a></span><span> </span><span class="annot"><span class="annottext">[Pattern]
+</span><a href="#local-6989586621679100731"><span class="hs-identifier hs-var">ps</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span></pre></body></html>

@@ -1,0 +1,905 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- | Dayan.Kernel.Conversion &#8212; &#22823;&#34893;&#19977;&#26497;&#31561;&#20215;&#21028;&#23450;&#24341;&#25806;</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- &#35774;&#35745;&#21407;&#29702; (&#23466;&#27861;):</span><span>
+</span><span id="line-4"></span><span class="hs-comment">--   &#19981;&#37325;&#20889; Agda 2400 &#34892; TypeChecking/Conversion.hs&#12290;</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--   &#22823;&#34893;&#30340;&#31561;&#20215;&#21028;&#23450; = &#19977;&#26497;&#26694;&#26550;:</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--     &#20195;&#25968;&#26497;: 4320D &#24402;&#32422; &#8594; CRT &#25237;&#24433;&#31561;&#20215; (polarCRT &#8743; toroidalCRT)</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--     &#20960;&#20309;&#26497;: T6 &#26684;&#28857;&#27604;&#23545; &#8594; A4 &#36712;&#36947;&#31561;&#20215; (&#25490;&#24207;&#32534;&#30721;&#19981;&#21464;)</span><span>
+</span><span id="line-8"></span><span class="hs-comment">--     &#25299;&#25169;&#26497;: &#19981;&#21464;&#24615;&#20445;&#25345; (&#38472;&#25968; C=&#177;2, &#33021;&#38553; &#8730;3, 6624 &#23545;&#40784;)</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--   &#20219;&#19968;&#26497;&#21028;&#23450;&#20026;&#31561;&#20215;, &#21017;&#20004;&#20540;&#22312; T&#8310; &#35770;&#22495;&#20013;&#19981;&#21487;&#21306;&#20998;&#12290;</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- &#20116;&#26681;&#25903;&#26609;:</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--   &#9312; &#26377;&#38480;&#27169;&#22411;&#35770; &#8212; &#8704; over Fin 729 &#21487;&#21028;</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--   &#9313; &#32676;&#35770; &#8212; A4 Orbit-Stabilizer &#20998;&#35299;</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--   &#9314; &#25968;&#35770; &#8212; CRT mod 144/46 &#25237;&#24433;</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--   &#9315; &#26684;&#28857;&#25299;&#25169; &#8212; T&#8310; &#29615;&#38754;&#22352;&#26631;</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--   &#9316; &#24187;&#26041;&#27491;&#20132; &#8212; M4 &#20869;&#31215;&#24402;&#38646;&#21028;&#25454;</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--</span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- &#23545;&#40784; Agda: T6.agda (T&#8310;&#26230;&#26684;, gf3To&#8469; sort4&#32534;&#30721;, polarCRT/toroidalCRT),</span><span>
+</span><span id="line-19"></span><span class="hs-comment">--   A4Group.agda (12&#20803;&#20132;&#26367;&#32676;), CRT.agda (CRT&#35889;&#25237;&#24433;), Closure.agda (zhonglv)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html"><span class="hs-identifier">Dayan.Kernel.Conversion</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#Cmp"><span class="hs-identifier">Cmp</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#26684;&#28857;&#27604;&#23545;</span></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareTryte"><span class="hs-identifier">compareTryte</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareLattice"><span class="hs-identifier">compareLattice</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#22352;&#26631;&#25805;&#20316;</span></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#normalizeTorus"><span class="hs-identifier">normalizeTorus</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareTorus"><span class="hs-identifier">compareTorus</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#27169;&#36816;&#31639;&#24402;&#32422;</span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod144"><span class="hs-identifier">reduceMod144</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod46"><span class="hs-identifier">reduceMod46</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtReduce"><span class="hs-identifier">crtReduce</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#19977;&#36827;&#21046;&#31561;&#24335;</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTrit"><span class="hs-identifier">convTrit</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTryte"><span class="hs-identifier">convTryte</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#orbitEqual"><span class="hs-identifier">orbitEqual</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="annot"><span class="hs-comment">-- * CRT &#25237;&#24433;&#27604;&#23545;</span></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtEqual"><span class="hs-identifier">crtEqual</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="annot"><span class="hs-comment">-- * T6 CRT (&#25490;&#24207;&#32534;&#30721;, &#23545;&#40784; Agda polarCRT/toroidalCRT)</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6PolarCRT"><span class="hs-identifier">t6PolarCRT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6ToroidalCRT"><span class="hs-identifier">t6ToroidalCRT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6CrtEqual"><span class="hs-identifier">t6CrtEqual</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="annot"><span class="hs-comment">-- * 4320D &#24402;&#32422;&#24341;&#25806;</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier">reduceDiv3k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier">reduceMod3k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduce4320D"><span class="hs-identifier">reduce4320D</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier">evalArith</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="annot"><span class="hs-comment">-- * CRT &#25237;&#24433;&#27714;&#20540;</span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier">evalToNat</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtProject"><span class="hs-identifier">crtProject</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#19977;&#26497;&#31561;&#20215;&#21028;&#23450; (&#26367;&#20195; Agda &#946;&#951; &#24402;&#32422;)</span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTerm"><span class="hs-identifier">convTerm</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier">convAlgebraic</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convGeometric"><span class="hs-identifier">convGeometric</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTopological"><span class="hs-identifier">convTopological</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier">convType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier">convTypeByCRT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier">convTypeStruct</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="annot"><span class="hs-comment">-- * GF9 &#24187;&#26041;&#27491;&#20132;&#31561;&#20215;</span></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#gf9CrtEquivalent"><span class="hs-identifier">gf9CrtEquivalent</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="annot"><span class="hs-comment">-- * &#31351;&#20030;&#39564;&#35777;</span></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#forall729"><span class="hs-identifier">forall729</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html"><span class="hs-identifier">Dayan.Core.Trit</span></a></span><span>   </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier">Trit</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html"><span class="hs-identifier">Dayan.Core.Tryte</span></a></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier">Tryte</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#allTrytes"><span class="hs-identifier">allTrytes</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#tritAt"><span class="hs-identifier">tritAt</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#sortedPolarCRT"><span class="hs-identifier">sortedPolarCRT</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#sortedToroidalCRT"><span class="hs-identifier">sortedToroidalCRT</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html"><span class="hs-identifier">Dayan.Core.Torus</span></a></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier">TorusPoint</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html"><span class="hs-identifier">Dayan.Algebra.GF9</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier">Gf9</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier">gf9CrtProject</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier">allGf9</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#frobenius"><span class="hs-identifier">frobenius</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Compute.CRT.html"><span class="hs-identifier">Dayan.Compute.CRT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier">lookupPolar</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier">lookupToroidal</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Compute.Orbit.html"><span class="hs-identifier">Dayan.Compute.Orbit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Compute.Orbit.html#a4Group"><span class="hs-identifier">a4Group</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Compute.Orbit.html#a4Action"><span class="hs-identifier">a4Action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html"><span class="hs-identifier">Dayan.ProofGen.AST</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier">Type</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier">Term</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier">Lit</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- 1. &#27604;&#36739;&#32467;&#26524;&#31867;&#22411;</span><span>
+</span><span id="line-61"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">data</span><span> </span><span id="Cmp"><span class="annot"><a href="Dayan.Kernel.Conversion.html#Cmp"><span class="hs-identifier hs-var">Cmp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Equal"><span class="annot"><a href="Dayan.Kernel.Conversion.html#Equal"><span class="hs-identifier hs-var">Equal</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="NotEqual"><span class="annot"><a href="Dayan.Kernel.Conversion.html#NotEqual"><span class="hs-identifier hs-var">NotEqual</span></a></span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679100251"><span id="local-6989586621679100253"><span id="local-6989586621679100257"><span class="annot"><span class="annottext">Int -&gt; Cmp -&gt; ShowS
+[Cmp] -&gt; ShowS
+Cmp -&gt; String
+(Int -&gt; Cmp -&gt; ShowS)
+-&gt; (Cmp -&gt; String) -&gt; ([Cmp] -&gt; ShowS) -&gt; Show Cmp
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Cmp -&gt; ShowS
+showsPrec :: Int -&gt; Cmp -&gt; ShowS
+$cshow :: Cmp -&gt; String
+show :: Cmp -&gt; String
+$cshowList :: [Cmp] -&gt; ShowS
+showList :: [Cmp] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679100262"><span id="local-6989586621679100267"><span class="annot"><span class="annottext">Cmp -&gt; Cmp -&gt; Bool
+(Cmp -&gt; Cmp -&gt; Bool) -&gt; (Cmp -&gt; Cmp -&gt; Bool) -&gt; Eq Cmp
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Cmp -&gt; Cmp -&gt; Bool
+== :: Cmp -&gt; Cmp -&gt; Bool
+$c/= :: Cmp -&gt; Cmp -&gt; Bool
+/= :: Cmp -&gt; Cmp -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-66"></span><span class="hs-comment">-- 2. &#26684;&#28857;&#27604;&#23545; &#8212; O(1) Word16 byte &#27604;&#23545;</span><span>
+</span><span id="line-67"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- | &#26684;&#28857;&#27604;&#23545;: &#30452;&#25509; Word16 &#31561;&#20540;&#21028;&#26029;</span><span>
+</span><span id="line-70"></span><span class="hs-comment">--   &#23466;&#27861;: &#20351;&#29992; Fin 3 (Z/3Z &#32676;), &#19981;&#20351;&#29992; Trit (GF(3) &#22495;)</span><span>
+</span><span id="line-71"></span><span class="hs-comment">--   &#38170;&#28857;: to&#8469;-sum &lt; 729 &#31639;&#26415;&#19978;&#30028;</span><span>
+</span><span id="line-72"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareTryte"><span class="hs-identifier hs-type">compareTryte</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#Cmp"><span class="hs-identifier hs-type">Cmp</span></a></span><span>
+</span><span id="line-73"></span><span id="compareTryte"><span class="annot"><span class="annottext">compareTryte :: Tryte -&gt; Tryte -&gt; Cmp
+</span><a href="Dayan.Kernel.Conversion.html#compareTryte"><span class="hs-identifier hs-var hs-var">compareTryte</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span id="local-6989586621679100272"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100272"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span id="local-6989586621679100273"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100273"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100272"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100273"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Cmp
+</span><a href="Dayan.Kernel.Conversion.html#Equal"><span class="hs-identifier hs-var">Equal</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Cmp
+</span><a href="Dayan.Kernel.Conversion.html#NotEqual"><span class="hs-identifier hs-var">NotEqual</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">-- | &#21516; compareTryte (&#35821;&#20041;&#21035;&#21517;)</span></span><span>
+</span><span id="line-76"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareLattice"><span class="hs-identifier hs-type">compareLattice</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#Cmp"><span class="hs-identifier hs-type">Cmp</span></a></span><span>
+</span><span id="line-77"></span><span id="compareLattice"><span class="annot"><span class="annottext">compareLattice :: Tryte -&gt; Tryte -&gt; Cmp
+</span><a href="Dayan.Kernel.Conversion.html#compareLattice"><span class="hs-identifier hs-var hs-var">compareLattice</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Tryte -&gt; Cmp
+</span><a href="Dayan.Kernel.Conversion.html#compareTryte"><span class="hs-identifier hs-var">compareTryte</span></a></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-80"></span><span class="hs-comment">-- 3. &#29615;&#38754;&#22352;&#26631;&#25805;&#20316;</span><span>
+</span><span id="line-81"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- | &#29615;&#38754;&#22352;&#26631;&#24402;&#19968;&#21270;: &#26497;&#21521; mod 144, &#29615;&#21521; mod 46</span><span>
+</span><span id="line-84"></span><span class="hs-comment">--   &#23466;&#27861;: &#26497;&#21521;&#21608;&#26399; 144, &#29615;&#21521;&#21608;&#26399; 46</span><span>
+</span><span id="line-85"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#normalizeTorus"><span class="hs-identifier hs-type">normalizeTorus</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span>
+</span><span id="line-86"></span><span id="normalizeTorus"><span class="annot"><span class="annottext">normalizeTorus :: TorusPoint -&gt; TorusPoint
+</span><a href="Dayan.Kernel.Conversion.html#normalizeTorus"><span class="hs-identifier hs-var hs-var">normalizeTorus</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span id="local-6989586621679100275"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100275"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span id="local-6989586621679100276"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100276"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>  </span><span class="annot"><span class="annottext">Word16 -&gt; Word8 -&gt; TorusPoint
+</span><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-var">TorusPoint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100275"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">144</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100276"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word8
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">46</span></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="annot"><span class="hs-comment">-- | &#29615;&#38754;&#22352;&#26631;&#27604;&#23545;</span></span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#compareTorus"><span class="hs-identifier hs-type">compareTorus</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Kernel.Conversion.html#Cmp"><span class="hs-identifier hs-type">Cmp</span></a></span><span>
+</span><span id="line-91"></span><span id="compareTorus"><span class="annot"><span class="annottext">compareTorus :: TorusPoint -&gt; TorusPoint -&gt; Cmp
+</span><a href="Dayan.Kernel.Conversion.html#compareTorus"><span class="hs-identifier hs-var hs-var">compareTorus</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span id="local-6989586621679100278"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100278"><span class="hs-identifier hs-var">p1</span></a></span></span><span> </span><span id="local-6989586621679100279"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100279"><span class="hs-identifier hs-var">t1</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Torus.html#TorusPoint"><span class="hs-identifier hs-type">TorusPoint</span></a></span><span> </span><span id="local-6989586621679100280"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100280"><span class="hs-identifier hs-var">p2</span></a></span></span><span> </span><span id="local-6989586621679100281"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100281"><span class="hs-identifier hs-var">t2</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100278"><span class="hs-identifier hs-var">p1</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100280"><span class="hs-identifier hs-var">p2</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100279"><span class="hs-identifier hs-var">t1</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100281"><span class="hs-identifier hs-var">t2</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Cmp
+</span><a href="Dayan.Kernel.Conversion.html#Equal"><span class="hs-identifier hs-var">Equal</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Cmp
+</span><a href="Dayan.Kernel.Conversion.html#NotEqual"><span class="hs-identifier hs-var">NotEqual</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- 4. &#27169;&#36816;&#31639;&#24402;&#32422; (4320D &#33539;&#24335;)</span><span>
+</span><span id="line-96"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><span class="hs-comment">-- | &#26497;&#21521;&#27169;&#24402;&#32422;: n mod 144</span></span><span>
+</span><span id="line-99"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod144"><span class="hs-identifier hs-type">reduceMod144</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-100"></span><span id="reduceMod144"><span class="annot"><span class="annottext">reduceMod144 :: Word16 -&gt; Word16
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod144"><span class="hs-identifier hs-var hs-var">reduceMod144</span></a></span></span><span> </span><span id="local-6989586621679100283"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100283"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100283"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">144</span></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">-- | &#29615;&#21521;&#27169;&#24402;&#32422;: n mod 46</span></span><span>
+</span><span id="line-103"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod46"><span class="hs-identifier hs-type">reduceMod46</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-104"></span><span id="reduceMod46"><span class="annot"><span class="annottext">reduceMod46 :: Word16 -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod46"><span class="hs-identifier hs-var hs-var">reduceMod46</span></a></span></span><span> </span><span id="local-6989586621679100284"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100284"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100284"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">46</span></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- | CRT &#25237;&#24433;&#24402;&#32422;: &#26684;&#28857;&#32034;&#24341; &#8594; (&#26497;&#21521;&#20313;&#25968;, &#29615;&#21521;&#20313;&#25968;)</span><span>
+</span><span id="line-107"></span><span class="hs-comment">--   &#20844;&#24335;: (idx % 144, idx % 46)</span><span>
+</span><span id="line-108"></span><span class="hs-comment">--   &#38170;&#28857;: 6624 &#8594; (0, 0)</span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtReduce"><span class="hs-identifier hs-type">crtReduce</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span id="crtReduce"><span class="annot"><span class="annottext">crtReduce :: Word16 -&gt; (Word8, Word8)
+</span><a href="Dayan.Kernel.Conversion.html#crtReduce"><span class="hs-identifier hs-var hs-var">crtReduce</span></a></span></span><span> </span><span id="local-6989586621679100285"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100285"><span class="hs-identifier hs-var">idx</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100285"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">144</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100285"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">46</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- 5. &#19977;&#36827;&#21046;&#31561;&#24335;&#21028;&#23450;</span><span>
+</span><span id="line-115"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- | Trit &#31561;&#24335;: &#30452;&#25509;&#20195;&#25968;&#27604;&#23545;</span><span>
+</span><span id="line-118"></span><span class="hs-comment">--   &#23466;&#27861;: &#20351;&#29992; Trit (GF(3) &#22495;), &#21306;&#20998;&#20110; Fin 3 (Z/3Z)</span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTrit"><span class="hs-identifier hs-type">convTrit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Trit.html#Trit"><span class="hs-identifier hs-type">Trit</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-120"></span><span id="convTrit"><span class="annot"><span class="annottext">convTrit :: Trit -&gt; Trit -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTrit"><span class="hs-identifier hs-var hs-var">convTrit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Trit -&gt; Trit -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">(==)</span></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- | Tryte &#26684;&#28857;&#31561;&#24335; (&#21547; A4 &#27491;&#21017;&#21270;)</span><span>
+</span><span id="line-123"></span><span class="hs-comment">--   &#23466;&#27861;: A4 &#32676;&#20316;&#29992;&#20110;&#21069; 4 &#32500;, &#25490;&#24207;&#32534;&#30721;&#28040;&#38500;&#32622;&#25442;&#24046;&#24322;</span><span>
+</span><span id="line-124"></span><span class="hs-comment">--   &#31574;&#30053;: &#20808;&#25552;&#21462; 6 &#20010; Trit, &#21069; 4 &#20010;&#20570; A4 &#36712;&#36947;&#26816;&#26597;</span><span>
+</span><span id="line-125"></span><span class="hs-comment">--   &#38170;&#28857;: &#21516;&#26500;&#23545; convTryte (encode v) (a4Action g (encode v)) == True</span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTryte"><span class="hs-identifier hs-type">convTryte</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-127"></span><span id="convTryte"><span class="annot"><span class="annottext">convTryte :: Tryte -&gt; Tryte -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTryte"><span class="hs-identifier hs-var hs-var">convTryte</span></a></span></span><span> </span><span id="local-6989586621679100286"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100286"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100287"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100287"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>  </span><span class="hs-comment">-- 1. &#30452;&#25509;&#31561;&#20540; (&#26368;&#24555;&#36335;&#24452;)</span><span>
+</span><span id="line-129"></span><span>  </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100286"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Tryte -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100287"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span>
+</span><span id="line-130"></span><span>  </span><span class="hs-comment">-- 2. A4 &#36712;&#36947;&#31561;&#20215;: &#26159;&#21542;&#23384;&#22312; g &#8712; A4 &#20351; a4Action g a == b</span><span>
+</span><span id="line-131"></span><span>  </span><span class="annot"><span class="annottext">Tryte -&gt; Tryte -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#orbitEqual"><span class="hs-identifier hs-var">orbitEqual</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100286"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100287"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><span class="hs-comment">-- | A4 &#36712;&#36947;&#31561;&#20215;: a &#21644; b &#26159;&#21542;&#22312;&#21516;&#19968; A4 &#36712;&#36947;&#20013;</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#orbitEqual"><span class="hs-identifier hs-type">orbitEqual</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-135"></span><span id="orbitEqual"><span class="annot"><span class="annottext">orbitEqual :: Tryte -&gt; Tryte -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#orbitEqual"><span class="hs-identifier hs-var hs-var">orbitEqual</span></a></span></span><span> </span><span id="local-6989586621679100289"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100289"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100290"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100290"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Bool) -&gt; [[Int]] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">any</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679100292"><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679100292"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Tryte -&gt; Tryte
+</span><a href="Dayan.Compute.Orbit.html#a4Action"><span class="hs-identifier hs-var">a4Action</span></a></span><span> </span><span class="annot"><span class="annottext">[Int]
+</span><a href="#local-6989586621679100292"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100289"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Tryte -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100290"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[[Int]]
+</span><a href="Dayan.Compute.Orbit.html#a4Group"><span class="hs-identifier hs-var">a4Group</span></a></span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- | CRT &#25237;&#24433;&#31561;&#20215;: polar &#21644; toroidal &#20313;&#25968;&#37117;&#30456;&#21516;</span><span>
+</span><span id="line-138"></span><span class="hs-comment">--   &#27880;&#24847;: &#20316;&#29992;&#20110; torus grid &#32034;&#24341; (0..6623), &#20351;&#29992;&#20301;&#32622; %144/%46</span><span>
+</span><span id="line-139"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtEqual"><span class="hs-identifier hs-type">crtEqual</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-140"></span><span id="crtEqual"><span class="annot"><span class="annottext">crtEqual :: Word16 -&gt; Word16 -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#crtEqual"><span class="hs-identifier hs-var hs-var">crtEqual</span></a></span></span><span> </span><span id="local-6989586621679100293"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100293"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100294"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100294"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-141"></span><span>  </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier hs-var">lookupPolar</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100293"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupPolar"><span class="hs-identifier hs-var">lookupPolar</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100294"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier hs-var">lookupToroidal</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100293"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word8
+</span><a href="Dayan.Compute.CRT.html#lookupToroidal"><span class="hs-identifier hs-var">lookupToroidal</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100294"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- 6b. T6 CRT &#8212; &#25490;&#24207;&#32534;&#30721;&#25237;&#24433; (&#23545;&#40784; Agda polarCRT/toroidalCRT)</span><span>
+</span><span id="line-145"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-146"></span><span>
+</span><span id="line-147"></span><span class="hs-comment">-- | T6 &#26684;&#28857;&#26497;&#21521; CRT &#25237;&#24433; (&#25490;&#24207;&#32534;&#30721; &#8594; %144)</span><span>
+</span><span id="line-148"></span><span class="hs-comment">--   &#23545;&#40784; Agda: polarCRT p = gf3To&#8469; p % 144</span><span>
+</span><span id="line-149"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6PolarCRT"><span class="hs-identifier hs-type">t6PolarCRT</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-150"></span><span id="t6PolarCRT"><span class="annot"><span class="annottext">t6PolarCRT :: Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6PolarCRT"><span class="hs-identifier hs-var hs-var">t6PolarCRT</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Core.Tryte.html#sortedPolarCRT"><span class="hs-identifier hs-var">sortedPolarCRT</span></a></span><span>
+</span><span id="line-151"></span><span>
+</span><span id="line-152"></span><span class="hs-comment">-- | T6 &#26684;&#28857;&#29615;&#21521; CRT &#25237;&#24433; (&#25490;&#24207;&#32534;&#30721; &#8594; %46)</span><span>
+</span><span id="line-153"></span><span class="hs-comment">--   &#23545;&#40784; Agda: toroidalCRT p = gf3To&#8469; p % 46</span><span>
+</span><span id="line-154"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6ToroidalCRT"><span class="hs-identifier hs-type">t6ToroidalCRT</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span>
+</span><span id="line-155"></span><span id="t6ToroidalCRT"><span class="annot"><span class="annottext">t6ToroidalCRT :: Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6ToroidalCRT"><span class="hs-identifier hs-var hs-var">t6ToroidalCRT</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Core.Tryte.html#sortedToroidalCRT"><span class="hs-identifier hs-var">sortedToroidalCRT</span></a></span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- | T6 CRT &#31561;&#20215;: &#25490;&#24207;&#32534;&#30721;&#30340;&#26497;&#21521;+&#29615;&#21521;&#25237;&#24433;&#22343;&#30456;&#21516;</span><span>
+</span><span id="line-158"></span><span class="hs-comment">--   &#23545;&#40784; Agda: polarCRT a &#8801; polarCRT b &#8743; toroidalCRT a &#8801; toroidalCRT b</span><span>
+</span><span id="line-159"></span><span class="hs-comment">--   A4 &#19981;&#21464;: &#21516;&#36712;&#36947;&#26684;&#28857; &#8594; True (&#25490;&#24207;&#32534;&#30721;&#28040;&#38500;&#32622;&#25442;&#25928;&#24212;)</span><span>
+</span><span id="line-160"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#t6CrtEqual"><span class="hs-identifier hs-type">t6CrtEqual</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-161"></span><span id="t6CrtEqual"><span class="annot"><span class="annottext">t6CrtEqual :: Tryte -&gt; Tryte -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#t6CrtEqual"><span class="hs-identifier hs-var hs-var">t6CrtEqual</span></a></span></span><span> </span><span id="local-6989586621679100295"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100295"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100296"><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100296"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-162"></span><span>  </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6PolarCRT"><span class="hs-identifier hs-var">t6PolarCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100295"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6PolarCRT"><span class="hs-identifier hs-var">t6PolarCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100296"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6ToroidalCRT"><span class="hs-identifier hs-var">t6ToroidalCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100295"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Word8
+</span><a href="Dayan.Kernel.Conversion.html#t6ToroidalCRT"><span class="hs-identifier hs-var">t6ToroidalCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Tryte
+</span><a href="#local-6989586621679100296"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-163"></span><span>
+</span><span id="line-164"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-165"></span><span class="hs-comment">-- &#9317; &#31867;&#22411;/&#39033;&#36716;&#25442; (&#22823;&#34893;&#19977;&#26497;&#26694;&#26550;)</span><span>
+</span><span id="line-166"></span><span class="hs-comment">--</span><span>
+</span><span id="line-167"></span><span class="hs-comment">-- &#19977;&#26497;&#21028;&#23450;:</span><span>
+</span><span id="line-168"></span><span class="hs-comment">--   &#20195;&#25968;&#26497;: 4320D &#24402;&#32422; &#8594; CRT &#25237;&#24433;&#31561;&#20215; (polarCRT &#8743; toroidalCRT)</span><span>
+</span><span id="line-169"></span><span class="hs-comment">--   &#20960;&#20309;&#26497;: T6 &#26684;&#28857;&#27604;&#23545; &#8594; A4 &#36712;&#36947;&#31561;&#20215; (&#25490;&#24207;&#32534;&#30721;&#19981;&#21464;)</span><span>
+</span><span id="line-170"></span><span class="hs-comment">--   &#25299;&#25169;&#26497;: &#19981;&#21464;&#24615;&#20445;&#25345; (&#38472;&#25968; C=&#177;2, &#33021;&#38553; &#8730;3)</span><span>
+</span><span id="line-171"></span><span class="hs-comment">--</span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- &#19982; Agda &#30340;&#26412;&#36136;&#21306;&#21035;:</span><span>
+</span><span id="line-173"></span><span class="hs-comment">--   Agda: &#35821;&#27861;&#26641;&#36880;&#33410;&#28857; &#946;&#951; &#24402;&#32422; &#8594; &#32467;&#26500;&#21305;&#37197; (2400&#34892;)</span><span>
+</span><span id="line-174"></span><span class="hs-comment">--   &#22823;&#34893;: CRT &#20313;&#25968;&#25237;&#24433; &#8594; &#26684;&#28857;&#22352;&#26631;&#27604;&#23545; (&#26412;&#27169;&#22359; ~200&#34892;)</span><span>
+</span><span id="line-175"></span><span class="hs-comment">--   &#21407;&#29702;: T&#8310; &#35770;&#22495;&#26377;&#38480; (729&#28857;), &#20840;&#31216;&#37327;&#21270;&#21487;&#21028;, &#31351;&#20030;&#26367;&#20195;&#24402;&#32435;</span><span>
+</span><span id="line-176"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- | &#19977;&#26497;&#31561;&#20215;&#21028;&#23450;: &#20219;&#24847;&#20004;&#26497;&#36890;&#36807;&#21017;&#31561;&#20215;</span><span>
+</span><span id="line-179"></span><span class="hs-comment">--   GF9 &#25193;&#23637;: &#24187;&#26041;&#27491;&#20132; i&#178;+1&#178;=0&#178; &#20313;&#25968;&#21521;&#37327;&#31561;&#20215;</span><span>
+</span><span id="line-180"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTerm"><span class="hs-identifier hs-type">convTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-181"></span><span id="convTerm"><span class="annot"><span class="annottext">convTerm :: Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTerm"><span class="hs-identifier hs-var hs-var">convTerm</span></a></span></span><span> </span><span id="local-6989586621679100297"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100297"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100298"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100298"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier hs-var">convAlgebraic</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100297"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100298"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convGeometric"><span class="hs-identifier hs-var">convGeometric</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100297"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100298"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTopological"><span class="hs-identifier hs-var">convTopological</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100297"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100298"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#gf9CrtEquivalent"><span class="hs-identifier hs-var">gf9CrtEquivalent</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100297"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100298"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span class="annot"><span class="hs-comment">-- | &#31867;&#22411;&#31561;&#20215;: CRT &#25237;&#24433;&#22522;&#25968; + &#19977;&#26497;&#36882;&#25512;</span></span><span>
+</span><span id="line-186"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-type">convType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-187"></span><span id="convType"><span class="annot"><span class="annottext">convType :: Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var hs-var">convType</span></a></span></span><span> </span><span id="local-6989586621679100299"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100299"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100300"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100300"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-188"></span><span>  </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier hs-var">convTypeByCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100299"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100300"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100299"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100300"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-189"></span><span>
+</span><span id="line-190"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-191"></span><span class="hs-comment">-- 6a. 4320D &#24402;&#32422;&#24341;&#25806;</span><span>
+</span><span id="line-192"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-193"></span><span>
+</span><span id="line-194"></span><span class="annot"><span class="hs-comment">-- | 4320D &#24402;&#32422;: (3*k) % 3 &#8594; 0</span></span><span>
+</span><span id="line-195"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-type">reduceMod3k</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-196"></span><span id="reduceMod3k"><span class="annot"><span class="annottext">reduceMod3k :: Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var hs-var">reduceMod3k</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;%&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100305"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100305"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100305"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var">reduceMod3k</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679100306"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100306"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679100307"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100307"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var">reduceMod3k</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100306"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var">reduceMod3k</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100307"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-199"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var">reduceMod3k</span></a></span><span> </span><span id="local-6989586621679100308"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100308"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100308"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-200"></span><span>
+</span><span id="line-201"></span><span class="annot"><span class="hs-comment">-- | 4320D &#24402;&#32422;: (3*k) / 3 &#8594; k</span></span><span>
+</span><span id="line-202"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-type">reduceDiv3k</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-203"></span><span id="reduceDiv3k"><span class="annot"><span class="annottext">reduceDiv3k :: Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var hs-var">reduceDiv3k</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100309"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100309"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-204"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100309"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100309"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var">reduceDiv3k</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679100311"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100311"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679100312"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100312"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var">reduceDiv3k</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100311"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var">reduceDiv3k</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100312"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-206"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var">reduceDiv3k</span></a></span><span> </span><span id="local-6989586621679100313"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100313"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100313"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-207"></span><span>
+</span><span id="line-208"></span><span class="annot"><span class="hs-comment">-- | &#23436;&#25972; 4320D &#24402;&#19968;&#21270;: div3k &#8594; mod3k &#8594; &#31639;&#26415;&#27714;&#20540;</span></span><span>
+</span><span id="line-209"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#reduce4320D"><span class="hs-identifier hs-type">reduce4320D</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-210"></span><span id="reduce4320D"><span class="annot"><span class="annottext">reduce4320D :: Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduce4320D"><span class="hs-identifier hs-var hs-var">reduce4320D</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; Term) -&gt; (Term -&gt; Term) -&gt; Term -&gt; Term
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceDiv3k"><span class="hs-identifier hs-var">reduceDiv3k</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; Term) -&gt; (Term -&gt; Term) -&gt; Term -&gt; Term
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduceMod3k"><span class="hs-identifier hs-var">reduceMod3k</span></a></span><span>
+</span><span id="line-211"></span><span>
+</span><span id="line-212"></span><span class="annot"><span class="hs-comment">-- | &#31639;&#26415;&#27714;&#20540;: &#23545;&#24050;&#30693;&#36816;&#31639;&#31526;&#20570;&#24120;&#37327;&#25240;&#21472;</span></span><span>
+</span><span id="line-213"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-type">evalArith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span>
+</span><span id="line-214"></span><span id="evalArith"><span class="annot"><span class="annottext">evalArith :: Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var hs-var">evalArith</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;+&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100315"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100315"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100316"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100316"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-215"></span><span>  </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100315"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100316"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-216"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;*&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100318"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100318"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100319"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100319"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-217"></span><span>  </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100318"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100319"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-218"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;%&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100321"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100321"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100322"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100322"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-219"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100322"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100321"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100322"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-220"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100324"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100324"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100325"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100325"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-221"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100325"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100324"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100325"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-222"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span id="local-6989586621679100326"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100326"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679100327"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100327"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100326"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100327"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-223"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalArith"><span class="hs-identifier hs-var">evalArith</span></a></span><span> </span><span id="local-6989586621679100328"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100328"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100328"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-224"></span><span>
+</span><span id="line-225"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- 6b. CRT &#25237;&#24433;&#27714;&#20540;</span><span>
+</span><span id="line-227"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-228"></span><span>
+</span><span id="line-229"></span><span class="annot"><span class="hs-comment">-- | &#39033; &#8594; &#8469; (&#26368;&#22823;&#21162;&#21147;&#27714;&#20540;, &#26080;&#27861;&#27714;&#20540;&#26102;&#36820;&#22238; Nothing)</span></span><span>
+</span><span id="line-230"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-type">evalToNat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span>
+</span><span id="line-231"></span><span id="evalToNat"><span class="annot"><span class="annottext">evalToNat :: Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var hs-var">evalToNat</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100329"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100329"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Maybe Word16
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100329"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-232"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="annot"><span class="annottext">Lit
+</span><a href="Dayan.ProofGen.AST.html#LZero"><span class="hs-identifier hs-var">LZero</span></a></span><span class="hs-special">)</span><span>             </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Maybe Word16
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-233"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LSuc"><span class="hs-identifier hs-type">LSuc</span></a></span><span> </span><span id="local-6989586621679100332"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100332"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>          </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16) -&gt; Maybe Word16 -&gt; Maybe Word16
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100332"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-234"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;+&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100334"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100334"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100335"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100335"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-235"></span><span>  </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(+)</span></span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16 -&gt; Word16)
+-&gt; Maybe Word16 -&gt; Maybe (Word16 -&gt; Word16)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100334"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (Word16 -&gt; Word16) -&gt; Maybe Word16 -&gt; Maybe Word16
+forall a b. Maybe (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100335"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-236"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;*&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100336"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100336"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100337"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100337"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-237"></span><span>  </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">(*)</span></span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16 -&gt; Word16)
+-&gt; Maybe Word16 -&gt; Maybe (Word16 -&gt; Word16)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100336"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (Word16 -&gt; Word16) -&gt; Maybe Word16 -&gt; Maybe Word16
+forall a b. Maybe (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100337"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-238"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;%&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100338"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100338"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100339"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100339"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-239"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100339"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100339"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16) -&gt; Maybe Word16 -&gt; Maybe Word16
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100338"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-240"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-type">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679100340"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100340"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-type">LNat</span></a></span><span> </span><span id="local-6989586621679100341"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100341"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-241"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100341"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100341"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Word16 -&gt; Word16) -&gt; Maybe Word16 -&gt; Maybe Word16
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100340"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-242"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span id="local-6989586621679100342"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100342"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-243"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679100343"><span class="annot"><span class="annottext">t' :: Term
+</span><a href="#local-6989586621679100343"><span class="hs-identifier hs-var hs-var">t'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Dayan.Kernel.Conversion.html#reduce4320D"><span class="hs-identifier hs-var">reduce4320D</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100342"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-244"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100343"><span class="hs-identifier hs-var">t'</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100342"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Maybe Word16
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>          </span><span class="hs-comment">-- &#26080;&#36827;&#19968;&#27493;&#24402;&#32422;, &#25918;&#24323;</span><span>
+</span><span id="line-245"></span><span>     </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100343"><span class="hs-identifier hs-var">t'</span></a></span><span>                 </span><span class="hs-comment">-- &#24402;&#32422;&#21518;&#37325;&#35797;</span><span>
+</span><span id="line-246"></span><span>
+</span><span id="line-247"></span><span class="annot"><span class="hs-comment">-- | CRT &#25237;&#24433;: &#39033; &#8594; (polarCRT, toroidalCRT)</span></span><span>
+</span><span id="line-248"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#crtProject"><span class="hs-identifier hs-type">crtProject</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-249"></span><span id="crtProject"><span class="annot"><span class="annottext">crtProject :: Term -&gt; Maybe (Word8, Word8)
+</span><a href="Dayan.Kernel.Conversion.html#crtProject"><span class="hs-identifier hs-var hs-var">crtProject</span></a></span></span><span> </span><span id="local-6989586621679100344"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100344"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-250"></span><span>  </span><span id="local-6989586621679100345"><span class="annot"><a href="#local-6989586621679100345"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100344"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-251"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679100345"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">`rem`</span></span><span> </span><span class="annot"><span class="hs-number">144</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679100345"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">`rem`</span></span><span> </span><span class="annot"><span class="hs-number">46</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-252"></span><span>
+</span><span id="line-253"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-254"></span><span class="hs-comment">-- 6c. &#20195;&#25968;&#26497;: CRT &#21516;&#20313;&#31561;&#20215;</span><span>
+</span><span id="line-255"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-256"></span><span>
+</span><span id="line-257"></span><span class="annot"><span class="hs-comment">-- | &#20195;&#25968;&#26497;&#21028;&#23450;: 4320D &#24402;&#32422; &#8594; CRT &#25237;&#24433;&#31561;&#20215;</span></span><span>
+</span><span id="line-258"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier hs-type">convAlgebraic</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-259"></span><span id="convAlgebraic"><span class="annot"><span class="annottext">convAlgebraic :: Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier hs-var hs-var">convAlgebraic</span></a></span></span><span> </span><span id="local-6989586621679100346"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100346"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100347"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100347"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Maybe (Word8, Word8)
+</span><a href="Dayan.Kernel.Conversion.html#crtProject"><span class="hs-identifier hs-var">crtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100346"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe (Word8, Word8)
+</span><a href="Dayan.Kernel.Conversion.html#crtProject"><span class="hs-identifier hs-var">crtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100347"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-260"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679100348"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100348"><span class="hs-identifier hs-var">pa</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679100349"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100349"><span class="hs-identifier hs-var">ta</span></a></span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679100350"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100350"><span class="hs-identifier hs-var">pb</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679100351"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100351"><span class="hs-identifier hs-var">tb</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-261"></span><span>    </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100348"><span class="hs-identifier hs-var">pa</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100350"><span class="hs-identifier hs-var">pb</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100349"><span class="hs-identifier hs-var">ta</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679100351"><span class="hs-identifier hs-var">tb</span></a></span><span>                     </span><span class="hs-comment">-- CRT &#20313;&#25968;&#19968;&#33268;</span><span>
+</span><span id="line-262"></span><span>  </span><span class="annot"><span class="annottext">(Maybe (Word8, Word8), Maybe (Word8, Word8))
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-263"></span><span>
+</span><span id="line-264"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-265"></span><span class="hs-comment">-- 6d. &#20960;&#20309;&#26497;: T6 &#26684;&#28857; + A4 &#36712;&#36947;&#31561;&#20215;</span><span>
+</span><span id="line-266"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-267"></span><span>
+</span><span id="line-268"></span><span class="annot"><span class="hs-comment">-- | &#20960;&#20309;&#26497;&#21028;&#23450;: &#26684;&#28857;&#27604;&#23545; &#8594; A4 &#36712;&#36947;&#31561;&#20215;</span></span><span>
+</span><span id="line-269"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convGeometric"><span class="hs-identifier hs-type">convGeometric</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-270"></span><span id="convGeometric"><span class="annot"><span class="annottext">convGeometric :: Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convGeometric"><span class="hs-identifier hs-var hs-var">convGeometric</span></a></span></span><span> </span><span id="local-6989586621679100352"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100352"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100353"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100353"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-271"></span><span>  </span><span class="hs-comment">-- &#23581;&#35797;&#27714;&#20540;&#20026; Tryte &#26684;&#28857;, &#26816;&#26597; A4 &#36712;&#36947;&#31561;&#20215;</span><span>
+</span><span id="line-272"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100352"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100353"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-273"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100354"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100354"><span class="hs-identifier hs-var">na</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100355"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100355"><span class="hs-identifier hs-var">nb</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-274"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100354"><span class="hs-identifier hs-var">na</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">729</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100355"><span class="hs-identifier hs-var">nb</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">729</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-275"></span><span>          </span><span class="annot"><span class="annottext">Tryte -&gt; Tryte -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTryte"><span class="hs-identifier hs-var">convTryte</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Tryte
+</span><a href="Dayan.Kernel.Conversion.html#mkTryte"><span class="hs-identifier hs-var">mkTryte</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100354"><span class="hs-identifier hs-var">na</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Tryte
+</span><a href="Dayan.Kernel.Conversion.html#mkTryte"><span class="hs-identifier hs-var">mkTryte</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100355"><span class="hs-identifier hs-var">nb</span></a></span><span class="hs-special">)</span><span>  </span><span class="hs-comment">-- A4 &#36712;&#36947; + &#30452;&#25509;&#27604;&#23545;</span><span>
+</span><span id="line-276"></span><span>    </span><span class="annot"><span class="annottext">(Maybe Word16, Maybe Word16)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-277"></span><span>
+</span><span id="line-278"></span><span class="hs-comment">-- &#20869;&#37096;: &#20174; Word16 &#26500;&#36896; Tryte (&#19981;&#39564;&#35777;&#33539;&#22260;, &#35843;&#29992;&#32773;&#20445;&#35777;)</span><span>
+</span><span id="line-279"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#mkTryte"><span class="hs-identifier hs-type">mkTryte</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span>
+</span><span id="line-280"></span><span id="mkTryte"><span class="annot"><span class="annottext">mkTryte :: Word16 -&gt; Tryte
+</span><a href="Dayan.Kernel.Conversion.html#mkTryte"><span class="hs-identifier hs-var hs-var">mkTryte</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Tryte
+</span><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-var">Tryte</span></a></span><span>
+</span><span id="line-281"></span><span>
+</span><span id="line-282"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-283"></span><span class="hs-comment">-- 6e. &#25299;&#25169;&#26497;: &#19981;&#21464;&#37327;&#20445;&#25345;</span><span>
+</span><span id="line-284"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-285"></span><span>
+</span><span id="line-286"></span><span class="hs-comment">-- | &#25299;&#25169;&#26497;&#21028;&#23450;: 6624 &#30456;&#20301;&#23545;&#40784; parity (&#30495;&#27491;&#19981;&#21464;&#37327;, &#38750;&#20195;&#25968;&#25237;&#24433;)</span><span>
+</span><span id="line-287"></span><span class="hs-comment">--   &#38472;&#25968; C=&#177;2 &#8594; &#23545;&#40784;&#28857; (0 mod 6624) &#26159;&#25299;&#25169;&#29305;&#24449;</span><span>
+</span><span id="line-288"></span><span class="hs-comment">--   &#19982;&#20195;&#25968;&#26497;&#30340;&#21306;&#21035;: &#20195;&#25968;&#26816;&#26597; exact CRT match, &#25299;&#25169;&#20165;&#26816;&#26597;&#23545;&#40784; parity</span><span>
+</span><span id="line-289"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTopological"><span class="hs-identifier hs-type">convTopological</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-290"></span><span id="convTopological"><span class="annot"><span class="annottext">convTopological :: Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTopological"><span class="hs-identifier hs-var hs-var">convTopological</span></a></span></span><span> </span><span id="local-6989586621679100358"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100358"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100359"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100359"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-291"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100358"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100359"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-292"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100360"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100360"><span class="hs-identifier hs-var">na</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100361"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100361"><span class="hs-identifier hs-var">nb</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-293"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100360"><span class="hs-identifier hs-var">na</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">6624</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100361"><span class="hs-identifier hs-var">nb</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Word16
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`rem`</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">6624</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>  </span><span class="hs-comment">-- &#21516;&#23545;&#40784;parity</span><span>
+</span><span id="line-294"></span><span>    </span><span class="annot"><span class="annottext">(Maybe Word16, Maybe Word16)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-295"></span><span>
+</span><span id="line-296"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-297"></span><span class="hs-comment">-- 6g. GF9 &#24187;&#26041;&#27491;&#20132;&#20195;&#20215; (i&#178;+1&#178;=0&#178;)</span><span>
+</span><span id="line-298"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-299"></span><span>
+</span><span id="line-300"></span><span class="hs-comment">-- | GF9 CRT &#20313;&#25968;&#21521;&#37327;&#31561;&#20215;: &#20004;&#20010; GF9 &#20803;&#32032;&#22312;&#24187;&#26041;&#27491;&#20132;&#25237;&#24433;&#19979;&#31561;&#20215;</span><span>
+</span><span id="line-301"></span><span class="hs-comment">--   i&#178;+1&#178;=0&#178;: M4 &#26412;&#24449;&#21521;&#37327; v16&#8314; &#8869; v16&#8315;</span><span>
+</span><span id="line-302"></span><span class="hs-comment">--   GF9 &#30340; 9 &#20010;&#20803;&#32032;&#26144;&#23556;&#21040; 9 &#20010;&#19981;&#21516;&#30340; CRT &#22352;&#26631; (gf9CrtProject &#21333;&#23556;)</span><span>
+</span><span id="line-303"></span><span class="hs-comment">--   Frobenius &#20849;&#36717;&#22312; CRT &#22495;&#20013;&#20026; &#177;16 &#25163;&#24449;&#20132;&#25442; (&#22352;&#26631;&#19981;&#21516;, &#25299;&#25169;&#31561;&#20215;)</span><span>
+</span><span id="line-304"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#gf9CrtEquivalent"><span class="hs-identifier hs-type">gf9CrtEquivalent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-305"></span><span id="gf9CrtEquivalent"><span class="annot"><span class="annottext">gf9CrtEquivalent :: Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#gf9CrtEquivalent"><span class="hs-identifier hs-var hs-var">gf9CrtEquivalent</span></a></span></span><span> </span><span id="local-6989586621679100362"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100362"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100363"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100363"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-306"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100362"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Maybe Word16
+</span><a href="Dayan.Kernel.Conversion.html#evalToNat"><span class="hs-identifier hs-var">evalToNat</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100363"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-307"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100364"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100364"><span class="hs-identifier hs-var">na</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679100365"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100365"><span class="hs-identifier hs-var">nb</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-308"></span><span>      </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100364"><span class="hs-identifier hs-var">na</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">9</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100365"><span class="hs-identifier hs-var">nb</span></a></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Word16 -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">9</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>  </span><span class="hs-comment">-- GF9 &#22495;&#20869;: 0..8 &#32534;&#30721;&#20540;</span><span>
+</span><span id="line-309"></span><span>          </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679100366"><span class="annot"><span class="annottext">ga :: Gf9
+</span><a href="#local-6989586621679100366"><span class="hs-identifier hs-var hs-var">ga</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Gf9
+</span><a href="Dayan.Kernel.Conversion.html#idxToGf9"><span class="hs-identifier hs-var">idxToGf9</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100364"><span class="hs-identifier hs-var">na</span></a></span><span class="hs-special">;</span><span> </span><span id="local-6989586621679100368"><span class="annot"><span class="annottext">gb :: Gf9
+</span><a href="#local-6989586621679100368"><span class="hs-identifier hs-var hs-var">gb</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Gf9
+</span><a href="Dayan.Kernel.Conversion.html#idxToGf9"><span class="hs-identifier hs-var">idxToGf9</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100365"><span class="hs-identifier hs-var">nb</span></a></span><span>
+</span><span id="line-310"></span><span>          </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var">gf9CrtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679100366"><span class="hs-identifier hs-var">ga</span></a></span><span> </span><span class="annot"><span class="annottext">(Word8, Word8) -&gt; (Word8, Word8) -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Gf9 -&gt; (Word8, Word8)
+</span><a href="Dayan.Algebra.GF9.html#gf9CrtProject"><span class="hs-identifier hs-var">gf9CrtProject</span></a></span><span> </span><span class="annot"><span class="annottext">Gf9
+</span><a href="#local-6989586621679100368"><span class="hs-identifier hs-var">gb</span></a></span><span>  </span><span class="hs-comment">-- CRT &#25237;&#24433;&#31561;&#20215;</span><span>
+</span><span id="line-311"></span><span>    </span><span class="annot"><span class="annottext">(Maybe Word16, Maybe Word16)
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-312"></span><span>
+</span><span id="line-313"></span><span class="annot"><span class="hs-comment">-- | &#32534;&#30721;&#20540; &#8594; GF9 &#20803;&#32032; (0&#8594;8)</span></span><span>
+</span><span id="line-314"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#idxToGf9"><span class="hs-identifier hs-type">idxToGf9</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Algebra.GF9.html#Gf9"><span class="hs-identifier hs-type">Gf9</span></a></span><span>
+</span><span id="line-315"></span><span id="idxToGf9"><span class="annot"><span class="annottext">idxToGf9 :: Word16 -&gt; Gf9
+</span><a href="Dayan.Kernel.Conversion.html#idxToGf9"><span class="hs-identifier hs-var hs-var">idxToGf9</span></a></span></span><span> </span><span id="local-6989586621679100369"><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100369"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Gf9]
+</span><a href="Dayan.Algebra.GF9.html#allGf9"><span class="hs-identifier hs-var">allGf9</span></a></span><span> </span><span class="annot"><span class="annottext">[Gf9] -&gt; Int -&gt; Gf9
+forall a. HasCallStack =&gt; [a] -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">!!</span></span><span> </span><span class="annot"><span class="annottext">Word16 -&gt; Int
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><a href="#local-6989586621679100369"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-316"></span><span>
+</span><span id="line-317"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-318"></span><span class="hs-comment">-- 6f. &#31867;&#22411;&#31561;&#20215; (CRT &#25237;&#24433;&#22522;&#25968;)</span><span>
+</span><span id="line-319"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-320"></span><span>
+</span><span id="line-321"></span><span class="annot"><span class="hs-comment">-- | CRT &#25237;&#24433;&#31867;&#22411;&#31561;&#20215;: Fin n &#8776; Fin m iff n&#8801;m in CRT &#22495;</span></span><span>
+</span><span id="line-322"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier hs-type">convTypeByCRT</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-323"></span><span id="convTypeByCRT"><span class="annot"><span class="annottext">convTypeByCRT :: Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier hs-var hs-var">convTypeByCRT</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFin"><span class="hs-identifier hs-type">TFin</span></a></span><span> </span><span id="local-6989586621679100372"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100372"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFin"><span class="hs-identifier hs-type">TFin</span></a></span><span> </span><span id="local-6989586621679100373"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100373"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier hs-var">convAlgebraic</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100372"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100373"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-324"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier hs-var">convTypeByCRT</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TVec"><span class="hs-identifier hs-type">TVec</span></a></span><span> </span><span id="local-6989586621679100375"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100375"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100376"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100376"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TVec"><span class="hs-identifier hs-type">TVec</span></a></span><span> </span><span id="local-6989586621679100377"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100377"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679100378"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100378"><span class="hs-identifier hs-var">m</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var">convType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100375"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100377"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convAlgebraic"><span class="hs-identifier hs-var">convAlgebraic</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100376"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679100378"><span class="hs-identifier hs-var">m</span></a></span><span>
+</span><span id="line-325"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeByCRT"><span class="hs-identifier hs-var">convTypeByCRT</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-326"></span><span>
+</span><span id="line-327"></span><span class="annot"><span class="hs-comment">-- | &#32467;&#26500;&#31867;&#22411;&#31561;&#20215; (&#22238;&#36864;: &#20165;&#24403; CRT &#27714;&#20540;&#19981;&#21487;&#33021;&#26102;&#20351;&#29992;)</span></span><span>
+</span><span id="line-328"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-type">convTypeStruct</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-329"></span><span id="convTypeStruct"><span class="annot"><span class="annottext">convTypeStruct :: Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var hs-var">convTypeStruct</span></a></span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TSet"><span class="hs-identifier hs-var">TSet</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TSet"><span class="hs-identifier hs-var">TSet</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-330"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TNat"><span class="hs-identifier hs-var">TNat</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="Dayan.ProofGen.AST.html#TNat"><span class="hs-identifier hs-var">TNat</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-331"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-type">TDef</span></a></span><span> </span><span id="local-6989586621679100382"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100382"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-type">TDef</span></a></span><span> </span><span id="local-6989586621679100383"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100383"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100382"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679100383"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-332"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TPi"><span class="hs-identifier hs-type">TPi</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679100385"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100385"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100386"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100386"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TPi"><span class="hs-identifier hs-type">TPi</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679100387"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100387"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679100388"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100388"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var">convType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100385"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100387"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var">convType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100386"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100388"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-333"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFun"><span class="hs-identifier hs-type">TFun</span></a></span><span> </span><span id="local-6989586621679100390"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100390"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679100391"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100391"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#TFun"><span class="hs-identifier hs-type">TFun</span></a></span><span> </span><span id="local-6989586621679100392"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100392"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621679100393"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100393"><span class="hs-identifier hs-var">d</span></a></span></span><span class="hs-special">)</span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var">convType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100390"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100392"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#convType"><span class="hs-identifier hs-var">convType</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100391"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621679100393"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-334"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#convTypeStruct"><span class="hs-identifier hs-var">convTypeStruct</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Type
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-335"></span><span>
+</span><span id="line-336"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-337"></span><span class="hs-comment">-- 7. &#31351;&#20030;&#39564;&#35777;</span><span>
+</span><span id="line-338"></span><span class="hs-comment">----------------------------------------------------------------------</span><span>
+</span><span id="line-339"></span><span>
+</span><span id="line-340"></span><span class="annot"><span class="hs-comment">-- | &#23545;&#20840;&#37096; 729 &#20010;&#26684;&#28857;&#39564;&#35777;&#35859;&#35789;</span></span><span>
+</span><span id="line-341"></span><span class="annot"><a href="Dayan.Kernel.Conversion.html#forall729"><span class="hs-identifier hs-type">forall729</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Core.Tryte.html#Tryte"><span class="hs-identifier hs-type">Tryte</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-342"></span><span id="forall729"><span class="annot"><span class="annottext">forall729 :: (Tryte -&gt; Bool) -&gt; Bool
+</span><a href="Dayan.Kernel.Conversion.html#forall729"><span class="hs-identifier hs-var hs-var">forall729</span></a></span></span><span> </span><span id="local-6989586621679100394"><span class="annot"><span class="annottext">Tryte -&gt; Bool
+</span><a href="#local-6989586621679100394"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Tryte -&gt; Bool) -&gt; [Tryte] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="annot"><span class="annottext">Tryte -&gt; Bool
+</span><a href="#local-6989586621679100394"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">[Tryte]
+</span><a href="Dayan.Core.Tryte.html#allTrytes"><span class="hs-identifier hs-var">allTrytes</span></a></span><span>
+</span><span id="line-343"></span></pre></body></html>

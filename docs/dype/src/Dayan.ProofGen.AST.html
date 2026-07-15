@@ -1,0 +1,259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE LambdaCase, OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html"><span class="hs-identifier">Dayan.ProofGen.AST</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Word16</span></span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">type</span><span> </span><span id="QName"><span class="annot"><a href="Dayan.ProofGen.AST.html#QName"><span class="hs-identifier hs-var">QName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">type</span><span> </span><span id="Name"><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-var">Name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">type</span><span> </span><span id="ModuleName"><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-var">ModuleName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="annot"><span class="hs-comment">-- | Agda &#27169;&#22359;&#21517; (Phase 4 &#21518;&#26399;&#26367;&#25442;&#20026; Agda.Syntax &#30495;&#23454;&#31867;&#22411;)</span></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">newtype</span><span> </span><span id="AgdaModuleName"><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaModuleName"><span class="hs-identifier hs-var">AgdaModuleName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AgdaModuleName"><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaModuleName"><span class="hs-identifier hs-var">AgdaModuleName</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="agdaModuleText"><span class="annot"><span class="annottext">AgdaModuleName -&gt; Text
+</span><a href="Dayan.ProofGen.AST.html#agdaModuleText"><span class="hs-identifier hs-var hs-var">agdaModuleText</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099030"><span id="local-6989586621679099036"><span id="local-6989586621679099040"><span class="annot"><span class="annottext">Int -&gt; AgdaModuleName -&gt; ShowS
+[AgdaModuleName] -&gt; ShowS
+AgdaModuleName -&gt; String
+(Int -&gt; AgdaModuleName -&gt; ShowS)
+-&gt; (AgdaModuleName -&gt; String)
+-&gt; ([AgdaModuleName] -&gt; ShowS)
+-&gt; Show AgdaModuleName
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AgdaModuleName -&gt; ShowS
+showsPrec :: Int -&gt; AgdaModuleName -&gt; ShowS
+$cshow :: AgdaModuleName -&gt; String
+show :: AgdaModuleName -&gt; String
+$cshowList :: [AgdaModuleName] -&gt; ShowS
+showList :: [AgdaModuleName] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679099045"><span id="local-6989586621679099050"><span class="annot"><span class="annottext">AgdaModuleName -&gt; AgdaModuleName -&gt; Bool
+(AgdaModuleName -&gt; AgdaModuleName -&gt; Bool)
+-&gt; (AgdaModuleName -&gt; AgdaModuleName -&gt; Bool) -&gt; Eq AgdaModuleName
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AgdaModuleName -&gt; AgdaModuleName -&gt; Bool
+== :: AgdaModuleName -&gt; AgdaModuleName -&gt; Bool
+$c/= :: AgdaModuleName -&gt; AgdaModuleName -&gt; Bool
+/= :: AgdaModuleName -&gt; AgdaModuleName -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">data</span><span> </span><span id="Type"><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-var">Type</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TSet"><span class="annot"><a href="Dayan.ProofGen.AST.html#TSet"><span class="hs-identifier hs-var">TSet</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TPi"><span class="annot"><a href="Dayan.ProofGen.AST.html#TPi"><span class="hs-identifier hs-var">TPi</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TApp"><span class="annot"><a href="Dayan.ProofGen.AST.html#TApp"><span class="hs-identifier hs-var">TApp</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TDef"><span class="annot"><a href="Dayan.ProofGen.AST.html#TDef"><span class="hs-identifier hs-var">TDef</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#QName"><span class="hs-identifier hs-type">QName</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TNat"><span class="annot"><a href="Dayan.ProofGen.AST.html#TNat"><span class="hs-identifier hs-var">TNat</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TFin"><span class="annot"><a href="Dayan.ProofGen.AST.html#TFin"><span class="hs-identifier hs-var">TFin</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TVec"><span class="annot"><a href="Dayan.ProofGen.AST.html#TVec"><span class="hs-identifier hs-var">TVec</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="TFun"><span class="annot"><a href="Dayan.ProofGen.AST.html#TFun"><span class="hs-identifier hs-var">TFun</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099065"><span id="local-6989586621679099086"><span id="local-6989586621679099089"><span class="annot"><span class="annottext">Int -&gt; Type -&gt; ShowS
+[Type] -&gt; ShowS
+Type -&gt; String
+(Int -&gt; Type -&gt; ShowS)
+-&gt; (Type -&gt; String) -&gt; ([Type] -&gt; ShowS) -&gt; Show Type
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Type -&gt; ShowS
+showsPrec :: Int -&gt; Type -&gt; ShowS
+$cshow :: Type -&gt; String
+show :: Type -&gt; String
+$cshowList :: [Type] -&gt; ShowS
+showList :: [Type] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099092"><span id="local-6989586621679099110"><span class="annot"><span class="annottext">Type -&gt; Type -&gt; Bool
+(Type -&gt; Type -&gt; Bool) -&gt; (Type -&gt; Type -&gt; Bool) -&gt; Eq Type
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Type -&gt; Type -&gt; Bool
+== :: Type -&gt; Type -&gt; Bool
+$c/= :: Type -&gt; Type -&gt; Bool
+/= :: Type -&gt; Type -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">data</span><span> </span><span id="Term"><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-var">Term</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Var"><span class="annot"><a href="Dayan.ProofGen.AST.html#Var"><span class="hs-identifier hs-var">Var</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Def"><span class="annot"><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-var">Def</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#QName"><span class="hs-identifier hs-type">QName</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="App"><span class="annot"><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Lam"><span class="annot"><a href="Dayan.ProofGen.AST.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Pi"><span class="annot"><a href="Dayan.ProofGen.AST.html#Pi"><span class="hs-identifier hs-var">Pi</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Lit"><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Refl"><span class="annot"><a href="Dayan.ProofGen.AST.html#Refl"><span class="hs-identifier hs-var">Refl</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Sym"><span class="annot"><a href="Dayan.ProofGen.AST.html#Sym"><span class="hs-identifier hs-var">Sym</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Trans"><span class="annot"><a href="Dayan.ProofGen.AST.html#Trans"><span class="hs-identifier hs-var">Trans</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Cong"><span class="annot"><a href="Dayan.ProofGen.AST.html#Cong"><span class="hs-identifier hs-var">Cong</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Subst"><span class="annot"><a href="Dayan.ProofGen.AST.html#Subst"><span class="hs-identifier hs-var">Subst</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Ann"><span class="annot"><a href="Dayan.ProofGen.AST.html#Ann"><span class="hs-identifier hs-var">Ann</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="Hole"><span class="annot"><a href="Dayan.ProofGen.AST.html#Hole"><span class="hs-identifier hs-var">Hole</span></a></span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099126"><span id="local-6989586621679099161"><span id="local-6989586621679099164"><span class="annot"><span class="annottext">Int -&gt; Term -&gt; ShowS
+[Term] -&gt; ShowS
+Term -&gt; String
+(Int -&gt; Term -&gt; ShowS)
+-&gt; (Term -&gt; String) -&gt; ([Term] -&gt; ShowS) -&gt; Show Term
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Term -&gt; ShowS
+showsPrec :: Int -&gt; Term -&gt; ShowS
+$cshow :: Term -&gt; String
+show :: Term -&gt; String
+$cshowList :: [Term] -&gt; ShowS
+showList :: [Term] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099167"><span id="local-6989586621679099193"><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Bool
+(Term -&gt; Term -&gt; Bool) -&gt; (Term -&gt; Term -&gt; Bool) -&gt; Eq Term
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Term -&gt; Term -&gt; Bool
+== :: Term -&gt; Term -&gt; Bool
+$c/= :: Term -&gt; Term -&gt; Bool
+/= :: Term -&gt; Term -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">data</span><span> </span><span id="Lit"><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="LNat"><span class="annot"><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word16</span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="LZero"><span class="annot"><a href="Dayan.ProofGen.AST.html#LZero"><span class="hs-identifier hs-var">LZero</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="LSuc"><span class="annot"><a href="Dayan.ProofGen.AST.html#LSuc"><span class="hs-identifier hs-var">LSuc</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099199"><span id="local-6989586621679099206"><span id="local-6989586621679099209"><span class="annot"><span class="annottext">Int -&gt; Lit -&gt; ShowS
+[Lit] -&gt; ShowS
+Lit -&gt; String
+(Int -&gt; Lit -&gt; ShowS)
+-&gt; (Lit -&gt; String) -&gt; ([Lit] -&gt; ShowS) -&gt; Show Lit
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Lit -&gt; ShowS
+showsPrec :: Int -&gt; Lit -&gt; ShowS
+$cshow :: Lit -&gt; String
+show :: Lit -&gt; String
+$cshowList :: [Lit] -&gt; ShowS
+showList :: [Lit] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099212"><span id="local-6989586621679099219"><span class="annot"><span class="annottext">Lit -&gt; Lit -&gt; Bool
+(Lit -&gt; Lit -&gt; Bool) -&gt; (Lit -&gt; Lit -&gt; Bool) -&gt; Eq Lit
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Lit -&gt; Lit -&gt; Bool
+== :: Lit -&gt; Lit -&gt; Bool
+$c/= :: Lit -&gt; Lit -&gt; Bool
+/= :: Lit -&gt; Lit -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">data</span><span> </span><span id="Pattern"><span class="annot"><a href="Dayan.ProofGen.AST.html#Pattern"><span class="hs-identifier hs-var">Pattern</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PVar"><span class="annot"><a href="Dayan.ProofGen.AST.html#PVar"><span class="hs-identifier hs-var">PVar</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="PCon"><span class="annot"><a href="Dayan.ProofGen.AST.html#PCon"><span class="hs-identifier hs-var">PCon</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#QName"><span class="hs-identifier hs-type">QName</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Pattern"><span class="hs-identifier hs-type">Pattern</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="PLit"><span class="annot"><a href="Dayan.ProofGen.AST.html#PLit"><span class="hs-identifier hs-var">PLit</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="PWild"><span class="annot"><a href="Dayan.ProofGen.AST.html#PWild"><span class="hs-identifier hs-var">PWild</span></a></span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099226"><span id="local-6989586621679099237"><span id="local-6989586621679099241"><span class="annot"><span class="annottext">Int -&gt; Pattern -&gt; ShowS
+[Pattern] -&gt; ShowS
+Pattern -&gt; String
+(Int -&gt; Pattern -&gt; ShowS)
+-&gt; (Pattern -&gt; String) -&gt; ([Pattern] -&gt; ShowS) -&gt; Show Pattern
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Pattern -&gt; ShowS
+showsPrec :: Int -&gt; Pattern -&gt; ShowS
+$cshow :: Pattern -&gt; String
+show :: Pattern -&gt; String
+$cshowList :: [Pattern] -&gt; ShowS
+showList :: [Pattern] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099244"><span id="local-6989586621679099254"><span class="annot"><span class="annottext">Pattern -&gt; Pattern -&gt; Bool
+(Pattern -&gt; Pattern -&gt; Bool)
+-&gt; (Pattern -&gt; Pattern -&gt; Bool) -&gt; Eq Pattern
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Pattern -&gt; Pattern -&gt; Bool
+== :: Pattern -&gt; Pattern -&gt; Bool
+$c/= :: Pattern -&gt; Pattern -&gt; Bool
+/= :: Pattern -&gt; Pattern -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">data</span><span> </span><span id="Clause"><span class="annot"><a href="Dayan.ProofGen.AST.html#Clause"><span class="hs-identifier hs-var">Clause</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Clause"><span class="annot"><a href="Dayan.ProofGen.AST.html#Clause"><span class="hs-identifier hs-var">Clause</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="clPats"><span class="annot"><span class="annottext">Clause -&gt; [Pattern]
+</span><a href="Dayan.ProofGen.AST.html#clPats"><span class="hs-identifier hs-var hs-var">clPats</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Pattern"><span class="hs-identifier hs-type">Pattern</span></a></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span id="clBody"><span class="annot"><span class="annottext">Clause -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#clBody"><span class="hs-identifier hs-var hs-var">clBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099261"><span id="local-6989586621679099267"><span id="local-6989586621679099271"><span class="annot"><span class="annottext">Int -&gt; Clause -&gt; ShowS
+[Clause] -&gt; ShowS
+Clause -&gt; String
+(Int -&gt; Clause -&gt; ShowS)
+-&gt; (Clause -&gt; String) -&gt; ([Clause] -&gt; ShowS) -&gt; Show Clause
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Clause -&gt; ShowS
+showsPrec :: Int -&gt; Clause -&gt; ShowS
+$cshow :: Clause -&gt; String
+show :: Clause -&gt; String
+$cshowList :: [Clause] -&gt; ShowS
+showList :: [Clause] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099274"><span id="local-6989586621679099279"><span class="annot"><span class="annottext">Clause -&gt; Clause -&gt; Bool
+(Clause -&gt; Clause -&gt; Bool)
+-&gt; (Clause -&gt; Clause -&gt; Bool) -&gt; Eq Clause
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Clause -&gt; Clause -&gt; Bool
+== :: Clause -&gt; Clause -&gt; Bool
+$c/= :: Clause -&gt; Clause -&gt; Bool
+/= :: Clause -&gt; Clause -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">data</span><span> </span><span id="Decl"><span class="annot"><a href="Dayan.ProofGen.AST.html#Decl"><span class="hs-identifier hs-var">Decl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DModule"><span class="annot"><a href="Dayan.ProofGen.AST.html#DModule"><span class="hs-identifier hs-var">DModule</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-type">ModuleName</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Decl"><span class="hs-identifier hs-type">Decl</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DOpen"><span class="annot"><a href="Dayan.ProofGen.AST.html#DOpen"><span class="hs-identifier hs-var">DOpen</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-type">ModuleName</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DOpenUsing"><span class="annot"><a href="Dayan.ProofGen.AST.html#DOpenUsing"><span class="hs-identifier hs-var">DOpenUsing</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-type">ModuleName</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DImport"><span class="annot"><a href="Dayan.ProofGen.AST.html#DImport"><span class="hs-identifier hs-var">DImport</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-type">ModuleName</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DPostulate"><span class="annot"><a href="Dayan.ProofGen.AST.html#DPostulate"><span class="hs-identifier hs-var">DPostulate</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DDef"><span class="annot"><a href="Dayan.ProofGen.AST.html#DDef"><span class="hs-identifier hs-var">DDef</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Clause"><span class="hs-identifier hs-type">Clause</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DData"><span class="annot"><a href="Dayan.ProofGen.AST.html#DData"><span class="hs-identifier hs-var">DData</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#ConDecl"><span class="hs-identifier hs-type">ConDecl</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DRewrite"><span class="annot"><a href="Dayan.ProofGen.AST.html#DRewrite"><span class="hs-identifier hs-var">DRewrite</span></a></span></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="DComment"><span class="annot"><a href="Dayan.ProofGen.AST.html#DComment"><span class="hs-identifier hs-var">DComment</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099292"><span id="local-6989586621679099323"><span id="local-6989586621679099327"><span class="annot"><span class="annottext">Int -&gt; Decl -&gt; ShowS
+[Decl] -&gt; ShowS
+Decl -&gt; String
+(Int -&gt; Decl -&gt; ShowS)
+-&gt; (Decl -&gt; String) -&gt; ([Decl] -&gt; ShowS) -&gt; Show Decl
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Decl -&gt; ShowS
+showsPrec :: Int -&gt; Decl -&gt; ShowS
+$cshow :: Decl -&gt; String
+show :: Decl -&gt; String
+$cshowList :: [Decl] -&gt; ShowS
+showList :: [Decl] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099331"><span id="local-6989586621679099355"><span class="annot"><span class="annottext">Decl -&gt; Decl -&gt; Bool
+(Decl -&gt; Decl -&gt; Bool) -&gt; (Decl -&gt; Decl -&gt; Bool) -&gt; Eq Decl
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Decl -&gt; Decl -&gt; Bool
+== :: Decl -&gt; Decl -&gt; Bool
+$c/= :: Decl -&gt; Decl -&gt; Bool
+/= :: Decl -&gt; Decl -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">data</span><span> </span><span id="ConDecl"><span class="annot"><a href="Dayan.ProofGen.AST.html#ConDecl"><span class="hs-identifier hs-var">ConDecl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConDecl"><span class="annot"><a href="Dayan.ProofGen.AST.html#ConDecl"><span class="hs-identifier hs-var">ConDecl</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="conName"><span class="annot"><span class="annottext">ConDecl -&gt; Text
+</span><a href="Dayan.ProofGen.AST.html#conName"><span class="hs-identifier hs-var hs-var">conName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">,</span><span> </span><span id="conType"><span class="annot"><span class="annottext">ConDecl -&gt; Type
+</span><a href="Dayan.ProofGen.AST.html#conType"><span class="hs-identifier hs-var hs-var">conType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099363"><span id="local-6989586621679099368"><span id="local-6989586621679099371"><span class="annot"><span class="annottext">Int -&gt; ConDecl -&gt; ShowS
+[ConDecl] -&gt; ShowS
+ConDecl -&gt; String
+(Int -&gt; ConDecl -&gt; ShowS)
+-&gt; (ConDecl -&gt; String) -&gt; ([ConDecl] -&gt; ShowS) -&gt; Show ConDecl
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConDecl -&gt; ShowS
+showsPrec :: Int -&gt; ConDecl -&gt; ShowS
+$cshow :: ConDecl -&gt; String
+show :: ConDecl -&gt; String
+$cshowList :: [ConDecl] -&gt; ShowS
+showList :: [ConDecl] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099374"><span id="local-6989586621679099378"><span class="annot"><span class="annottext">ConDecl -&gt; ConDecl -&gt; Bool
+(ConDecl -&gt; ConDecl -&gt; Bool)
+-&gt; (ConDecl -&gt; ConDecl -&gt; Bool) -&gt; Eq ConDecl
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ConDecl -&gt; ConDecl -&gt; Bool
+== :: ConDecl -&gt; ConDecl -&gt; Bool
+$c/= :: ConDecl -&gt; ConDecl -&gt; Bool
+/= :: ConDecl -&gt; ConDecl -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">data</span><span> </span><span id="AgdaFile"><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaFile"><span class="hs-identifier hs-var">AgdaFile</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="AgdaFile"><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaFile"><span class="hs-identifier hs-var">AgdaFile</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="fileOpts"><span class="annot"><span class="annottext">AgdaFile -&gt; Text
+</span><a href="Dayan.ProofGen.AST.html#fileOpts"><span class="hs-identifier hs-var hs-var">fileOpts</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span id="fileModule"><span class="annot"><span class="annottext">AgdaFile -&gt; Text
+</span><a href="Dayan.ProofGen.AST.html#fileModule"><span class="hs-identifier hs-var hs-var">fileModule</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#ModuleName"><span class="hs-identifier hs-type">ModuleName</span></a></span><span class="hs-special">,</span><span> </span><span id="fileDecls"><span class="annot"><span class="annottext">AgdaFile -&gt; [Decl]
+</span><a href="Dayan.ProofGen.AST.html#fileDecls"><span class="hs-identifier hs-var hs-var">fileDecls</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Decl"><span class="hs-identifier hs-type">Decl</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679099385"><span id="local-6989586621679099392"><span id="local-6989586621679099396"><span class="annot"><span class="annottext">Int -&gt; AgdaFile -&gt; ShowS
+[AgdaFile] -&gt; ShowS
+AgdaFile -&gt; String
+(Int -&gt; AgdaFile -&gt; ShowS)
+-&gt; (AgdaFile -&gt; String) -&gt; ([AgdaFile] -&gt; ShowS) -&gt; Show AgdaFile
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AgdaFile -&gt; ShowS
+showsPrec :: Int -&gt; AgdaFile -&gt; ShowS
+$cshow :: AgdaFile -&gt; String
+show :: AgdaFile -&gt; String
+$cshowList :: [AgdaFile] -&gt; ShowS
+showList :: [AgdaFile] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span id="local-6989586621679099399"><span id="local-6989586621679099405"><span class="annot"><span class="annottext">AgdaFile -&gt; AgdaFile -&gt; Bool
+(AgdaFile -&gt; AgdaFile -&gt; Bool)
+-&gt; (AgdaFile -&gt; AgdaFile -&gt; Bool) -&gt; Eq AgdaFile
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AgdaFile -&gt; AgdaFile -&gt; Bool
+== :: AgdaFile -&gt; AgdaFile -&gt; Bool
+$c/= :: AgdaFile -&gt; AgdaFile -&gt; Bool
+/= :: AgdaFile -&gt; AgdaFile -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="Dayan.ProofGen.AST.html#apps"><span class="hs-identifier hs-type">apps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">;</span><span> </span><span id="apps"><span class="annot"><span class="annottext">apps :: Term -&gt; [Term] -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#apps"><span class="hs-identifier hs-var hs-var">apps</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; Term -&gt; Term) -&gt; Term -&gt; [Term] -&gt; Term
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) b a.
+Foldable t =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldl</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span>
+</span><span id="line-25"></span><span class="annot"><a href="Dayan.ProofGen.AST.html#lams"><span class="hs-identifier hs-type">lams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Dayan.ProofGen.AST.html#Name"><span class="hs-identifier hs-type">Name</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">;</span><span> </span><span id="lams"><span class="annot"><span class="annottext">lams :: [Text] -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#lams"><span class="hs-identifier hs-var hs-var">lams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; [Text] -&gt; Term) -&gt; [Text] -&gt; Term -&gt; Term
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Text -&gt; Term -&gt; Term) -&gt; Term -&gt; [Text] -&gt; Term
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="annot"><a href="Dayan.ProofGen.AST.html#plusOne"><span class="hs-identifier hs-type">plusOne</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">;</span><span> </span><span id="plusOne"><span class="annot"><span class="annottext">plusOne :: Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#plusOne"><span class="hs-identifier hs-var hs-var">plusOne</span></a></span></span><span> </span><span id="local-6989586621679099414"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679099414"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-var">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;+&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679099414"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="annot"><a href="Dayan.ProofGen.AST.html#modThree"><span class="hs-identifier hs-type">modThree</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">;</span><span> </span><span id="modThree"><span class="annot"><span class="annottext">modThree :: Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#modThree"><span class="hs-identifier hs-var hs-var">modThree</span></a></span></span><span> </span><span id="local-6989586621679099416"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679099416"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Term -&gt; Term -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#App"><span class="hs-identifier hs-var">App</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Def"><span class="hs-identifier hs-var">Def</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_%_&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621679099416"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Lit -&gt; Term
+</span><a href="Dayan.ProofGen.AST.html#Lit"><span class="hs-identifier hs-var">Lit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word16 -&gt; Lit
+</span><a href="Dayan.ProofGen.AST.html#LNat"><span class="hs-identifier hs-var">LNat</span></a></span><span> </span><span class="annot"><span class="annottext">Word16
+</span><span class="hs-number">3</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span></pre></body></html>
