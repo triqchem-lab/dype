@@ -27,6 +27,8 @@ module Dayan.Kernel.Conversion
   , convTrit, convTryte, orbitEqual
   -- * CRT 投影比对
   , crtEqual
+  -- * T6 CRT (排序编码, 对齐 Agda polarCRT/toroidalCRT)
+  , t6PolarCRT, t6ToroidalCRT, t6CrtEqual
   -- * 类型/项转换
   , convType, convTerm
   -- * 穷举验证
@@ -35,7 +37,7 @@ module Dayan.Kernel.Conversion
 
 import Data.Word (Word8, Word16)
 import Dayan.Core.Trit   (Trit(..))
-import Dayan.Core.Tryte  (Tryte(..), allTrytes, tritAt)
+import Dayan.Core.Tryte  (Tryte(..), allTrytes, tritAt, sortedPolarCRT, sortedToroidalCRT)
 import Dayan.Core.Torus  (TorusPoint(..))
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
 import Dayan.Compute.Orbit (a4Group, a4Action)
@@ -120,9 +122,31 @@ orbitEqual :: Tryte -> Tryte -> Bool
 orbitEqual a b = any (\g -> a4Action g a == b) a4Group
 
 -- | CRT 投影等价: polar 和 toroidal 余数都相同
+--   注意: 作用于 torus grid 索引 (0..6623), 使用位置 %144/%46
 crtEqual :: Word16 -> Word16 -> Bool
 crtEqual a b =
   lookupPolar a == lookupPolar b && lookupToroidal a == lookupToroidal b
+
+----------------------------------------------------------------------
+-- 6b. T6 CRT — 排序编码投影 (对齐 Agda polarCRT/toroidalCRT)
+----------------------------------------------------------------------
+
+-- | T6 格点极向 CRT 投影 (排序编码 → %144)
+--   对齐 Agda: polarCRT p = gf3Toℕ p % 144
+t6PolarCRT :: Tryte -> Word8
+t6PolarCRT = sortedPolarCRT
+
+-- | T6 格点环向 CRT 投影 (排序编码 → %46)
+--   对齐 Agda: toroidalCRT p = gf3Toℕ p % 46
+t6ToroidalCRT :: Tryte -> Word8
+t6ToroidalCRT = sortedToroidalCRT
+
+-- | T6 CRT 等价: 排序编码的极向+环向投影均相同
+--   对齐 Agda: polarCRT a ≡ polarCRT b ∧ toroidalCRT a ≡ toroidalCRT b
+--   A4 不变: 同轨道格点 → True (排序编码消除置换效应)
+t6CrtEqual :: Tryte -> Tryte -> Bool
+t6CrtEqual a b =
+  t6PolarCRT a == t6PolarCRT b && t6ToroidalCRT a == t6ToroidalCRT b
 
 ----------------------------------------------------------------------
 -- 6. 类型/项转换 (格点比对替代 βη 归约)

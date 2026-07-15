@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import Dayan.Core.Trit
 import Dayan.Core.Tryte (Tryte(..), unTryte, mkTryte, mkTryteSafe, minTryte, maxTryte, balanceTryte,
   encode, decode, decodeRaw, tritAt, setTrit,
-  allTrytes, findTryte)
+  allTrytes, findTryte, sortedToNat, sortedPolarCRT, sortedToroidalCRT)
 import qualified Dayan.Core.Tryte as Tryte
 import Dayan.Core.Torus
 import qualified Dayan.Core.Torus as Torus
@@ -18,7 +18,8 @@ import qualified Dayan.Compute.Cascade as Cascade
 import Dayan.ProofGen.AST
 import Dayan.ProofGen.Emit
 import Dayan.ProofGen.Templates
-import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729)
+import Dayan.Kernel.Conversion (Cmp(..), compareTryte, compareTorus, orbitEqual, crtEqual, forall729,
+  t6CrtEqual, t6PolarCRT, t6ToroidalCRT, normalizeTorus)
 import Dayan.Parse.Dy (parseDy, parseOpts)
 import Data.Either (isLeft)
 import Dayan.Compute.Orbit
@@ -367,5 +368,17 @@ main = hspec $ do
     context "CRT 投影等价" $ do
       it "同余-自身" $ crtEqual 0 0 `shouldBe` True
       it "不同余-自身" $ crtEqual 0 1 `shouldBe` False
+    context "T6 CRT (排序编码, 对齐 Agda polarCRT/toroidalCRT)" $ do
+      it "sortedToNat A4不变: 同一轨道格点等值" $
+        let t = mkTryte 364  -- 平衡点 (全 Z)
+            orbitPts = map (\g -> a4Action g t) a4Group
+            encodedVals = map sortedToNat orbitPts
+        in all (== head encodedVals) encodedVals `shouldBe` True
+      it "t6CrtEqual 同轨道 True" $
+        let t = mkTryte 364
+            g = a4Group !! 1
+        in t6CrtEqual t (a4Action g t) `shouldBe` True
+      it "t6CrtEqual 不同格点 False" $
+        t6CrtEqual (mkTryte 0) (mkTryte 1) `shouldBe` False
     context "穷举" $ do
       it "∀Tryte n == n" $ forall729 (\t -> compareTryte t t == Equal) `shouldBe` True

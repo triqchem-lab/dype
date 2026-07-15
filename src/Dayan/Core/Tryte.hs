@@ -160,3 +160,48 @@ findTryte :: (Tryte -> Bool) -> Maybe Tryte
 findTryte p = case filter p allTrytes of
                 []    -> Nothing
                 (t:_) -> Just t
+
+----------------------------------------------------------------------
+-- 7. A4-不变排序编码 (对齐 Agda gf3Toℕ + sort4)
+----------------------------------------------------------------------
+
+-- | sort4: 对 4 个 ℕ 值 (∈{0,1,2}) 升序排列
+--   对齐 Agda T6.agda sort4 (5比较器排序网络)
+--   策略: 计数重构 (与排序网络结果等义, 效率更高)
+sort4 :: [Int] -> [Int]
+sort4 [a,b,c,d] =
+  let c0 = count 0; c1 = count 1
+  in replicate c0 0 ++ replicate c1 1 ++ replicate (4-c0-c1) 2
+  where count v = length [x | x <- [a,b,c,d], x == v]
+sort4 _ = [0,0,0,0]
+
+-- | 排序编码: T6 格点 → ℕ [0, 728]
+--   对齐 Agda gf3Toℕ (前4坐标排序 + 后2坐标位置编码)
+--   公式: s₀ + 3·s₁ + 9·s₂ + 27·s₃ + 81·v₄ + 243·v₅
+--   其中 (s₀..s₃) = sort4(v₀..v₃)
+--   性质: A4 置换不变 (同轨道格点 → 相同编码值)
+sortedToNat :: Tryte -> Word16
+sortedToNat (Tryte n) =
+  let raw = toNatList' (fromIntegral n)
+      (front4, back2) = splitAt 4 raw
+      sorted4 = sort4 (map fromIntegral front4)
+      all6 = sorted4 ++ map fromIntegral back2
+  in encode6 all6
+
+-- | 排序编码 → 极向 CRT 投影 (对齐 Agda polarCRT)
+sortedPolarCRT :: Tryte -> Word8
+sortedPolarCRT t = fromIntegral (sortedToNat t `rem` 144)
+
+-- | 排序编码 → 环向 CRT 投影 (对齐 Agda toroidalCRT)
+sortedToroidalCRT :: Tryte -> Word8
+sortedToroidalCRT t = fromIntegral (sortedToNat t `rem` 46)
+
+-- 内部: Word16 → [Word8] (第 i 个 Trit 的 ℕ 值)
+toNatList' :: Word16 -> [Word8]
+toNatList' n = [ fromIntegral ((n `div` (3^i)) `mod` 3) | i <- [(0::Int)..5] ]
+
+-- 内部: 6 个 ℕ Trit → Word16 编码
+encode6 :: [Int] -> Word16
+encode6 = go 0 1
+  where go acc _ [] = acc
+        go acc w (t:ts) = go (acc + w * fromIntegral t) (w*3) ts
