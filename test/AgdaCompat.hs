@@ -65,7 +65,7 @@ testFile succeedDir agdaTestDir fp = do
                           else ["--include-path=" <> succeedDir]
           extraFlags = perFileFlags fp
       sysEnv <- getEnvironment
-      let procEnv = sysEnv ++ varsEnv
+      let procEnv = sysEnv ++ varsEnv ++ perFileEnv fp
           cp = (proc "agda" (includeFlags ++ extraFlags ++ [fp]))
                  { env = Just procEnv }
       (exit, _, stderr) <- readCreateProcessWithExitCode cp ""
@@ -103,6 +103,13 @@ perFileFlags :: FilePath -> [String]
 perFileFlags fp
   | "ExecAgda" `isInfixOf` fp = ["--allow-exec"]
   | otherwise                 = []
+
+-- | 逐文件环境变量: ~/.dype/ 作为 dype 的配置目录
+perFileEnv :: FilePath -> [(String, String)]
+perFileEnv fp
+  | "ExecAgda" `isInfixOf` fp = [("AGDA_DIR", home ++ "/.dype")]
+  | otherwise                 = []
+  where home = "/home/yanli"
 
 main :: IO ()
 main = do
