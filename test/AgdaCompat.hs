@@ -30,8 +30,17 @@ data FileResult
   = ParseFail String
   | VerifyFail Text AgdaCompatIssue
   | VerifyOk
-  | WarnOk        -- .warn 文件存在, 预期失败 = 测试通过
+  | WarnOk              -- .warn 文件存在, 预期失败 = 测试通过
+  | MakefileDependent   -- 需要 Makefile 特殊准备 (与 Agda Tests.hs:94 一致)
   deriving (Show)
+
+-- | 需要 Makefile 特殊准备的测试 (从 Agda test/Succeed/Tests.hs:94 复制)
+-- Agda 测试套件自身也跳过这些测试: "Tests that get special preparation from the Makefile"
+makefileDependent :: [String]
+makefileDependent = ["ExecAgda"]
+
+isMakefileDependent :: FilePath -> Bool
+isMakefileDependent fp = any (`isInfixOf` fp) makefileDependent
 
 scanDir :: FilePath -> FilePath -> FilePath -> IO ([FilePath], [FileResult])
 scanDir dir succeedDir agdaTestDir = do
@@ -41,7 +50,9 @@ scanDir dir succeedDir agdaTestDir = do
   pure (agdaFiles, results)
 
 testFile :: FilePath -> FilePath -> FilePath -> IO FileResult
-testFile succeedDir agdaTestDir fp = do
+testFile succeedDir agdaTestDir fp
+  | isMakefileDependent fp = pure MakefileDependent
+  | otherwise = do
   content <- TIO.readFile fp
   result <- parseAgdaFile fp content
   case result of
@@ -120,15 +131,18 @@ main = do
   let total = length results
       verifyOk   = length [() | VerifyOk <- results]
       warnOk     = length [() | WarnOk <- results]
+      mkDep      = length [() | MakefileDependent <- results]
       parseFail  = length [() | ParseFail _ <- results]
       verifyFail = length [() | VerifyFail _ _ <- results]
-      effective  = total
+      effective  = total - mkDep
       passRate   = 100.0 * fromIntegral (verifyOk + warnOk) / fromIntegral effective :: Double
       l1 = length [() | VerifyFail _ TheoryDiff <- results]
       l2 = length [() | VerifyFail _ ProofIssue <- results]
       l3 = length [() | VerifyFail _ Engineering <- results]
   putStrLn $ replicate 60 '='
   printf "Total files:      %d\n" total
+  printf "Makefile-dep:     %d (Agda 测试套件也跳过)\n" mkDep
+  printf "Effective:        %d\n" effective
   printf "Verify OK:        %d\n" verifyOk
   printf "Warn OK (.warn):  %d\n" warnOk
   printf "Pass rate:        %.1f%%\n" passRate
