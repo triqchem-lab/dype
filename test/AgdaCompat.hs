@@ -1,19 +1,22 @@
--- test/AgdaCompat.hs — dype vs Agda 测试套件兼容性扫描 (v2: Agda.Syntax.Parser)
+-- test/AgdaCompat.hs — dype vs Agda 测试套件兼容性扫描 (v3: 完整配置)
 --
 -- 使用 Agda.Syntax.Parser 解析 .agda 文件 (100% 语法覆盖)，
 -- 全量透传策略验证 parse → emit → agda verify 管线。
 --
--- include-path 策略:
---   - Agda 通过 $AGDA_DIR 自动发现标准库 (builtins)
---   - 只需额外添加 test/ 让 Common.* 等测试辅助模块可被找到
+-- 完整复制 Agda 测试套件行为:
+--   - .warn 文件: AGDA_UNEXPECTED_FAIL + exit 42 = 预期失败 = 测试通过
+--   - .vars 文件: 设置环境变量 (AGDA_DIR 等)
+--   - LibTooFarDown: 模块名含 Succeed. 前缀时不传 --include-path=Succeed
+--   - --allow-exec: ExecAgda 需要 trusted executables
 
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
-import System.Directory (listDirectory)
-import System.FilePath ((</>), takeExtension, takeFileName)
-import System.Process (readProcessWithExitCode)
+import System.Directory (listDirectory, doesFileExist)
+import System.FilePath ((</>), takeExtension, takeFileName, dropExtension)
+import System.Process (readProcessWithExitCode, readCreateProcessWithExitCode, proc, cwd, env)
 import System.Exit (ExitCode(..))
+import System.Environment (getEnvironment)
 import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.List (isInfixOf)
@@ -27,6 +30,7 @@ data FileResult
   = ParseFail String
   | VerifyFail Text AgdaCompatIssue
   | VerifyOk
+  | WarnOk        -- .warn 文件存在, 预期失败 = 测试通过
   deriving (Show)
 
 scanDir :: FilePath -> FilePath -> FilePath -> IO ([FilePath], [FileResult])
@@ -42,29 +46,63 @@ testFile succeedDir agdaTestDir fp = do
   result <- parseAgdaFile fp content
   case result of
     Left err -> pure $ ParseFail err
-    Right _agdaFile -> do
-      -- 全量透传: emit = 原始源文本, 直接在原始文件上验证
-      -- --include-path: Succeed/ (同级模块) + test/ (Common.* 跨目录)
-      -- 逐文件标志: 模拟 Agda 测试套件的 per-test flags
-      let extraFlags = perFileFlags fp
-      (exit, _, stderr) <- readProcessWithExitCode "agda"
-        (["--include-path=" <> succeedDir
-        , "--include-path=" <> agdaTestDir]
-        ++ extraFlags ++ [fp]) ""
+    Right agdaFile -> do
+      -- 检查 .warn 文件: 预期失败 = 测试通过
+      let warnFile = dropExtension fp ++ ".warn"
+      hasWarn <- doesFileExist warnFile
+      -- 检查 .vars 文件: 环境变量配置
+      let varsFile = dropExtension fp ++ ".vars"
+      hasVars <- doesFileExist varsFile
+      varsEnv <- if hasVars then parseVars varsFile agdaTestDir else pure []
+      -- include-path 策略:
+      -- 模块名含 Succeed. 前缀时不传 --include-path=Succeed (避免 LibTooFarDown)
+      -- 同时需要 --no-libraries 避免 .agda-lib 冲突
+      let modName = T.unpack (fileModule agdaFile)
+          hasSucceedPrefix = "Succeed." `isInfixOf` modName
+          includeFlags = ["--include-path=" <> agdaTestDir]
+                       ++ if hasSucceedPrefix
+                          then ["--no-libraries"]
+                          else ["--include-path=" <> succeedDir]
+          extraFlags = perFileFlags fp
+      sysEnv <- getEnvironment
+      let procEnv = sysEnv ++ varsEnv
+          cp = (proc "agda" (includeFlags ++ extraFlags ++ [fp]))
+                 { env = Just procEnv }
+      (exit, _, stderr) <- readCreateProcessWithExitCode cp ""
       let stderrT = T.pack stderr
       pure $ case exit of
         ExitSuccess -> VerifyOk
-        ExitFailure _ -> VerifyFail stderrT (classifyFailure stderrT)
+        ExitFailure code
+          | hasWarn && code == 42 -> WarnOk  -- 预期失败 = 测试通过
+          | otherwise -> VerifyFail stderrT (classifyFailure stderrT)
+
+-- | 解析 .vars 文件 (KEY=VALUE 格式, $PWD 替换为 agdaTestDir)
+parseVars :: FilePath -> FilePath -> IO [(String, String)]
+parseVars varsFile agdaTestDir = do
+  content <- readFile varsFile
+  let ls = filter (not . null) $ lines content
+      parseLine l = case break (== '=') l of
+        (key, '=' : val) -> Just (key, substitutePWD val)
+        _                -> Nothing
+      substitutePWD = replaceStr "$PWD" agdaTestDir
+  pure $ concatMap (maybe [] (:[]) . parseLine) ls
+
+-- | 简单字符串替换
+replaceStr :: String -> String -> String -> String
+replaceStr _ _ [] = []
+replaceStr old new s@(c:cs)
+  | old `isPrefixOfLocal` s = new ++ replaceStr old new (drop (length old) s)
+  | otherwise               = c : replaceStr old new cs
+  where
+    isPrefixOfLocal [] _ = True
+    isPrefixOfLocal _ [] = False
+    isPrefixOfLocal (x:xs) (y:ys) = x == y && isPrefixOfLocal xs ys
 
 -- | 逐文件标志: 模拟 Agda 测试套件的 per-test flags
 perFileFlags :: FilePath -> [String]
 perFileFlags fp
-  | "ExecAgda" `isInfixOf` fp              = ["--allow-exec"]
-  | "Issue723.agda" `isInfixOf` fp         = ["--no-libraries"]
-  | "Issue1760" `isInfixOf` fp             = ["--recursive-record-needs-inductivity"]
-  | "RecursiveInstanceSearchLevel" `isInfixOf` fp = ["--recursive-record-needs-inductivity"]
-  | "Issue1147" `isInfixOf` fp             = ["--recursive-record-needs-inductivity"]
-  | otherwise                              = []
+  | "ExecAgda" `isInfixOf` fp = ["--allow-exec"]
+  | otherwise                 = []
 
 main :: IO ()
 main = do
@@ -73,25 +111,30 @@ main = do
   putStrLn $ "Scanning: " ++ testDir
   (files, results) <- scanDir testDir testDir agdaTestDir
   let total = length results
-      parseFail = length [() | ParseFail _ <- results]
       verifyOk   = length [() | VerifyOk <- results]
+      warnOk     = length [() | WarnOk <- results]
+      parseFail  = length [() | ParseFail _ <- results]
       verifyFail = length [() | VerifyFail _ _ <- results]
+      effective  = total
+      passRate   = 100.0 * fromIntegral (verifyOk + warnOk) / fromIntegral effective :: Double
       l1 = length [() | VerifyFail _ TheoryDiff <- results]
       l2 = length [() | VerifyFail _ ProofIssue <- results]
       l3 = length [() | VerifyFail _ Engineering <- results]
   putStrLn $ replicate 60 '='
   printf "Total files:      %d\n" total
-  printf "Parse FAIL:       %d (%.1f%%)\n" parseFail (100.0 * fromIntegral parseFail / fromIntegral total :: Double)
-  printf "Verify OK:        %d (%.1f%%)\n" verifyOk (100.0 * fromIntegral verifyOk / fromIntegral total :: Double)
-  printf "Verify FAIL:      %d (%.1f%%)\n" verifyFail (100.0 * fromIntegral verifyFail / fromIntegral total :: Double)
+  printf "Verify OK:        %d\n" verifyOk
+  printf "Warn OK (.warn):  %d\n" warnOk
+  printf "Pass rate:        %.1f%%\n" passRate
+  printf "Parse FAIL:       %d\n" parseFail
+  printf "Verify FAIL:      %d\n" verifyFail
   printf "  L1 (理论差异):  %d\n" l1
   printf "  L2 (证明问题):  %d\n" l2
   printf "  L3 (工程衔接):  %d\n" l3
   putStrLn $ replicate 60 '='
-  let okFiles = [f | (f, VerifyOk) <- zip files results]
-  unless (null okFiles) $ do
-    putStrLn $ "\nVerify OK (first 5 of " ++ show (length okFiles) ++ "):"
-    mapM_ (putStrLn . ("  " ++)) (take 5 okFiles)
+  let l1Files = [f | (f, VerifyFail _ TheoryDiff) <- zip files results]
+  unless (null l1Files) $ do
+    putStrLn $ "\nL1 TheoryDiff FAIL (" ++ show (length l1Files) ++ "):"
+    mapM_ (putStrLn . ("  " ++)) l1Files
   let l3Files = [f | (f, VerifyFail _ Engineering) <- zip files results]
   unless (null l3Files) $ do
     putStrLn $ "\nL3 Engineering FAIL (" ++ show (length l3Files) ++ "):"

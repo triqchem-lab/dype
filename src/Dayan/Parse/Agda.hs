@@ -85,17 +85,22 @@ data AgdaCompatIssue
 
 classifyFailure :: Text -> AgdaCompatIssue
 classifyFailure err
+  | any (`T.isInfixOf` err) engMarkers    = Engineering
   | any (`T.isInfixOf` err) theoryMarkers = TheoryDiff
   | any (`T.isInfixOf` err) proofMarkers  = ProofIssue
   | otherwise                             = Engineering
   where
+    -- 工程标记优先: 这些是配置/环境问题, 不是理论差异
+    engMarkers =
+      [ "ExeNotTrusted", "SafeFlagPragma"
+      , "LibTooFarDown", "LibraryError"
+      , "trusted executables"
+      ]
     theoryMarkers =
       [ "Set₁", "Set₂", "Setω"
-      , "cubical", "Partial", "hcomp", "transp", "I"
-      , "with", "rewrite"
+      , "cubical", "Partial", "hcomp", "transp"
       , "coinductive", "∞"
       , "sized", "Size<"
-      , "unquote", "TC", "quoteTerm"
       , "Prop", "Propℓ"
       ]
     proofMarkers =
