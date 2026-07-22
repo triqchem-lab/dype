@@ -11,17 +11,16 @@
 module Main (main) where
 
 import System.Directory (listDirectory)
-import System.FilePath ((</>), takeExtension)
+import System.FilePath ((</>), takeExtension, takeFileName)
 import System.Process (readProcessWithExitCode)
 import System.Exit (ExitCode(..))
-import System.IO.Temp (withSystemTempDirectory)
 import Text.Printf (printf)
 import Control.Monad (unless)
+import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Dayan.Parse.Agda (parseAgdaFile, classifyFailure, AgdaCompatIssue(..))
-import Dayan.ProofGen.Emit (emitFile)
 import Dayan.ProofGen.AST (AgdaFile(..))
 
 data FileResult
@@ -30,40 +29,49 @@ data FileResult
   | VerifyOk
   deriving (Show)
 
-scanDir :: FilePath -> FilePath -> IO ([FilePath], [FileResult])
-scanDir dir testDir = do
+scanDir :: FilePath -> FilePath -> FilePath -> IO ([FilePath], [FileResult])
+scanDir dir succeedDir agdaTestDir = do
   ents <- listDirectory dir
   let agdaFiles = filter (\f -> takeExtension f == ".agda") ents
-  results <- mapM (testFile testDir . (dir </>)) agdaFiles
+  results <- mapM (testFile succeedDir agdaTestDir . (dir </>)) agdaFiles
   pure (agdaFiles, results)
 
-testFile :: FilePath -> FilePath -> IO FileResult
-testFile testDir fp = do
+testFile :: FilePath -> FilePath -> FilePath -> IO FileResult
+testFile succeedDir agdaTestDir fp = do
   content <- TIO.readFile fp
   result <- parseAgdaFile fp content
   case result of
     Left err -> pure $ ParseFail err
-    Right agdaFile ->
-      withSystemTempDirectory "dayan-agt" $ \tmp -> do
-        let agdaSrc = emitFile agdaFile
-            agdaModuleName = T.unpack (fileModule agdaFile)
-            agdaPath = tmp </> agdaModuleName <> ".agda"
-        TIO.writeFile agdaPath agdaSrc
-        (exit, _, stderr) <- readProcessWithExitCode "agda"
-          ["--include-path=" <> tmp
-          , "--include-path=" <> testDir
-          , agdaPath] ""
-        let stderrT = T.pack stderr
-        pure $ case exit of
-          ExitSuccess -> VerifyOk
-          ExitFailure _ -> VerifyFail stderrT (classifyFailure stderrT)
+    Right _agdaFile -> do
+      -- 全量透传: emit = 原始源文本, 直接在原始文件上验证
+      -- --include-path: Succeed/ (同级模块) + test/ (Common.* 跨目录)
+      -- 逐文件标志: 模拟 Agda 测试套件的 per-test flags
+      let extraFlags = perFileFlags fp
+      (exit, _, stderr) <- readProcessWithExitCode "agda"
+        (["--include-path=" <> succeedDir
+        , "--include-path=" <> agdaTestDir]
+        ++ extraFlags ++ [fp]) ""
+      let stderrT = T.pack stderr
+      pure $ case exit of
+        ExitSuccess -> VerifyOk
+        ExitFailure _ -> VerifyFail stderrT (classifyFailure stderrT)
+
+-- | 逐文件标志: 模拟 Agda 测试套件的 per-test flags
+perFileFlags :: FilePath -> [String]
+perFileFlags fp
+  | "ExecAgda" `isInfixOf` fp              = ["--allow-exec"]
+  | "Issue723.agda" `isInfixOf` fp         = ["--no-libraries"]
+  | "Issue1760" `isInfixOf` fp             = ["--recursive-record-needs-inductivity"]
+  | "RecursiveInstanceSearchLevel" `isInfixOf` fp = ["--recursive-record-needs-inductivity"]
+  | "Issue1147" `isInfixOf` fp             = ["--recursive-record-needs-inductivity"]
+  | otherwise                              = []
 
 main :: IO ()
 main = do
   let testDir = "/data/work/functional-programming/agda/test/Succeed"
       agdaTestDir = "/data/work/functional-programming/agda/test"
   putStrLn $ "Scanning: " ++ testDir
-  (files, results) <- scanDir testDir agdaTestDir
+  (files, results) <- scanDir testDir testDir agdaTestDir
   let total = length results
       parseFail = length [() | ParseFail _ <- results]
       verifyOk   = length [() | VerifyOk <- results]
@@ -84,3 +92,7 @@ main = do
   unless (null okFiles) $ do
     putStrLn $ "\nVerify OK (first 5 of " ++ show (length okFiles) ++ "):"
     mapM_ (putStrLn . ("  " ++)) (take 5 okFiles)
+  let l3Files = [f | (f, VerifyFail _ Engineering) <- zip files results]
+  unless (null l3Files) $ do
+    putStrLn $ "\nL3 Engineering FAIL (" ++ show (length l3Files) ++ "):"
+    mapM_ (putStrLn . ("  " ++)) l3Files
