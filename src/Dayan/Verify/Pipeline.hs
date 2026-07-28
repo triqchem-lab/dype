@@ -23,7 +23,11 @@ data VerifyResult = VerifyOk | VerifyFail [Text]
 -- | 完整管线: .dy 文本 → agda 验证
 --   Returns (module name, generated .agda, verification result)
 runPipeline :: Text -> IO (Text, Text, VerifyResult)
-runPipeline dySource = do
+runPipeline = runPipelineWithInclude []
+
+-- | 带额外 include-path 的管线 (用于 Sovereign 库依赖)
+runPipelineWithInclude :: [FilePath] -> Text -> IO (Text, Text, VerifyResult)
+runPipelineWithInclude extraPaths dySource = do
   case parseDy dySource of
     Left errs -> pure (T.pack (show errs), "", VerifyFail [T.pack (show errs)])
     Right (modName, agdaFile) -> do
@@ -36,8 +40,10 @@ runPipeline dySource = do
         createDirectoryIfMissing True agdaDir
         let agdaPath = agdaDir </> modFile
         TIO.writeFile agdaPath agdaSrc
+        let includeArgs = ["--include-path=" <> tmp]
+                       ++ ["--include-path=" <> p | p <- extraPaths]
         (exit, stdout, stderr) <- readProcessWithExitCode "agda"
-          ["--include-path=" <> tmp, agdaPath] ""
+          (includeArgs ++ [agdaPath]) ""
         let output = T.pack (stdout <> stderr)
         pure $ case exit of
           ExitSuccess -> VerifyOk

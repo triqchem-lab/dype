@@ -14,10 +14,15 @@ emitDecl = \case
   DOpen n -> ["open import " <> n]; DOpenUsing n ns -> ["open import " <> n <> " using (" <> T.intercalate "; " ns <> ")"]
   DImport n -> ["open import " <> n]; DPostulate n ty -> ["postulate", "  " <> n <> " : " <> emitType ty]
   DDef n ty cls -> map (\c -> n <> " : " <> emitType ty <> "\n" <> n <> " " <> emitClause c) cls
+  DClause n pats body -> [n <> " " <> T.unwords (map emitPattern pats) <> " = " <> emitTerm body]
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
   DRewrite n eq -> ["{-# REWRITE " <> n <> " #-}\n" <> "postulate\n  " <> n <> " : " <> emitTerm eq]
+  DInfix fx prec ops -> [emitFixity fx <> " " <> T.pack (show prec) <> " " <> T.unwords ops]
   DComment t -> ["-- " <> t]
   DPassThrough t -> [t]
+
+emitFixity :: Fixity -> Text
+emitFixity InfixL = "infixl"; emitFixity InfixR = "infixr"; emitFixity InfixN = "infix"
 
 emitClause :: Clause -> Text
 emitClause (Clause pats body) = T.intercalate " " (map emitPattern pats) <> " = " <> emitTerm body

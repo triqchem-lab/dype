@@ -33,11 +33,13 @@ library
         Dayan.Core.Torus
         Dayan.Core.Constants
         Dayan.Compute.CRT
+        Dayan.Compute.Det
         Dayan.Compute.Orbit
         Dayan.Compute.Cascade
         Dayan.Compute.ModArith
         Dayan.ProofGen.AST
         Dayan.ProofGen.Emit
+        Dayan.ProofGen.Jacobian
         Dayan.ProofGen.Templates
         Dayan.Verify.Pipeline
         Dayan.Parse.Dy
@@ -65,7 +67,8 @@ test-suite dype-test
         base,
         dype,
         hspec,
-        text
+        text,
+        vector
     default-language: Haskell2010
 
 test-suite agda-compat

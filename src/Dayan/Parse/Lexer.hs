@@ -19,6 +19,7 @@ data Token
   | TokSet | TokNat | TokFin | TokVec | TokRefl | TokHole
   | TokArrow | TokColon | TokEqual | TokLParen | TokRParen
   | TokDColon | TokVBar | TokSemi | TokUnderscore
+  | TokInfixl | TokInfixr | TokInfix | TokLambda | TokComma
   | TokName Text | TokNum Integer
   | TokComment Text
   deriving (Show, Eq)
@@ -43,6 +44,7 @@ lexDy = topLevel . T.unpack
     scanToken ('(':'_':cs) = (TokLParen, '_':cs)  -- 留 _ 给下次递归
     scanToken ('(' : cs) = (TokLParen, cs)
     scanToken (')' : cs) = (TokRParen, cs)
+    scanToken (',' : cs) = (TokComma, cs)
     scanToken (':' : ':' : cs) = (TokDColon, cs)
     scanToken (':' : cs) = (TokColon, cs)
     scanToken ('=' : cs) = (TokEqual, cs)
@@ -50,6 +52,7 @@ lexDy = topLevel . T.unpack
     scanToken ('|' : cs) = (TokVBar, cs)
     scanToken (';' : cs) = (TokSemi, cs)
     scanToken ('{' : '!' : '!' : '}' : cs) = (TokHole, cs)  -- {!!}
+    scanToken ('λ' : cs) = (TokLambda, cs)
     scanToken ('_' : cs)
       | null name = (TokUnderscore, rest)
       | otherwise = (TokName (T.pack ('_':name)), rest)
@@ -60,6 +63,8 @@ lexDy = topLevel . T.unpack
           in (keyword (T.pack name), rest)
       | isDigit c = let (n, rest) = scanNum (c:cs)
           in (TokNum n, rest)
+      | isSymbol c = let (name, rest) = scanName (c:cs)
+          in (TokName (T.pack name), rest)  -- 独立运算符: ≟, ≡, ⊕, ⊗ 等
       | otherwise = scanToken cs
 
 -- | 扫描 pragma: {-＃ ... ＃-}
@@ -84,6 +89,13 @@ scanName = go []
 
 isNameChar :: Char -> Bool
 isNameChar c = isAlpha c || isDigit c || elem c ['_', '\'', '.', '-', '?', '!'] || isSymbol c
+            || isUnicodeSubSuper c  -- ₀₁₂₃ 等下标/上标
+
+-- | Unicode 下标/上标数字 (Agda 标识符合法字符)
+isUnicodeSubSuper :: Char -> Bool
+isUnicodeSubSuper c = (c >= '\x2080' && c <= '\x2089')  -- ₀-₉
+                   || c `elem` ['\x2070','\x00B9','\x00B2','\x00B3']  -- ⁰¹²³
+                   || (c >= '\x2074' && c <= '\x2079')  -- ⁴-⁹
 
 -- | 扫描数字
 scanNum :: String -> (Integer, String)
@@ -108,6 +120,9 @@ keyword "using"     = TokUsing
 keyword "postulate" = TokPostulate
 keyword "data"      = TokData
 keyword "rewrite"   = TokRewrite
+keyword "infixl"    = TokInfixl
+keyword "infixr"    = TokInfixr
+keyword "infix"     = TokInfix
 keyword "Set"       = TokSet
 keyword "ℕ"         = TokNat
 keyword "Nat"       = TokNat

@@ -28,7 +28,12 @@ import Dayan.ProofGen.AST (AgdaModuleName(..))
 import Dayan.Compute.Orbit
 import Dayan.Algebra.GF9
 
-import Dayan.Verify.Pipeline (runPipeline, report, VerifyResult(..))
+import Dayan.Verify.Pipeline (runPipeline, runPipelineWithInclude, report, VerifyResult(..))
+import Dayan.Compute.Det (det2, det3, det3Fast, det4, det3Table,
+  identity2, identity3, identity4, zero3, zero4,
+  crtDecompose3, crtDetNonzero, crtDet3, crtDet4, CrtDetResult(..),
+  detNonzeroStructural, Mat3)
+import qualified Data.Vector.Unboxed as V
 import qualified Data.Text.IO as TIO
 
 import Dayan.Parse.Lexer (Token(..), lexDy)
@@ -592,3 +597,81 @@ main = hspec $ do
       case result of
         VerifyOk -> pure ()
         VerifyFail _ -> pure ()  -- 类型检查失败可接受, 只要 parse 成功
+
+    it "Det9x9Full.dy → parseDy → emit (任务 5.9 集成)" $ do
+      dySource <- TIO.readFile "test/Det9x9Full.dy"
+      (modName, agdaSrc, _result) <- runPipelineWithInclude
+        ["/data/work/discrete-mathematics/src"] dySource
+      -- 管线验证: parse + emit 成功
+      T.unpack modName `shouldSatisfy` ("Det9x9Full" `isInfixOf`)
+      let src = T.unpack agdaSrc
+      src `shouldSatisfy` ("module Det9x9Full where" `isInfixOf`)
+      src `shouldSatisfy` ("open import Sovereign.Base.Trit" `isInfixOf`)
+      src `shouldSatisfy` ("infixl 7" `isInfixOf`)
+      src `shouldSatisfy` ("M9" `isInfixOf`)
+      src `shouldSatisfy` ("det9" `isInfixOf`)
+      src `shouldSatisfy` ("test9" `isInfixOf`)
+
+  describe "Det — CRT 行列式引擎 (对齐 jac_CRTDet 拱顶石)" $ do
+    context "2×2 GF(3) det" $ do
+      it "det2(I₂) = Z (T₁)" $
+        det2 identity2 `shouldBe` Z
+      it "det2(swap) = P (-1=2)" $
+        det2 ((N, Z), (Z, N)) `shouldBe` P
+      it "det2(same cols) = N" $
+        det2 ((Z, Z), (Z, Z)) `shouldBe` N
+
+    context "3×3 GF(3) det — Sarrus" $ do
+      it "det3(I₃) = Z" $
+        det3 identity3 `shouldBe` Z
+      it "det3(zero) = N" $
+        det3 zero3 `shouldBe` N
+      it "det3(swap01) = P (-1)" $
+        det3 (N, Z, N, Z, N, N, N, N, Z) `shouldBe` P
+
+    context "3×3 查表 (19683 项)" $ do
+      it "det3Fast(I₃) = Z" $
+        det3Fast identity3 `shouldBe` Z
+      it "det3Fast(zero) = N" $
+        det3Fast zero3 `shouldBe` N
+      it "table size = 19683" $
+        V.length det3Table `shouldBe` 19683
+      it "∀ 19683: det3Fast ≡ det3 (0 mismatch)" $
+        length [() | idx <- [0..19682::Int],
+          let m = idxToMat3 idx, det3Fast m /= det3 m] `shouldBe` 0
+
+    context "4×4 Laplace → 3×3 归约" $ do
+      it "det4(I₄) = Z" $
+        det4 identity4 `shouldBe` Z
+      it "det4(zero) = N" $
+        det4 zero4 `shouldBe` N
+
+    context "CRT 分解 (拱顶石定理)" $ do
+      it "crtDecompose3(I₃): det₃=Z, det₄=1, nonzero=True" $ do
+        let r = crtDecompose3 identity3
+        crtDet3 r `shouldBe` Z
+        crtDet4 r `shouldBe` 1
+        crtDetNonzero r `shouldBe` True
+      it "crtDecompose3(zero): det₃=N, det₄=0, nonzero=False" $ do
+        let r = crtDecompose3 zero3
+        crtDet3 r `shouldBe` N
+        crtDet4 r `shouldBe` 0
+        crtDetNonzero r `shouldBe` False
+
+    context "结构判定 (jac_NMatrix)" $ do
+      it "id: NoZeroRow ∧ ColDistinct = True" $
+        detNonzeroStructural id `shouldBe` True
+      it "const 0: 非双射 = False" $
+        detNonzeroStructural (const 0) `shouldBe` False
+  where
+    idxToMat3 idx =
+      let (a, r1) = idx `divMod` 6561
+          (b, r2) = r1  `divMod` 2187
+          (c, r3) = r2  `divMod` 729
+          (d, r4) = r3  `divMod` 243
+          (e, r5) = r4  `divMod` 81
+          (f, r6) = r5  `divMod` 27
+          (g, r7) = r6  `divMod` 9
+          (h, i') = r7  `divMod` 3
+          toT 0 = N; toT 1 = Z; toT _ = P
+      in (toT a, toT b, toT c, toT d, toT e, toT f, toT g, toT h, toT i')

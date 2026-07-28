@@ -17,7 +17,8 @@ data Term = Var Name | Def QName | App Term Term | Lam Name Term | Pi Name Type 
 data Lit = LNat Word16 | LZero | LSuc Term deriving (Show,Eq)
 data Pattern = PVar Name | PCon QName [Pattern] | PLit Lit | PWild deriving (Show,Eq)
 data Clause = Clause { clPats :: [Pattern], clBody :: Term } deriving (Show,Eq)
-data Decl = DModule ModuleName [Decl] | DOpen ModuleName | DOpenUsing ModuleName [Name] | DImport ModuleName | DPostulate Name Type | DDef Name Type [Clause] | DData Name [Name] [ConDecl] | DRewrite Name Term | DComment Text | DPassThrough Text deriving (Show,Eq)
+data Decl = DModule ModuleName [Decl] | DOpen ModuleName | DOpenUsing ModuleName [Name] | DImport ModuleName | DPostulate Name Type | DDef Name Type [Clause] | DClause Name [Pattern] Term | DData Name [Name] [ConDecl] | DRewrite Name Term | DInfix Fixity Integer [Name] | DComment Text | DPassThrough Text deriving (Show,Eq)
+data Fixity = InfixL | InfixR | InfixN deriving (Show,Eq)
 data ConDecl = ConDecl { conName :: Name, conType :: Type } deriving (Show,Eq)
 data AgdaFile = AgdaFile { fileOpts :: Text, fileModule :: ModuleName, fileDecls :: [Decl] } deriving (Show,Eq)
 

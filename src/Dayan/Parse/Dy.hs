@@ -2,9 +2,12 @@
 --
 -- 支持完整 .dy 语法:
 --   pragma, module, open import, postulate, data, rewrite, defs
+--   infixl/infixr/infix 声明
+--   多参数函数定义: f x y = body
+--   lambda: λ x → body
+--   where 子句 (跳过/透传)
 --   类型: Set, Nat, Fin n, Vec A n, A -> B, (x : A) -> B
---   项: refl, 字面量, 变量, 应用, {!!}
---   运算符: _===_, _+_, _*_, _%_, _/_
+--   项: refl, 字面量, 变量, 应用, {!!}, 运算符
 --
 -- 不支持的语法会报 ParseError, 而非静默跳过。
 
@@ -13,6 +16,7 @@ module Dayan.Parse.Dy where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Char (isAlpha, isDigit)
 import Dayan.ProofGen.AST
 import Dayan.Parse.Lexer (Token(..), lexDy)
 
@@ -70,11 +74,31 @@ parseTopLevel (TokRewrite : rest) =
   let (decl, rest') = parseRewrite rest
       (errs, (opts, decls)) = parseTopLevel rest'
   in (errs, (opts, decl : decls))
+-- infixl/infixr/infix 声明
+parseTopLevel (TokInfixl : rest) =
+  let (decl, rest') = parseInfix InfixL rest
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
+parseTopLevel (TokInfixr : rest) =
+  let (decl, rest') = parseInfix InfixR rest
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
+parseTopLevel (TokInfix : rest) =
+  let (decl, rest') = parseInfix InfixN rest
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
+-- 类型签名: name : Type, 后跟可选的函数子句
 parseTopLevel (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
-      (body, rest'') = parseBody rest'
+      (clauses, rest'') = parseClauses name rest'
       (errs, (opts, decls)) = parseTopLevel rest''
-  in (errs, (opts, DDef name ty [Clause [] body] : decls))
+  in (errs, (opts, DDef name ty clauses : decls))
+-- 函数子句 (无类型签名): name args = body
+parseTopLevel (TokName name : rest)
+  | isClauseStart rest =
+      let (pats, body, rest') = parseClauseBody rest
+          (errs, (opts, decls)) = parseTopLevel rest'
+      in (errs, (opts, DClause name pats body : decls))
 parseTopLevel (TokComment c : rest) =
   let (errs, (opts, decls)) = parseTopLevel rest
   in (errs, (opts, DComment c : decls))
@@ -98,11 +122,28 @@ parseDecls (TokRewrite : rest) =
   let (d, rest') = parseRewrite rest
       (errs, ds) = parseDecls rest'
   in (errs, d : ds)
+parseDecls (TokInfixl : rest) =
+  let (d, rest') = parseInfix InfixL rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
+parseDecls (TokInfixr : rest) =
+  let (d, rest') = parseInfix InfixR rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
+parseDecls (TokInfix : rest) =
+  let (d, rest') = parseInfix InfixN rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
 parseDecls (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
-      (body, rest'') = parseBody rest'
+      (clauses, rest'') = parseClauses name rest'
       (errs, ds) = parseDecls rest''
-  in (errs, DDef name ty [Clause [] body] : ds)
+  in (errs, DDef name ty clauses : ds)
+parseDecls (TokName name : rest)
+  | isClauseStart rest =
+      let (pats, body, rest') = parseClauseBody rest
+          (errs, ds) = parseDecls rest'
+      in (errs, DClause name pats body : ds)
 parseDecls (t : rest) =
   let (errs, ds) = parseDecls rest
   in (unsupported t : errs, ds)
@@ -135,6 +176,11 @@ tokenText TokDColon         = "::"
 tokenText TokVBar           = "|"
 tokenText TokSemi           = ";"
 tokenText TokUnderscore     = "_"
+tokenText TokInfixl         = "infixl"
+tokenText TokInfixr         = "infixr"
+tokenText TokInfix          = "infix"
+tokenText TokLambda         = "λ"
+tokenText TokComma          = ","
 tokenText (TokName n)       = n
 tokenText (TokNum n)        = T.pack (show n)
 tokenText (TokComment _)    = "--"
@@ -142,6 +188,23 @@ tokenText (TokComment _)    = "--"
 -- 保留函数 (简化为不累积错误的版本, 供其他地方使用)
 parseDecls' :: [Token] -> [Decl]
 parseDecls' = snd . parseDecls
+
+----------------------------------------------------------------------
+-- Infix 声明
+----------------------------------------------------------------------
+
+parseInfix :: Fixity -> [Token] -> (Decl, [Token])
+parseInfix fx (TokNum prec : rest) =
+  let (ops, rest') = spanInfixOps rest
+  in (DInfix fx prec ops, rest')
+parseInfix fx rest = (DInfix fx 0 [], rest)
+
+-- | 收集 infix 声明中的运算符名 (直到遇到新声明开头)
+spanInfixOps :: [Token] -> ([Name], [Token])
+spanInfixOps (TokName n : rest)
+  | isNewDeclStart rest = ([n], rest)
+  | otherwise = let (more, rest') = spanInfixOps rest in (n : more, rest')
+spanInfixOps rest = ([], rest)
 
 ----------------------------------------------------------------------
 -- Import
@@ -209,7 +272,73 @@ parseRewrite (TokName name : TokColon : rest) =
 parseRewrite rest = (DRewrite "?" Hole, rest)
 
 ----------------------------------------------------------------------
--- Body
+-- Function clauses
+----------------------------------------------------------------------
+
+-- | 判断 token 流是否以函数子句开头 (name args = 或 name = )
+isClauseStart :: [Token] -> Bool
+isClauseStart (TokEqual : _) = True
+isClauseStart (TokName _ : rest) = isClauseStart rest
+isClauseStart (TokNum _ : rest) = isClauseStart rest
+isClauseStart (TokUnderscore : rest) = isClauseStart rest
+isClauseStart (TokLParen : _) = True  -- 模式匹配
+isClauseStart _ = False
+
+-- | 解析函数子句体: 收集 patterns 直到 =, 然后解析 body
+parseClauseBody :: [Token] -> ([Pattern], Term, [Token])
+parseClauseBody toks =
+  let (pats, rest) = collectPats toks
+  in case rest of
+    TokEqual : rest' ->
+      let (body, rest'') = parseTerm rest'
+          rest''' = skipWhereClause rest''
+      in (pats, body, rest''')
+    _ -> (pats, Hole, rest)
+
+-- | 收集 patterns (变量名) 直到遇到 =
+collectPats :: [Token] -> ([Pattern], [Token])
+collectPats (TokEqual : rest) = ([], TokEqual : rest)
+collectPats (TokName n : rest) =
+  let (more, rest') = collectPats rest
+  in (PVar n : more, rest')
+collectPats (TokNum n : rest) =
+  let (more, rest') = collectPats rest
+  in (PLit (LNat (fromIntegral n)) : more, rest')
+collectPats (TokUnderscore : rest) =
+  let (more, rest') = collectPats rest
+  in (PWild : more, rest')
+collectPats rest = ([], rest)
+
+-- | 解析类型签名后的函数子句
+-- 查找同名函数的子句: name pats = body
+parseClauses :: Name -> [Token] -> ([Clause], [Token])
+parseClauses name toks = case toks of
+  TokName n : rest | n == name ->
+    let (pats, body, rest') = parseClauseBody rest
+        (more, rest'') = parseClauses name rest'
+    in (Clause pats body : more, rest'')
+  _ -> ([], toks)
+
+-- | 跳过 where 子句 (where open import ... / where name : ...)
+skipWhereClause :: [Token] -> [Token]
+skipWhereClause (TokWhere : rest) = skipWhereBody rest
+skipWhereClause rest = rest
+
+skipWhereBody :: [Token] -> [Token]
+skipWhereBody (TokOpen : TokImport : rest) =
+  -- 跳过 open import X using (...)
+  case span (/= TokRParen) rest of
+    (_, TokRParen : after) -> skipWhereBody after
+    (_, []) -> []
+skipWhereBody (TokName _ : TokColon : rest) =
+  -- 跳过 where 内的类型签名和定义
+  let (_, rest') = parseType rest
+  in skipWhereBody rest'
+skipWhereBody (TokName _ : rest) = skipWhereBody rest
+skipWhereBody rest = rest
+
+----------------------------------------------------------------------
+-- Body (简化版, 供无子句的定义使用)
 ----------------------------------------------------------------------
 
 parseBody :: [Token] -> (Term, [Token])
@@ -264,39 +393,115 @@ parseTypeApp rest = (TSet, rest)
 
 parseTypeAppMore :: Type -> [Token] -> (Type, [Token])
 parseTypeAppMore acc (TokName n : rest)
-  | restStartsDecl rest = (acc, TokName n : rest)
+  | isNewDeclStart rest = (acc, TokName n : rest)
+  | isOperatorName n =
+      -- 中缀类型运算符: acc ≡ rhs → TApp (TApp (TDef "_≡_") acc) rhs
+      let (rhs, rest') = parseTypeApp rest
+      in (TApp (TApp (TDef (T.pack "_" <> n <> T.pack "_")) (typeToTerm acc)) (typeToTerm rhs), rest')
+  | isClauseLike (TokName n : rest) = (acc, TokName n : rest)
   | otherwise = parseTypeAppMore (TApp acc (Def n)) rest
 parseTypeAppMore acc (TokNum n : rest)
-  | restStartsDecl rest = (acc, TokNum n : rest)
+  | isNewDeclStart rest = (acc, TokNum n : rest)
   | otherwise = parseTypeAppMore (TApp acc (Lit (LNat (fromIntegral n)))) rest
 parseTypeAppMore acc rest = (acc, rest)
 
-restStartsDecl :: [Token] -> Bool
-restStartsDecl (TokColon : _) = True
-restStartsDecl _ = False
+-- | 前瞻检测: token 流是否看起来像函数子句 (name args = ...)
+-- 纯运算符名 (≡, ≤, ×) 不视为子句开头 — 它们是类型表达式的一部分
+isClauseLike :: [Token] -> Bool
+isClauseLike (TokName n : rest)
+  | isOperatorName n = False
+  | otherwise = isClauseLikeArgs rest
+isClauseLike _ = False
+
+isClauseLikeArgs :: [Token] -> Bool
+isClauseLikeArgs (TokEqual : _) = True
+isClauseLikeArgs (TokName _ : rest) = isClauseLikeArgs rest
+isClauseLikeArgs (TokNum _ : rest) = isClauseLikeArgs rest
+isClauseLikeArgs (TokUnderscore : rest) = isClauseLikeArgs rest
+isClauseLikeArgs _ = False
+
+-- | 纯运算符名: 不含字母/数字 (如 ≡, ≤, ×, ⊕, ⊗, _≡_)
+isOperatorName :: Text -> Bool
+isOperatorName n = not (T.null n) && T.all (\c -> not (isAlpha c || isDigit c)) n
+
+-- | 类型→项转换 (用于中缀类型运算符的参数)
+typeToTerm :: Type -> Term
+typeToTerm (TDef n) = Def n
+typeToTerm (TApp t e) = App (typeToTerm t) e
+typeToTerm TNat = Def "ℕ"
+typeToTerm TSet = Def "Set"
+typeToTerm (TFun a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
+typeToTerm (TFin n) = App (Def "Fin") n
+typeToTerm (TVec a n) = App (App (Def "Vec") (typeToTerm a)) n
+typeToTerm (TPi x a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
+
+-- | 判断后续 token 是否开始新声明 (用于类型/项解析终止)
+-- 只匹配确定性标志: 类型签名 (name :) 或关键字
+isNewDeclStart :: [Token] -> Bool
+isNewDeclStart (TokColon : _) = True
+isNewDeclStart (TokEqual : _) = True
+isNewDeclStart (TokName _ : TokColon : _) = True      -- name : Type (新类型签名)
+isNewDeclStart (TokInfixl : _) = True
+isNewDeclStart (TokInfixr : _) = True
+isNewDeclStart (TokInfix : _) = True
+isNewDeclStart (TokOpen : _) = True
+isNewDeclStart (TokPostulate : _) = True
+isNewDeclStart (TokData : _) = True
+isNewDeclStart (TokComment _ : _) = True
+isNewDeclStart _ = False
 
 ----------------------------------------------------------------------
 -- Term parsing
 ----------------------------------------------------------------------
 
 parseTerm :: [Token] -> (Term, [Token])
-parseTerm (TokName n : rest) = parseTermApp (Var n) rest
-parseTerm (TokNum n : rest) = (Lit (LNat (fromIntegral n)), rest)
-parseTerm (TokRefl : rest) = (Refl, rest)
-parseTerm (TokHole : rest) = (Hole, rest)
-parseTerm (TokLParen : rest) =
+parseTerm toks =
+  let (t, rest) = parseTermInner toks
+  in case rest of
+    TokComma : rest' ->
+      let (t2, rest'') = parseTerm rest'
+      in (App (App (Def "_,_") t) t2, rest'')
+    _ -> (t, rest)
+
+parseTermInner :: [Token] -> (Term, [Token])
+parseTermInner (TokLambda : rest) = parseLambda rest
+parseTermInner (TokName n : rest) = parseTermApp (Var n) rest
+parseTermInner (TokNum n : rest) = (Lit (LNat (fromIntegral n)), rest)
+parseTermInner (TokRefl : rest) = (Refl, rest)
+parseTermInner (TokHole : rest) = (Hole, rest)
+parseTermInner (TokLParen : rest) =
   let (t, rest') = parseTerm rest
   in case rest' of
     TokRParen : rest'' -> (t, rest'')
     _ -> (t, rest')
-parseTerm rest = (Hole, rest)
+parseTermInner rest = (Hole, rest)
+
+-- | Lambda 解析: λ x y → body
+parseLambda :: [Token] -> (Term, [Token])
+parseLambda (TokName x : rest) =
+  case rest of
+    TokArrow : rest' ->
+      let (body, rest'') = parseTerm rest'
+      in (Lam x body, rest'')
+    _ ->
+      -- 多参数 lambda: λ x y → body
+      let (body, rest') = parseLambda rest
+      in (Lam x body, rest')
+parseLambda rest = (Hole, rest)
 
 parseTermApp :: Term -> [Token] -> (Term, [Token])
-parseTermApp acc (TokName n : rest) | n /= "where" = parseTermApp (App acc (Def n)) rest
+parseTermApp acc (TokName n : rest)
+  | n == "where" = (acc, TokName n : rest)
+  | isNewDeclStart rest = (acc, TokName n : rest)
+  | otherwise = parseTermApp (App acc (Def n)) rest
 parseTermApp acc (TokNum n : rest) = parseTermApp (App acc (Lit (LNat (fromIntegral n)))) rest
 parseTermApp acc (TokLParen : rest) =
   let (t, rest') = parseTerm rest
   in case rest' of
     TokRParen : rest'' -> parseTermApp (App acc t) rest''
     _ -> (acc, rest)
+parseTermApp acc (TokComma : rest) =
+  -- pair 语法: (a , b) → App (App (Def "_,_") a) b
+  let (t2, rest') = parseTerm rest
+  in (App (App (Def "_,_") acc) t2, rest')
 parseTermApp acc rest = (acc, rest)
