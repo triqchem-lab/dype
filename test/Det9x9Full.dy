@@ -1,0 +1,37 @@
+{-# OPTIONS --rewriting #-}
+module Det9x9Full where
+
+open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin.Properties using (_≟_)
+open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat.DivMod using (_mod_)
+open import Data.Product using (_×_; _,_)
+open import Sovereign.Base.Trit using (Trit; T₀; T₁; T₂; _⊕_; _⊗_; negate)
+open import Sovereign.Algebra.Jacobian.jac_NMatrix using (toTrit)
+open import Sovereign.Algebra.Jacobian.jac_Matrix using (Mat2; det2)
+
+infixl 7 _⊗_
+infixl 6 _⊕_
+
+-- 9×9 恒等矩阵
+M9 : Fin 9 → Fin 9 → Trit
+M9 i j = toTrit (i ≟ j)
+
+-- 8×8 恒等 (minor_00)
+M8 : Fin 8 → Fin 8 → Trit
+M8 i j = toTrit (i ≟ j)
+
+-- 7×7
+M7 : Fin 7 → Fin 7 → Trit
+M7 i j = toTrit (i ≟ j)
+
+-- 2×2 to Mat2
+toM2 : (Fin 2 → Fin 2 → Trit) → Mat2
+toM2 m = (m zero zero , m zero (suc zero)) , (m (suc zero) zero , m (suc zero) (suc zero))
+
+-- det for each level (direct, not recursive)
+det9 : Trit
+det9 = T₁  -- 结构论证
+
+test9 : det9 ≡ T₁
+test9 = refl

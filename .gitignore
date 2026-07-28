@@ -10,3 +10,8 @@ cabal.sandbox.config
 *.dyn_hi
 stack.yaml
 test/Succeed/
+
+# direnv / venv
+.envrc
+.direnv/
+.venv/
