@@ -621,6 +621,13 @@ main = hspec $ do
       src `shouldSatisfy` ("det3-id" `isInfixOf`)
       result `shouldBe` VerifyOk
 
+    it "Det9x9Full.dy → parse → emit → agda verify → VerifyOk (Sovereign 库)" $ do
+      dySource <- TIO.readFile "test/Det9x9Full.dy"
+      (modName, agdaSrc, result) <- runPipelineWithInclude
+        ["/data/work/discrete-mathematics/src"] dySource
+      T.unpack modName `shouldSatisfy` ("Det9x9Full" `isInfixOf`)
+      result `shouldBe` VerifyOk
+
     it "DetPerf.dy → parseDy → emit (parse-only)" $ do
       dySource <- TIO.readFile "test/DetPerf.dy"
       (modName, agdaSrc, _result) <- runPipeline dySource
