@@ -1,8 +1,10 @@
--- CI cache bust v1: force full rebuild, avoid stale artifacts (2026-07-10)
-packages: Agda.cabal
+-- dype cabal project for GHC 9.14.1
+packages:
+  .
+  vendor/agda-syntax
 
-package Agda
-  flags: +debug +debug-parsing +debug-serialization +enable-cluster-counting +use-xdg-data-home -optimise-heavily
+package agda-syntax
+  flags: +debug +enable-cluster-counting
   documentation: False
 
 allow-newer: assoc:base
@@ -54,11 +56,3 @@ allow-newer: text-iso8601:time
 allow-newer: time-compat:time
 
 allow-newer: aeson:QuickCheck
-
-if arch(wasm32)
-  -- See https://github.com/haskellari/splitmix/pull/73. This is only required
-  -- for tests.
-  source-repository-package
-    type:     git
-    location: https://github.com/amesgen/splitmix.git
-    tag:      cea9e31bdd849eb0c17611bb99e33d590e126164
