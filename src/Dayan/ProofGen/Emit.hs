@@ -46,9 +46,19 @@ emitTerm = \case
   Sym p -> "sym " <> emitTerm p; Trans p q -> "trans " <> emitTerm p <> " " <> emitTerm q
   Cong f p -> "cong " <> emitTerm f <> " " <> emitTerm p
   Subst _ _ eq x -> "subst (λ _ → _) " <> emitTerm eq <> " " <> emitTerm x
-  App (App (Def "_,_") a) b -> "(" <> emitTerm a <> " , " <> emitTerm b <> ")"
+  -- 中缀运算符: App (App (Def "_op_") a) b → (a op b)
+  App (App (Def op) a) b | isInfixOp op ->
+    "(" <> emitTerm a <> " " <> stripUnderscores op <> " " <> emitTerm b <> ")"
   App f a -> emitTerm f <> " " <> emitTerm a
   Ann e t -> "(" <> emitTerm e <> " : " <> emitType t <> ")"; Pi _ _ _ -> "{! Pi !}"
+
+-- | 判断是否为中缀运算符名 (_xxx_ 形式)
+isInfixOp :: Text -> Bool
+isInfixOp t = T.length t >= 3 && T.head t == '_' && T.last t == '_'
+
+-- | 去掉首尾下划线: _≟_ → ≟, _⊕_ → ⊕
+stripUnderscores :: Text -> Text
+stripUnderscores t = T.drop 1 (T.dropEnd 1 t)
 
 emitLit :: Lit -> Text
 emitLit = \case; LNat n -> T.pack (show n); LZero -> "zero"; LSuc n -> "suc " <> emitTerm n
