@@ -20,6 +20,9 @@
 # 配置
 # ============================================================
 
+# 并行编译线程数 (0=自动, 1=串行)
+JFLAG ?= 0
+
 # 并行测试数 (默认 = CPU 核心数)
 PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
 
@@ -137,7 +140,7 @@ cubical-test: ## Cubical 核心修复验证
 	-rm -rf cubical/_build
 	@$(call decorate, "Cubical library test", \
 		/usr/bin/time $(MAKE) -C cubical \
-			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j0" RTS_OPTIONS=$(AGDA_OPTS))
+			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j$(JFLAG)" RTS_OPTIONS=$(AGDA_OPTS))
 	@echo ""
 	@echo "=== Cubical test summary ==="
 	@echo "Agda files: $$(find cubical/Cubical -name '*.agda' | wc -l)"
