@@ -39,8 +39,8 @@ tested-with:
     GHC == 9.2.8
 
 extra-doc-files:
-    CHANGELOG.md
-    README.md
+    ../CHANGELOG.md
+    ../README.md
     doc/user-manual/agda.svg
 
 extra-source-files:
