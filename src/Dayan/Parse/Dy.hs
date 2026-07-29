@@ -101,9 +101,9 @@ parseTopLevel (TokName name : TokColon : rest) =
 -- 函数子句 (无类型签名): name args = body
 parseTopLevel (TokName name : rest)
   | isClauseStart rest =
-      let (pats, body, rest') = parseClauseBody rest
+      let (pats, body, whereDecls, rest') = parseClauseBody rest
           (errs, (opts, decls)) = parseTopLevel rest'
-      in (errs, (opts, DClause name pats body : decls))
+      in (errs, (opts, whereDecls ++ [DClause name pats body] ++ decls))
 parseTopLevel (TokComment c : rest) =
   let (errs, (opts, decls)) = parseTopLevel rest
   in (errs, (opts, DComment c : decls))
@@ -150,9 +150,9 @@ parseDecls (TokName name : TokColon : rest) =
   in (errs, DDef name ty clauses : ds)
 parseDecls (TokName name : rest)
   | isClauseStart rest =
-      let (pats, body, rest') = parseClauseBody rest
+      let (pats, body, whereDecls, rest') = parseClauseBody rest
           (errs, ds) = parseDecls rest'
-      in (errs, DClause name pats body : ds)
+      in (errs, whereDecls ++ [DClause name pats body] ++ ds)
 parseDecls (t : rest) =
   let (errs, ds) = parseDecls rest
   in (unsupported t : errs, ds)
@@ -363,15 +363,16 @@ isClauseStart (TokLParen : _) = True  -- 模式匹配
 isClauseStart _ = False
 
 -- | 解析函数子句体: 收集 patterns 直到 =, 然后解析 body
-parseClauseBody :: [Token] -> ([Pattern], Term, [Token])
+-- 返回 (patterns, body, where-imports, remaining tokens)
+parseClauseBody :: [Token] -> ([Pattern], Term, [Decl], [Token])
 parseClauseBody toks =
   let (pats, rest) = collectPats toks
   in case rest of
     TokEqual : rest' ->
       let (body, rest'') = parseTerm rest'
-          rest''' = skipWhereClause rest''
-      in (pats, body, rest''')
-    _ -> (pats, Hole, rest)
+          (whereDecls, rest''') = collectWhereImports rest''
+      in (pats, body, whereDecls, rest''')
+    _ -> (pats, Hole, [], rest)
 
 -- | 收集 patterns (变量名) 直到遇到 =
 collectPats :: [Token] -> ([Pattern], [Token])
@@ -392,28 +393,28 @@ collectPats rest = ([], rest)
 parseClauses :: Name -> [Token] -> ([Clause], [Token])
 parseClauses name toks = case toks of
   TokName n : rest | n == name ->
-    let (pats, body, rest') = parseClauseBody rest
+    let (pats, body, _whereDecls, rest') = parseClauseBody rest
         (more, rest'') = parseClauses name rest'
     in (Clause pats body : more, rest'')
   _ -> ([], toks)
 
--- | 跳过 where 子句 (where open import ... / where name : ...)
-skipWhereClause :: [Token] -> [Token]
-skipWhereClause (TokWhere : rest) = skipWhereBody rest
-skipWhereClause rest = rest
+-- | 收集 where 子句中的 open import (提升为顶层)
+-- where open import X using (...) → DOpenUsing
+collectWhereImports :: [Token] -> ([Decl], [Token])
+collectWhereImports (TokWhere : rest) = collectWhereBody rest
+collectWhereImports rest = ([], rest)
 
-skipWhereBody :: [Token] -> [Token]
-skipWhereBody (TokOpen : TokImport : rest) =
-  -- 跳过 open import X using (...)
-  case span (/= TokRParen) rest of
-    (_, TokRParen : after) -> skipWhereBody after
-    (_, []) -> []
-skipWhereBody (TokName _ : TokColon : rest) =
+collectWhereBody :: [Token] -> ([Decl], [Token])
+collectWhereBody (TokOpen : TokImport : TokName mod : rest) =
+  let (decl, rest') = parseOpen mod rest
+      (more, rest'') = collectWhereBody rest'
+  in (decl : more, rest'')
+collectWhereBody (TokName _ : TokColon : rest) =
   -- 跳过 where 内的类型签名和定义
   let (_, rest') = parseType rest
-  in skipWhereBody rest'
-skipWhereBody (TokName _ : rest) = skipWhereBody rest
-skipWhereBody rest = rest
+  in collectWhereBody rest'
+collectWhereBody (TokName _ : rest) = collectWhereBody rest
+collectWhereBody rest = ([], rest)
 
 ----------------------------------------------------------------------
 -- Body (简化版, 供无子句的定义使用)
