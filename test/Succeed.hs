@@ -7,11 +7,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
-import System.Directory (listDirectory, doesDirectoryExist)
+import System.Directory (listDirectory, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>), takeExtension, makeRelative)
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, ExitCode(..))
+import System.Process (readProcessWithExitCode)
+import System.IO.Temp (withSystemTempDirectory)
+import System.Timeout (timeout)
 import Text.Printf (printf)
-import Control.Monad (unless, forM_)
+import Control.Monad (unless, forM_, forM)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import Dayan.Parse.Agda (parseAgdaFile)
@@ -65,6 +68,17 @@ main = do
 
   -- 允许 <5% 失败 (复杂语法边界)
   let passRate = 100.0 * fromIntegral ok / fromIntegral total :: Double
+
+  -- Phase 2: agda verify 冒烟测试
+  putStrLn "\n=== Phase 2: agda verify 冒烟测试 ==="
+  let agdaTestDir = "/data/work/functional-programming/agda/test"
+  smokeResults <- forM smokeFiles $ \rel -> do
+    r <- testSmoke agdaTestDir rel
+    putStrLn $ "  " ++ rel ++ ": " ++ show r
+    pure r
+  let smokeOk = length [() | SmokeOk <- smokeResults]
+  printf "Smoke: %d/%d OK\n" smokeOk (length smokeFiles)
+
   if passRate >= 95.0
     then putStrLn "\n✅ dype-succeed PASS"
     else do
@@ -87,3 +101,42 @@ testOne fp = do
           if length (fileDecls af2) == length (fileDecls af)
             then pure Ok
             else pure $ Fail $ "decl mismatch: " ++ show (length (fileDecls af)) ++ " → " ++ show (length (fileDecls af2))
+
+----------------------------------------------------------------------
+-- Phase 2: agda verify 冒烟测试 (≤4 自包含文件)
+----------------------------------------------------------------------
+
+smokeFiles :: [FilePath]
+smokeFiles =
+  [ "simple.agda"
+  , "Lambda.agda"
+  , "Nat.agda"
+  , "AbsurdLam.agda"
+  ]
+
+data SmokeResult = SmokeOk | SmokeFail String | SmokeSkip deriving (Show)
+
+testSmoke :: FilePath -> FilePath -> IO SmokeResult
+testSmoke agdaTestDir rel = do
+  let fp = agdaTestDir </> "Succeed" </> rel
+  exists <- doesFileExist fp
+  if not exists then pure SmokeSkip
+  else do
+    content <- TIO.readFile fp
+    r <- parseAgdaFile fp content
+    case r of
+      Left err -> pure $ SmokeFail ("parse: " ++ err)
+      Right af -> do
+        let emitted = emitFile af
+        withSystemTempDirectory "dype-succeed-smoke" $ \tmp -> do
+          let modParts = T.split (== '.') (fileModule af)
+              modFile = T.unpack (last modParts) ++ ".agda"
+          TIO.writeFile (tmp </> modFile) emitted
+          mResult <- timeout 10000000 $
+            readProcessWithExitCode "agda"
+              ["--include-path=" ++ tmp, "--include-path=" ++ agdaTestDir,
+               tmp </> modFile] ""
+          pure $ case mResult of
+            Nothing -> SmokeFail "timeout"
+            Just (ExitSuccess, _, _) -> SmokeOk
+            Just (ExitFailure _, _, stderr) -> SmokeFail (take 100 stderr)
