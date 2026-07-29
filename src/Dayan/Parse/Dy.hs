@@ -59,7 +59,7 @@ parseTopLevel [] = ([], ("", []))
 parseTopLevel (TokPragma p : rest) =
   let (errs, (more, decls)) = parseTopLevel rest
   in (errs, (p <> more, decls))
-parseTopLevel (TokOpen : TokImport : TokName mod : rest) =
+parseTopLevel (TokOpen : TokImport : TokName m : rest) =
   let (decl, rest') = parseOpen mod rest
       (errs, (opts, decls)) = parseTopLevel rest'
   in (errs, (opts, decl : decls))
@@ -224,10 +224,10 @@ spanInfixOps rest = ([], rest)
 ----------------------------------------------------------------------
 
 parseOpen :: Text -> [Token] -> (Decl, [Token])
-parseOpen mod (TokUsing : TokLParen : rest) =
+parseOpen m (TokUsing : TokLParen : rest) =
   let (names, after) = parseUsingList rest
   in (DOpenUsing mod names, skipOpenRest after)
-parseOpen mod rest = (DOpen mod, skipOpenRest rest)
+parseOpen m rest = (DOpen mod, skipOpenRest rest)
 
 parseUsingList :: [Token] -> ([Text], [Token])
 parseUsingList rest =
@@ -409,7 +409,7 @@ collectWhereImports (TokWhere : rest) = collectWhereBody rest
 collectWhereImports rest = ([], rest)
 
 collectWhereBody :: [Token] -> ([Decl], [Token])
-collectWhereBody (TokOpen : TokImport : TokName mod : rest) =
+collectWhereBody (TokOpen : TokImport : TokName m : rest) =
   let (decl, rest') = parseOpen mod rest
       (more, rest'') = collectWhereBody rest'
   in (decl : more, rest'')
@@ -538,6 +538,7 @@ typeToTerm (TFun a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
 typeToTerm (TFin n) = App (Def "Fin") n
 typeToTerm (TVec a n) = App (App (Def "Vec") (typeToTerm a)) n
 typeToTerm (TPi x a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
+typeToTerm (TPiImplicit _ a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
 
 -- | 判断后续 token 是否开始新声明 (用于类型/项解析终止)
 -- 只匹配确定性标志: 类型签名 (name :) 或关键字
