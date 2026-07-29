@@ -1,6 +1,38 @@
 # fix-whitespace config for dype
+#
+# * Removes trailing whitespace.
+# * Removes trailing lines containing nothing but whitespace.
+# * Ensures that the file ends in a newline character.
+
 excluded-dirs:
-  - ".git"
-  - ".stack-work"
-  - "config/.stack-work"
-  - "dist-newstyle"
+  - "**/MAlonzo"
+  - "**/dist*"
+  - .stack-work
+  - .git
+  - .direnv
+  - .venv
+  - dist-newstyle
+  - std-lib
+  - cubical
+  - test/Succeed/LineEndings
+
+included-files:
+  - "*.agda"
+  - "*.agda-lib"
+  - "*.cabal"
+  - "*.hs"
+  - "*.hs-boot"
+  - "*.lagda"
+  - "*.md"
+  - "*.yaml"
+  - "*.yml"
+  - "*.dy"
+
+excluded-files:
+  - "test/Succeed/Whitespace.agda"
+  - "test/Succeed/Issue1337.agda"
+  - "test/Succeed/Issue5545.agda"
+  - "test/Fail/Issue4506.agda"
+  - "test/Fail/Tabs.agda"
+  - "test/Fail/TabsInPragmas.agda"
+  - "vendor/agda-src/Agda/Syntax/Parser/Lexer.hs"
