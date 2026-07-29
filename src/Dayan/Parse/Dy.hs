@@ -274,7 +274,7 @@ parsePostulates toks = case toks of
 
 parseDataDecl :: [Token] -> (Decl, [Token])
 parseDataDecl (TokName name : TokColon : rest) =
-  let (ty, afterType) = parseType rest
+  let (_ty, afterType) = parseType rest    -- 解析类型以跳过, 不需要结果
   in case afterType of
     TokWhere : rest' ->
       let (cons, rest'') = parseConstructors rest'
@@ -537,7 +537,8 @@ typeToTerm TSet = Def "Set"
 typeToTerm (TFun a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
 typeToTerm (TFin n) = App (Def "Fin") n
 typeToTerm (TVec a n) = App (App (Def "Vec") (typeToTerm a)) n
-typeToTerm (TPi x a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
+typeToTerm (TPi x _a b) = App (App (Def "_→_") (typeToTerm _a)) (typeToTerm b)
+typeToTerm (TPiImplicit _ _a b) = App (App (Def "_→_") (typeToTerm _a)) (typeToTerm b)
 
 -- | 判断后续 token 是否开始新声明 (用于类型/项解析终止)
 -- 只匹配确定性标志: 类型签名 (name :) 或关键字
