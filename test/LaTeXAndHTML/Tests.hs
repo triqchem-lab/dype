@@ -195,7 +195,9 @@ mkLaTeXOrHTMLTest k copy agdaBin testDir inp =
                    , "--ignore-interfaces"
                    , "--no-libraries"
                    ] ++ extraFlags
-    when copy $ copyFile inp newFile
+    when copy $ do
+      absInp <- makeAbsolute inp
+      copyFile absInp newFile
     (exitcode, out, err) <- PT.readProcessWithExitCode agdaBin agdaArgs T.empty
     if exitcode /= ExitSuccess then
       AgdaFailed <$> do
