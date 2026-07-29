@@ -443,7 +443,7 @@ common language
 library
   import:           language
 
-  hs-source-dirs:   ../full ../setup
+  hs-source-dirs:   full setup
 
   -- Andreas, 2021-03-10:
   -- All packages we depend upon should be mentioned in an unconditional
@@ -1070,7 +1070,7 @@ executable agda-mode
 executable agda-tests
   import:           language
 
-  hs-source-dirs:   ../../test
+  hs-source-dirs:   ../test
   main-is:          Main.hs
   ghc-options:      -rtsopts
   other-modules:
