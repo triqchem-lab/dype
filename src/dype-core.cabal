@@ -1030,7 +1030,7 @@ executable agda
 executable agda-mode
   import:           language
 
-  hs-source-dirs:   agda-mode .
+  hs-source-dirs:   agda-mode full setup
   main-is:          Main.hs
   autogen-modules:
     Paths_dype_core

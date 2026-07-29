@@ -17,7 +17,7 @@ category:           Math, Proof Assistants
 build-type:         Simple
 
 common warnings
-    ghc-options: -Wall
+    ghc-options: -Wall -Wno-name-shadowing
 
 library
     import:           warnings
