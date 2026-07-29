@@ -27,13 +27,13 @@ PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
 # dype 类型检查器二进制 (从 vendor/agda-src 构建)
-AGDA_BIN ?= $(shell which agda)
+AGDA_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda/build/agda/agda
 
 # dype 测试目录 (自带)
 AGDA_TEST_DIR = test
 
 # Tasty 测试运行器 (从 dype 构建)
-AGDA_TESTS_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/Agda-2.9.0/x/agda-tests/build/agda-tests/agda-tests
+AGDA_TESTS_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda-tests/build/agda-tests/agda-tests
 
 # 构建工具
 CABAL ?= cabal
