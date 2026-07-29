@@ -628,13 +628,15 @@ main = hspec $ do
       T.unpack modName `shouldSatisfy` ("Det9x9Full" `isInfixOf`)
       result `shouldBe` VerifyOk
 
-    it "DetPerf.dy → parseDy → emit (parse-only)" $ do
+    it "DetPerf.dy → parse → emit → agda verify → VerifyOk (Sarrus)" $ do
       dySource <- TIO.readFile "test/DetPerf.dy"
-      (modName, agdaSrc, _result) <- runPipeline dySource
+      (modName, agdaSrc, result) <- runPipelineWithInclude
+        ["/data/work/discrete-mathematics/src"] dySource
       T.unpack modName `shouldSatisfy` ("DetPerf" `isInfixOf`)
       let src = T.unpack agdaSrc
       src `shouldSatisfy` ("module DetPerf where" `isInfixOf`)
       src `shouldSatisfy` ("det3" `isInfixOf`)
+      result `shouldBe` VerifyOk
 
     it "隐式参数 {A : Set} → A → A 解析" $ do
       let dySrc = "module TestImplicit where\n\nid : {A : Set} → A → A\nid x = x\n"
