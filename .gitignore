@@ -8,7 +8,6 @@ cabal.sandbox.config
 *.hi
 *.dyn_o
 *.dyn_hi
-stack.yaml
 *.yaml.lock
 test/Succeed/
 
