@@ -136,6 +136,11 @@ cubical-test: ## Cubical 核心修复验证
 	@$(call decorate, "Cubical library test", \
 		/usr/bin/time $(MAKE) -C cubical \
 			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j" RTS_OPTIONS=$(AGDA_OPTS))
+	@echo ""
+	@echo "=== Cubical test summary ==="
+	@echo "Agda files: $$(find cubical/Cubical -name '*.agda' | wc -l)"
+	@echo "Interface files (.agdai): $$(find cubical/_build -name '*.agdai' 2>/dev/null | wc -l)"
+	@echo "============================"
 
 .PHONY: cubical-succeed
 cubical-succeed: ## Cubical 成功测试
