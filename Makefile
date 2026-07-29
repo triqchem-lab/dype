@@ -104,8 +104,16 @@ test: ## 运行完整测试套件 (串行, CI 等价)
 	$(MAKE) std-lib-interaction
 
 .PHONY: test-quick
-test-quick: ## 快速测试 (common + succeed + fail)
-	$(MAKE) common succeed fail
+test-quick: ## 快速测试 (dype-test + agda-compat, 60s 内完成)
+	@echo "=== dype-test (hspec) ==="
+	timeout 60 $(CABAL) test dype-test --test-show-details=direct
+	@echo "=== agda-compat (前端 roundtrip + 冒烟) ==="
+	timeout 60 $(CABAL) test agda-compat --test-show-details=direct
+
+.PHONY: det-test
+det-test: ## Det 行列式专项测试
+	@echo "=== Det 专项测试 ==="
+	$(CABAL) test dype-test --test-show-details=direct --test-options="--match Det"
 
 .PHONY: test-using-std-lib
 test-using-std-lib: ## 标准库相关测试

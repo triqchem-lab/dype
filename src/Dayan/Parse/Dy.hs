@@ -403,6 +403,12 @@ parseTypeAppMore acc (TokName n : rest)
 parseTypeAppMore acc (TokNum n : rest)
   | isNewDeclStart rest = (acc, TokNum n : rest)
   | otherwise = parseTypeAppMore (TApp acc (Lit (LNat (fromIntegral n)))) rest
+parseTypeAppMore acc (TokLParen : rest) =
+  -- 括号内的项作为类型参数: det3 (λ i j → ...)
+  let (t, rest') = parseTerm rest
+  in case rest' of
+    TokRParen : rest'' -> parseTypeAppMore (TApp acc t) rest''
+    _ -> (TApp acc t, rest')
 parseTypeAppMore acc rest = (acc, rest)
 
 -- | 前瞻检测: token 流是否看起来像函数子句 (name args = ...)
@@ -456,25 +462,34 @@ isNewDeclStart _ = False
 
 parseTerm :: [Token] -> (Term, [Token])
 parseTerm toks =
-  let (t, rest) = parseTermInner toks
-  in case rest of
-    TokComma : rest' ->
-      let (t2, rest'') = parseTerm rest'
-      in (App (App (Def "_,_") t) t2, rest'')
-    _ -> (t, rest)
+  let (t, rest) = parseTermAtom toks
+  in parseTermContinuation t rest
 
-parseTermInner :: [Token] -> (Term, [Token])
-parseTermInner (TokLambda : rest) = parseLambda rest
-parseTermInner (TokName n : rest) = parseTermApp (Var n) rest
-parseTermInner (TokNum n : rest) = (Lit (LNat (fromIntegral n)), rest)
-parseTermInner (TokRefl : rest) = (Refl, rest)
-parseTermInner (TokHole : rest) = (Hole, rest)
-parseTermInner (TokLParen : rest) =
+-- | 项的后续: 逗号 (pair) 或中缀运算符 (左结合)
+parseTermContinuation :: Term -> [Token] -> (Term, [Token])
+parseTermContinuation t (TokComma : rest) =
+  let (t2, rest') = parseTerm rest
+  in parseTermContinuation (App (App (Def "_,_") t) t2) rest'
+parseTermContinuation t (TokName n : rest)
+  | isOperatorName n =
+      -- 中缀运算符: a ⊕ b → App (App (Def "_⊕_") a) b, 左结合
+      let (rhs, rest') = parseTermAtom rest
+      in parseTermContinuation (App (App (Def (T.pack "_" <> n <> T.pack "_")) t) rhs) rest'
+parseTermContinuation t rest = (t, rest)
+
+-- | 原子项 (不含中缀运算符): 用于运算符右侧
+parseTermAtom :: [Token] -> (Term, [Token])
+parseTermAtom (TokLambda : rest) = parseLambda rest
+parseTermAtom (TokName n : rest) = parseTermApp (Var n) rest
+parseTermAtom (TokNum n : rest) = (Lit (LNat (fromIntegral n)), rest)
+parseTermAtom (TokRefl : rest) = (Refl, rest)
+parseTermAtom (TokHole : rest) = (Hole, rest)
+parseTermAtom (TokLParen : rest) =
   let (t, rest') = parseTerm rest
   in case rest' of
     TokRParen : rest'' -> (t, rest'')
     _ -> (t, rest')
-parseTermInner rest = (Hole, rest)
+parseTermAtom rest = (Hole, rest)
 
 -- | Lambda 解析: λ x y → body
 parseLambda :: [Token] -> (Term, [Token])
@@ -492,6 +507,7 @@ parseLambda rest = (Hole, rest)
 parseTermApp :: Term -> [Token] -> (Term, [Token])
 parseTermApp acc (TokName n : rest)
   | n == "where" = (acc, TokName n : rest)
+  | isOperatorName n = (acc, TokName n : rest)  -- 中缀运算符: 停止, 交给 parseTermContinuation
   | isNewDeclStart rest = (acc, TokName n : rest)
   | otherwise = parseTermApp (App acc (Def n)) rest
 parseTermApp acc (TokNum n : rest) = parseTermApp (App acc (Lit (LNat (fromIntegral n)))) rest

@@ -612,6 +612,24 @@ main = hspec $ do
       src `shouldSatisfy` ("det9" `isInfixOf`)
       src `shouldSatisfy` ("test9" `isInfixOf`)
 
+    it "DetVerify.dy → parse → emit → agda verify → VerifyOk (全管线)" $ do
+      dySource <- TIO.readFile "test/DetVerify.dy"
+      (modName, agdaSrc, result) <- runPipeline dySource
+      T.unpack modName `shouldSatisfy` ("DetVerify" `isInfixOf`)
+      let src = T.unpack agdaSrc
+      src `shouldSatisfy` ("module DetVerify where" `isInfixOf`)
+      src `shouldSatisfy` ("det2-id" `isInfixOf`)
+      src `shouldSatisfy` ("det3-id" `isInfixOf`)
+      result `shouldBe` VerifyOk
+
+    it "DetPerf.dy → parseDy → emit (parse-only)" $ do
+      dySource <- TIO.readFile "test/DetPerf.dy"
+      (modName, agdaSrc, _result) <- runPipeline dySource
+      T.unpack modName `shouldSatisfy` ("DetPerf" `isInfixOf`)
+      let src = T.unpack agdaSrc
+      src `shouldSatisfy` ("module DetPerf where" `isInfixOf`)
+      src `shouldSatisfy` ("det3" `isInfixOf`)
+
   describe "Det — CRT 行列式引擎 (对齐 jac_CRTDet 拱顶石)" $ do
     context "2×2 GF(3) det" $ do
       it "det2(I₂) = Z (T₁)" $
