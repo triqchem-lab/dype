@@ -95,9 +95,9 @@ parseTopLevel (TokInfix : rest) =
 -- 类型签名: name : Type, 后跟可选的函数子句
 parseTopLevel (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
-      (clauses, rest'') = parseClauses name rest'
+      (clauses, whereDecls, rest'') = parseClauses name rest'
       (errs, (opts, decls)) = parseTopLevel rest''
-  in (errs, (opts, DDef name ty clauses : decls))
+  in (errs, (opts, whereDecls ++ [DDef name ty clauses] ++ decls))
 -- 函数子句 (无类型签名): name args = body
 parseTopLevel (TokName name : rest)
   | isClauseStart rest =
@@ -145,9 +145,9 @@ parseDecls (TokInfix : rest) =
   in (errs, d : ds)
 parseDecls (TokName name : TokColon : rest) =
   let (ty, rest') = parseType rest
-      (clauses, rest'') = parseClauses name rest'
+      (clauses, whereDecls, rest'') = parseClauses name rest'
       (errs, ds) = parseDecls rest''
-  in (errs, DDef name ty clauses : ds)
+  in (errs, whereDecls ++ [DDef name ty clauses] ++ ds)
 parseDecls (TokName name : rest)
   | isClauseStart rest =
       let (pats, body, whereDecls, rest') = parseClauseBody rest
@@ -250,7 +250,10 @@ tokenToName _ = Nothing
 
 skipOpenRest :: [Token] -> [Token]
 skipOpenRest (TokUsing : TokLParen : rest) = skipOpenRest (snd (span (/= TokRParen) rest))
-skipOpenRest (TokName _ : rest) = skipOpenRest rest
+-- 只跳过真正的 import 修饰符关键字, 不吃掉后续声明名
+skipOpenRest (TokName n : rest)
+  | n `elem` ["renaming", "hiding", "public"] = skipOpenRest rest
+  | otherwise = TokName n : rest
 skipOpenRest rest = rest
 
 ----------------------------------------------------------------------
@@ -390,13 +393,14 @@ collectPats rest = ([], rest)
 
 -- | 解析类型签名后的函数子句
 -- 查找同名函数的子句: name pats = body
-parseClauses :: Name -> [Token] -> ([Clause], [Token])
+-- 返回 (clauses, where-imports, remaining tokens)
+parseClauses :: Name -> [Token] -> ([Clause], [Decl], [Token])
 parseClauses name toks = case toks of
   TokName n : rest | n == name ->
-    let (pats, body, _whereDecls, rest') = parseClauseBody rest
-        (more, rest'') = parseClauses name rest'
-    in (Clause pats body : more, rest'')
-  _ -> ([], toks)
+    let (pats, body, whereDecls, rest') = parseClauseBody rest
+        (more, moreWhere, rest'') = parseClauses name rest'
+    in (Clause pats body : more, whereDecls ++ moreWhere, rest'')
+  _ -> ([], [], toks)
 
 -- | 收集 where 子句中的 open import (提升为顶层)
 -- where open import X using (...) → DOpenUsing
