@@ -25,7 +25,8 @@
 JFLAG ?= 1
 
 # 并行测试数 (默认 = CPU 核心数)
-PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
+# 并行测试数 (默认最多 4 线程, CI 安全)
+PARALLEL_TESTS ?= 4
 
 # 子 agda 进程的内存限制 (默认 6GB)
 AGDA_RTS ?= +RTS -M6G -RTS
@@ -174,7 +175,7 @@ common: ## 公共库测试
 succeed: ## 成功测试集
 	@$(call decorate, "Suite of successful tests", \
 		$(test-group-options) echo $(shell command -v $(AGDA_BIN)) > $(AGDA_TEST_DIR)/helpers/exec-tc/executables && \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Succeed ; \
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Succeed ; \
 		rm -f $(AGDA_TEST_DIR)/helpers/exec-tc/executables)
 
 .PHONY: fail
