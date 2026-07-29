@@ -1,0 +1,11 @@
+cabal-version: 2.4
+name: dype-bisect
+version: 0.1.0.0
+synopsis: Git bisect wrapper for the dype code base
+build-type: Simple
+license: MIT
+
+executable dype-bisect
+  main-is: Bisect.hs
+  build-depends: base, process, directory
+  default-language: Haskell2010
