@@ -115,6 +115,11 @@ det-test: ## Det 行列式专项测试
 	@echo "=== Det 专项测试 ==="
 	$(CABAL) test dype-test --test-show-details=direct --test-options="--match Det"
 
+.PHONY: bench
+bench: ## 基准测试 (编译模式)
+	@echo "=== Da-Yan Benchmarks ==="
+	$(CABAL) run dype-bench
+
 .PHONY: test-using-std-lib
 test-using-std-lib: ## 标准库相关测试
 	$(MAKE) std-lib-test std-lib-compiler-test std-lib-succeed std-lib-interaction

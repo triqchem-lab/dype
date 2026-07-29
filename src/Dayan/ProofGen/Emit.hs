@@ -78,7 +78,7 @@ emitTypeArg t = emitType t
 emitTerm :: Term -> Text
 emitTerm = \case
   Var x -> x; Def f -> f; Refl -> "refl"; Hole -> "{!!}"; Lit l -> emitLit l
-  Lam x e -> "λ " <> x <> " → " <> emitTerm e
+  Lam x e -> "λ " <> collectLamVars x e
   Sym p -> "sym " <> emitTerm p; Trans p q -> "trans " <> emitTerm p <> " " <> emitTerm q
   Cong f p -> "cong " <> emitTerm f <> " " <> emitTerm p
   Subst _ _ eq x -> "subst (λ _ → _) " <> emitTerm eq <> " " <> emitTerm x
@@ -87,6 +87,11 @@ emitTerm = \case
     "(" <> emitTerm a <> " " <> stripUnderscores op <> " " <> emitTerm b <> ")"
   App f a -> emitTerm f <> " " <> emitTermAtom a
   Ann e t -> "(" <> emitTerm e <> " : " <> emitType t <> ")"; Pi _ _ _ -> "{! Pi !}"
+
+-- | 合并嵌套 lambda: λ i → λ j → body → "i j → body"
+collectLamVars :: Name -> Term -> Text
+collectLamVars x (Lam y body) = x <> " " <> collectLamVars y body
+collectLamVars x body = x <> " → " <> emitTerm body
 
 -- | 原子项渲染: 复合项 (App/Lam) 作为参数时需要括号
 -- 中缀运算符已自带括号, 不再重复
