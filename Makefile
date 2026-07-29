@@ -134,7 +134,7 @@ test-using-std-lib: ## 标准库相关测试
 cubical-test: ## Cubical 核心修复验证
 	-rm -rf cubical/_build
 	@$(call decorate, "Cubical library test", \
-		time $(MAKE) -C cubical \
+		/usr/bin/time $(MAKE) -C cubical \
 			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j" RTS_OPTIONS=$(AGDA_OPTS))
 
 .PHONY: cubical-succeed
@@ -221,7 +221,7 @@ latex-html-test: ## LaTeX/HTML 后端测试
 std-lib-test: ## 标准库测试
 	@$(call decorate, "Standard library test", \
 		cd std-lib && cabal run --project-dir=. GenerateEverything && \
-						time $(AGDA_BIN) $(AGDA_OPTS) --ignore-interfaces --no-default-libraries $(PROFILEOPTS) \
+						/usr/bin/time $(AGDA_BIN) $(AGDA_OPTS) --ignore-interfaces --no-default-libraries $(PROFILEOPTS) \
 																 -i. -isrc Everything.agda \
 																 +RTS -s)
 
