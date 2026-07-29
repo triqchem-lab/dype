@@ -26,15 +26,14 @@ PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
-# Agda 二进制 (dype 使用本地构建的 agda, 含 CRT 正交分解内核)
+# dype 类型检查器二进制 (从 vendor/agda-src 构建)
 AGDA_BIN ?= $(shell which agda)
 
-# Agda 测试目录 (使用 agda 仓库的测试套件)
-AGDA_REPO ?= /data/work/functional-programming/agda
+# dype 测试目录 (自带)
 AGDA_TEST_DIR = test
 
-# Tasty 测试运行器 (从 agda 仓库构建)
-AGDA_TESTS_BIN ?= $(AGDA_REPO)/dist-newstyle/build/x86_64-linux/ghc-9.14.1/Agda-2.9.0/x/agda-tests/build/agda-tests/agda-tests
+# Tasty 测试运行器 (从 dype 构建)
+AGDA_TESTS_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/Agda-2.9.0/x/agda-tests/build/agda-tests/agda-tests
 
 # 构建工具
 CABAL ?= cabal
@@ -67,12 +66,12 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: ## 编译 Agda (CI Step 1)
-	cd $(AGDA_REPO) && $(CABAL) install --overwrite-policy=always
+install-bin: ## 编译 dype 类型检查器 (CI Step 1)
+	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
-	cd $(AGDA_REPO) && $(CABAL) build --dependencies-only
+	$(CABAL) build --dependencies-only
 
 # ============================================================
 # 全量测试 (CI Step 2, 串行)
@@ -282,14 +281,14 @@ clean: ## 清理构建产物
 	rm -rf dist-newstyle
 
 .PHONY: clean-caches
-clean-caches: ## 清理 Agda 缓存 (解决旧二进制问题)
-	rm -rf $(AGDA_REPO)/.stack-work/dist/x86_64-linux-tinfo6/
+clean-caches: ## 清理缓存
+	rm -rf .stack-work/dist/x86_64-linux-tinfo6/
 	rm -rf cubical/_build
 	rm -rf std-lib/_build
 
 .PHONY: clean-nuclear
 clean-nuclear: ## 核弹级清理 (删除整个 .stack-work)
-	rm -rf $(AGDA_REPO)/.stack-work/
+	rm -rf .stack-work/
 	rm -rf cubical/_build
 	rm -rf std-lib/_build
 
