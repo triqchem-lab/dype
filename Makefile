@@ -27,13 +27,16 @@ PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
 # dype 类型检查器二进制 (从 src/dype-core 构建)
-AGDA_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda/build/agda/agda
+AGDA_BIN ?= $(CURDIR)/dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda/build/agda/agda
 
 # dype 测试目录 (自带)
 AGDA_TEST_DIR = test
 
 # Tasty 测试运行器 (从 dype 构建)
-AGDA_TESTS_BIN ?= dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda-tests/build/agda-tests/agda-tests
+AGDA_TESTS_BIN ?= $(CURDIR)/dist-newstyle/build/x86_64-linux/ghc-9.14.1/dype-core-2.9.0/x/agda-tests/build/agda-tests/agda-tests
+
+# 数据目录 (prim 库等)
+export AGDA_DATADIR ?= $(CURDIR)/src/data
 
 # 构建工具
 CABAL ?= cabal
@@ -134,7 +137,7 @@ cubical-test: ## Cubical 核心修复验证
 	-rm -rf cubical/_build
 	@$(call decorate, "Cubical library test", \
 		/usr/bin/time $(MAKE) -C cubical \
-			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j" RTS_OPTIONS=$(AGDA_OPTS))
+			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j0" RTS_OPTIONS=$(AGDA_OPTS))
 	@echo ""
 	@echo "=== Cubical test summary ==="
 	@echo "Agda files: $$(find cubical/Cubical -name '*.agda' | wc -l)"
