@@ -12,7 +12,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Dayan.ProofGen.Jacobian where
 
-import Data.Text (Text)
 import qualified Data.Text as T
 import Dayan.ProofGen.AST
 import Dayan.Core.Trit (Trit(..))

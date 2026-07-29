@@ -49,9 +49,9 @@ module Dayan.Kernel.Conversion
 
 import Data.Word (Word8, Word16)
 import Dayan.Core.Trit   (Trit(..))
-import Dayan.Core.Tryte  (Tryte(..), allTrytes, tritAt, sortedPolarCRT, sortedToroidalCRT)
+import Dayan.Core.Tryte  (Tryte(..), allTrytes, sortedPolarCRT, sortedToroidalCRT)
 import Dayan.Core.Torus  (TorusPoint(..))
-import Dayan.Algebra.GF9 (Gf9(..), gf9CrtProject, allGf9, frobenius)
+import Dayan.Algebra.GF9 (Gf9(..), gf9CrtProject, allGf9)
 import Dayan.Compute.CRT (lookupPolar, lookupToroidal)
 import Dayan.Compute.Orbit (a4Group, a4Action)
 import Dayan.ProofGen.AST (Type(..), Term(..), Lit(..))

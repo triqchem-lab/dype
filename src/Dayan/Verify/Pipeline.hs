@@ -11,11 +11,10 @@ import System.Process (readProcessWithExitCode)
 import System.Exit (ExitCode(..))
 import System.IO.Temp (withSystemTempDirectory)
 import System.FilePath ((</>))
-import System.Directory (createDirectoryIfMissing, setCurrentDirectory)
+import System.Directory (createDirectoryIfMissing)
 import Dayan.ProofGen.AST (AgdaModuleName(..))
 import Dayan.ProofGen.Emit (emitFile)
 import Dayan.Parse.Dy (parseDy)
-import Dayan.Adapter.Agda (writeAgdaFile)
 
 data VerifyResult = VerifyOk | VerifyFail [Text]
   deriving (Show, Eq)
