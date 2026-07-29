@@ -32,12 +32,18 @@ emitConDecl (ConDecl n ty) = n <> " : " <> emitType ty
 
 emitType :: Type -> Text
 emitType = \case
-  TSet -> "Set"; TNat -> "Nat"; TDef n -> n; TFun a b -> emitType a <> " → " <> emitType b
+  TSet -> "Set"; TNat -> "Nat"; TDef n -> n
+  TFun a b -> emitTypeArg a <> " → " <> emitType b
   TPi x a b -> "(" <> x <> " : " <> emitType a <> ") → " <> emitType b
   TFin n -> "Fin " <> emitTerm n; TVec a n -> "Vec " <> emitType a <> " " <> emitTerm n
   TApp (TApp (TDef "_≡_") a) b -> emitTerm a <> " ≡ " <> emitTerm b
   TApp (TApp (TDef "_≤_") a) b -> emitTerm a <> " ≤ " <> emitTerm b
   TApp t e -> emitType t <> " " <> emitTerm e
+
+-- | 函数类型参数需要括号: (A → B) → C
+emitTypeArg :: Type -> Text
+emitTypeArg t@(TFun _ _) = "(" <> emitType t <> ")"
+emitTypeArg t = emitType t
 
 emitTerm :: Term -> Text
 emitTerm = \case
