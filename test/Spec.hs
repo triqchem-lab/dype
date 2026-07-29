@@ -636,6 +636,23 @@ main = hspec $ do
       src `shouldSatisfy` ("module DetPerf where" `isInfixOf`)
       src `shouldSatisfy` ("det3" `isInfixOf`)
 
+    it "隐式参数 {A : Set} → A → A 解析" $ do
+      let dySrc = "module TestImplicit where\n\nid : {A : Set} → A → A\nid x = x\n"
+      case parseDy dySrc of
+        Left errs -> expectationFailure $ "parse failed: " ++ show errs
+        Right (_, f) -> do
+          let src = T.unpack $ emitFile f
+          src `shouldSatisfy` ("{A : Set}" `isInfixOf`)
+
+    it "record 声明解析" $ do
+      let dySrc = "module TestRecord where\n\nrecord Pair (A : Set) : Set where\n  field\n    fst : A\n    snd : A\n"
+      case parseDy dySrc of
+        Left errs -> expectationFailure $ "parse failed: " ++ show errs
+        Right (_, f) -> do
+          let src = T.unpack $ emitFile f
+          src `shouldSatisfy` ("record Pair" `isInfixOf`)
+          src `shouldSatisfy` ("fst" `isInfixOf`)
+
   describe "Det — CRT 行列式引擎 (对齐 jac_CRTDet 拱顶石)" $ do
     context "2×2 GF(3) det" $ do
       it "det2(I₂) = Z (T₁)" $
