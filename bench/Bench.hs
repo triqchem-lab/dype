@@ -19,14 +19,16 @@ main = do
   bench "Trit mul"      1000000  (mul P P)
   putStrLn ""
   putStrLn "--- Det Engine (CRT 行列式) ---"
-  benchIO "det3Fast (O(1) table)" 1000000 $ \i ->
-    let m = idxToMat3 i in toNat (det3Fast m)
-  benchIO "det3 (Sarrus direct)"  1000000 $ \i ->
-    let m = idxToMat3 i in toNat (det3 m)
+  -- 预构造矩阵, 只测查表
+  let testMat = idxToMat3 12345
+  bench "det3Fast (O(1) lookup)" 1000000 (toNat (det3Fast testMat))
+  bench "det3 (Sarrus direct)"  1000000 (toNat (det3 testMat))
   bench "det4 (I4)"       100000  (toNat (det4 identity4))
   bench "det2 (I2)"      1000000  (toNat (det2 identity2))
   bench "crtDetNonzero"  1000000  (crtDetNonzero (crtDecompose3 identity3))
   bench "detNonzeroStructural" 100000 (detNonzeroStructural id)
+  benchIO "det3Fast sweep (construct+lookup)" 100000 $ \i ->
+    toNat (det3Fast (idxToMat3 i))
   putStrLn ""
   putStrLn "--- Comparison ---"
   putStrLn "Agda O(N!) 9x9 det: >2min timeout"
