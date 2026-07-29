@@ -67,7 +67,7 @@ install: ## 安装 dype
 
 .PHONY: install-bin
 install-bin: ## 编译 dype 类型检查器 (CI Step 1)
-	$(CABAL) install --overwrite-policy=always
+	cabal build all
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
