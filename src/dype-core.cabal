@@ -305,6 +305,10 @@ common language
   ghc-options:
       -- ASR (2022-05-31). Workaround to Issue #5932.
 
+      -Wno-name-shadowing
+      -Wno-unused-matches
+      -Wno-orphans
+      -Wno-unused-top-binds
       -Wno-unused-packages
       -Wcpp-undef
       -Wdeprecated-flags

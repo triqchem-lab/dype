@@ -46,6 +46,10 @@ library
       ImportQualifiedPost
 
   ghc-options:
+      -Wno-name-shadowing
+      -Wno-unused-matches
+      -Wno-orphans
+      -Wno-unused-top-binds
     -Wall -fno-warn-unused-imports -fno-warn-missing-signatures
     -Wno-error=deprecated-flags -Wno-error=tabs
 
