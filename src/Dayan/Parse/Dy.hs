@@ -443,6 +443,7 @@ typeToTerm (TPi x a b) = App (App (Def "_→_") (typeToTerm a)) (typeToTerm b)
 
 -- | 判断后续 token 是否开始新声明 (用于类型/项解析终止)
 -- 只匹配确定性标志: 类型签名 (name :) 或关键字
+-- 注意: TokComment 不在此列 — 注释是透明的，不开始新声明
 isNewDeclStart :: [Token] -> Bool
 isNewDeclStart (TokColon : _) = True
 isNewDeclStart (TokEqual : _) = True
@@ -453,7 +454,6 @@ isNewDeclStart (TokInfix : _) = True
 isNewDeclStart (TokOpen : _) = True
 isNewDeclStart (TokPostulate : _) = True
 isNewDeclStart (TokData : _) = True
-isNewDeclStart (TokComment _ : _) = True
 isNewDeclStart _ = False
 
 ----------------------------------------------------------------------
