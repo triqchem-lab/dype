@@ -9,6 +9,7 @@ cabal.sandbox.config
 *.dyn_o
 *.dyn_hi
 stack.yaml
+*.yaml.lock
 test/Succeed/
 
 # direnv / venv
