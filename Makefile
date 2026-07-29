@@ -238,9 +238,8 @@ latex-html-test: ## LaTeX/HTML 后端测试
 std-lib-test: ## 标准库测试
 	@$(call decorate, "Standard library test", \
 		cd std-lib && cabal run --project-dir=. GenerateEverything && \
-						/usr/bin/time $(AGDA_BIN) $(AGDA_OPTS) --ignore-interfaces --no-default-libraries $(PROFILEOPTS) \
-																 -i. -isrc Everything.agda \
-																 +RTS -s)
+		/usr/bin/time $(AGDA_BIN) $(AGDA_OPTS) --ignore-interfaces --no-default-libraries $(PROFILEOPTS) \
+			-i. -isrc Everything.agda +RTS -s)
 
 .PHONY: std-lib-compiler-test
 std-lib-compiler-test: ## 标准库编译器测试
