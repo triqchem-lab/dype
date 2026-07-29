@@ -1,3 +1,7 @@
 packages:
   .
-  vendor/agda-syntax
+  src/vendor/agda-syntax
+  src/vendor/agda-src
+
+allow-newer: monad-control:transformers-compat
+allow-newer: monad-control:transformers

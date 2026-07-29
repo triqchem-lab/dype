@@ -5,7 +5,7 @@ compiler-check: match-exact
 # Local packages specified by relative directory name.
 packages:
 - '..'
-- '../vendor/agda-syntax'
+- '../src/vendor/agda-syntax'
 
 flags:
   mintty:
