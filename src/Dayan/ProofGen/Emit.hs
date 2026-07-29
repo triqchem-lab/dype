@@ -9,7 +9,18 @@ emitFile (AgdaFile _opts _modName [DPassThrough t]) = t  -- 全量透传: 直接
 emitFile (AgdaFile opts modName decls) =
   let imported = collectImportedNames decls
       filtered = filter (not . isRedundantInfix imported) decls
-  in T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl filtered
+      -- 检测 Sovereign 依赖: 需要 --cubical --guardedness
+      needsSovereign = any isSovereignImport decls
+      opts' = if needsSovereign && not ("--cubical" `T.isInfixOf` opts)
+              then T.replace "#-}" "--cubical --guardedness #-}" opts
+              else opts
+  in T.unlines $ [opts', "module " <> modName <> " where", ""] ++ concatMap emitDecl filtered
+
+-- | 检测是否导入 Sovereign 模块
+isSovereignImport :: Decl -> Bool
+isSovereignImport (DOpen m) = "Sovereign" `T.isInfixOf` m
+isSovereignImport (DOpenUsing m _) = "Sovereign" `T.isInfixOf` m
+isSovereignImport _ = False
 
 -- | 收集所有 open import ... using (...) 引入的名称
 collectImportedNames :: [Decl] -> [Name]

@@ -1,6 +1,7 @@
 {-# OPTIONS --rewriting #-}
 module Det9x9Full where
 
+open import Agda.Builtin.Equality using (_≡_; refl)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Fin.Properties using (_≟_)
 open import Data.Nat using (ℕ; zero; suc)
@@ -8,7 +9,7 @@ open import Data.Nat.DivMod using (_mod_)
 open import Data.Product using (_×_; _,_)
 open import Sovereign.Base.Trit using (Trit; T₀; T₁; T₂; _⊕_; _⊗_; negate)
 open import Sovereign.Algebra.Jacobian.jac_NMatrix using (toTrit)
-open import Sovereign.Algebra.Jacobian.jac_Matrix using (Mat2; det2)
+open import Sovereign.Algebra.Jacobian.jac_Discrete using (Mat2; det2)
 
 infixl 7 _⊗_
 infixl 6 _⊕_

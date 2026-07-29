@@ -88,7 +88,7 @@ scanName = go []
         go acc cs = (reverse acc, cs)
 
 isNameChar :: Char -> Bool
-isNameChar c = isAlpha c || isDigit c || elem c ['_', '\'', '.', '-', '?', '!'] || isSymbol c
+isNameChar c = isAlpha c || isDigit c || elem c ['_', '\'', '.', '-', '?', '!', ','] || isSymbol c
             || isUnicodeSubSuper c  -- ₀₁₂₃ 等下标/上标
 
 -- | Unicode 下标/上标数字 (Agda 标识符合法字符)

@@ -17,6 +17,7 @@ module Dayan.Parse.Dy where
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Char (isAlpha, isDigit)
+import Data.Maybe (mapMaybe)
 import Dayan.ProofGen.AST
 import Dayan.Parse.Lexer (Token(..), lexDy)
 
@@ -220,8 +221,20 @@ parseUsingList :: [Token] -> ([Text], [Token])
 parseUsingList rest =
   case span (/= TokRParen) rest of
     (names, TokRParen : after) ->
-      ([n | TokName n <- names], after)
+      (mapMaybe tokenToName names, after)
     (_, []) -> ([], [])
+
+-- | 将 token 转为名称 (用于 using 列表, 关键字也作为名称)
+tokenToName :: Token -> Maybe Text
+tokenToName (TokName n) = Just n
+tokenToName TokFin = Just "Fin"
+tokenToName TokSet = Just "Set"
+tokenToName TokNat = Just "ℕ"
+tokenToName TokVec = Just "Vec"
+tokenToName TokRefl = Just "refl"
+tokenToName TokSemi = Nothing  -- 分隔符
+tokenToName TokLParen = Nothing
+tokenToName _ = Nothing
 
 skipOpenRest :: [Token] -> [Token]
 skipOpenRest (TokUsing : TokLParen : rest) = skipOpenRest (snd (span (/= TokRParen) rest))
