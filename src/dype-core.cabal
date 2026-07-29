@@ -41,7 +41,7 @@ tested-with:
 extra-doc-files:
     ../CHANGELOG.md
     ../README.md
-    doc/user-manual/agda.svg
+    ../doc/user-manual/agda.svg
 
 extra-source-files:
     ../config/stack-9.14.1.yaml
