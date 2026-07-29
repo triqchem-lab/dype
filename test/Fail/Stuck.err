@@ -1,3 +1,7 @@
-AGDA_UNEXPECTED_SUCCESS
-
-ret > ExitSuccess
+Stuck.agda:12.1-4: error: [SplitError.UnificationStuck]
+I'm not sure if there should be a case for the constructor e,
+because I get stuck when trying to solve the following unification
+problems (inferred index ≟ expected index):
+  j ≟ i
+  j ≟ x
+when checking the definition of f
