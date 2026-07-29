@@ -6,7 +6,22 @@ import Dayan.ProofGen.AST
 
 emitFile :: AgdaFile -> Text
 emitFile (AgdaFile _opts _modName [DPassThrough t]) = t  -- 全量透传: 直接输出原始源文本
-emitFile (AgdaFile opts modName decls) = T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl decls
+emitFile (AgdaFile opts modName decls) =
+  let imported = collectImportedNames decls
+      filtered = filter (not . isRedundantInfix imported) decls
+  in T.unlines $ [opts, "module " <> modName <> " where", ""] ++ concatMap emitDecl filtered
+
+-- | 收集所有 open import ... using (...) 引入的名称
+collectImportedNames :: [Decl] -> [Name]
+collectImportedNames = concatMap go
+  where
+    go (DOpenUsing _ ns) = ns
+    go _ = []
+
+-- | 过滤对 import 名称的 infix 声明 (Agda 不允许)
+isRedundantInfix :: [Name] -> Decl -> Bool
+isRedundantInfix imported (DInfix _ _ ops) = all (`elem` imported) ops
+isRedundantInfix _ _ = False
 
 emitDecl :: Decl -> [Text]
 emitDecl = \case
@@ -59,7 +74,9 @@ emitTerm = \case
   Ann e t -> "(" <> emitTerm e <> " : " <> emitType t <> ")"; Pi _ _ _ -> "{! Pi !}"
 
 -- | 原子项渲染: 复合项 (App/Lam) 作为参数时需要括号
+-- 中缀运算符已自带括号, 不再重复
 emitTermAtom :: Term -> Text
+emitTermAtom t@(App (App (Def op) _) _) | isInfixOp op = emitTerm t
 emitTermAtom t@(App _ _) = "(" <> emitTerm t <> ")"
 emitTermAtom t@(Lam _ _) = "(" <> emitTerm t <> ")"
 emitTermAtom t = emitTerm t

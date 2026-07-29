@@ -607,7 +607,6 @@ main = hspec $ do
       let src = T.unpack agdaSrc
       src `shouldSatisfy` ("module Det9x9Full where" `isInfixOf`)
       src `shouldSatisfy` ("open import Sovereign.Base.Trit" `isInfixOf`)
-      src `shouldSatisfy` ("infixl 7" `isInfixOf`)
       src `shouldSatisfy` ("M9" `isInfixOf`)
       src `shouldSatisfy` ("det9" `isInfixOf`)
       src `shouldSatisfy` ("test9" `isInfixOf`)
