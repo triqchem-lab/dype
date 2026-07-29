@@ -11,8 +11,9 @@ module Dayan.Adapter.Agda
   ) where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Dayan.ProofGen.AST (AgdaFile(..))
+import Dayan.ProofGen.AST (AgdaFile(..), AgdaModuleName(..))
 import Dayan.ProofGen.Emit (emitFile)
 import Dayan.Parse.Dy (parseDy)
 

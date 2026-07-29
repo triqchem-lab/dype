@@ -89,9 +89,7 @@ isAligned idx = lookupPolar idx == 0 && lookupToroidal idx == 0
 
 -- | 找到下一个对齐点 (从当前索引开始, 最多 6624 步)
 nextAlignment :: Word16 -> Word16
-nextAlignment idx = case dropWhile (not . isAligned) (iterate cascadeStep idx) of
-    (x:_) -> x
-    _     -> idx  -- fallback: 所有对齐都失败则返回自身
+nextAlignment idx = head $ dropWhile (not . isAligned) $ iterate cascadeStep idx
 
 -- | 两个对齐点之间的步数应为 6624
 alignmentPeriod :: Bool

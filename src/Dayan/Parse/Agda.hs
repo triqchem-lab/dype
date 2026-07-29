@@ -43,7 +43,7 @@ parseAgdaFile fp content = do
   result <- runPMIO $ parseFile False moduleParser rfile src
   case fst result of
     Left err -> pure $ Left (show err)
-    Right ((md, _attrs), _ft) ->
+    Right ((mod, _attrs), _ft) ->
       pure $ Right $ moduleToAgdaFile fp content mod
 
 ----------------------------------------------------------------------
