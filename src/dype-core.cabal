@@ -106,13 +106,13 @@ extra-source-files:
     data/emacs-mode/agda2.el
     data/emacs-mode/annotation.el
     data/emacs-mode/eri.el
-    src/data/html/Agda.css
-    src/data/html/highlight-hover.js
+    data/html/Agda.css
+    data/html/highlight-hover.js
     data/JS/agda-rts.mjs
     data/JS/agda-rts.js
     data/JS/agda-rts.amd.js
-    src/data/latex/agda.sty
-    src/data/latex/postprocess-latex.pl
+    data/latex/agda.sty
+    data/latex/postprocess-latex.pl
     data/lib/prim/agda-builtins.agda-lib
     data/lib/prim/Agda/Builtin/Bool.agda
     data/lib/prim/Agda/Builtin/Char.agda
@@ -150,10 +150,10 @@ extra-source-files:
     data/lib/prim/Agda/Builtin/Word/Properties.agda
     data/lib/prim/Agda/Primitive.agda
     data/lib/prim/Agda/Primitive/Cubical.agda
-    src/data/MAlonzo/src/MAlonzo/RTE.hs
-    src/data/MAlonzo/src/MAlonzo/RTE/Float.hs
+    data/MAlonzo/src/MAlonzo/RTE.hs
+    data/MAlonzo/src/MAlonzo/RTE/Float.hs
 
-data-dir: src/data
+data-dir: data
 data-files:
     emacs-mode/agda-input.el
     emacs-mode/agda2-abbrevs.el
