@@ -1,0 +1,3 @@
+LetPair.agda:17.8-13: error: [ShouldBeRecordPattern]
+Expected record pattern
+when checking that the pattern a , b has type A × B

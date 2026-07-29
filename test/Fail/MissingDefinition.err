@@ -1,0 +1,3 @@
+MissingDefinition.agda:4.1-6: error: [MissingDefinitions]
+The following names are declared but lack a definition:
+, T U

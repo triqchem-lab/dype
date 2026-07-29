@@ -31,10 +31,10 @@ AGDA_BIN ?= $(shell which agda)
 
 # Agda 测试目录 (使用 agda 仓库的测试套件)
 AGDA_REPO ?= /data/work/functional-programming/agda
-AGDA_TEST_DIR = $(AGDA_REPO)/test
+AGDA_TEST_DIR = test
 
 # Tasty 测试运行器 (从 agda 仓库构建)
-AGDA_TESTS_BIN ?= $(AGDA_REPO)/dist-newstyle/build/x86_64-linux/ghc-9.14.1/agda-2.9.0/t/agda-tests/build/agda-tests/agda-tests
+AGDA_TESTS_BIN ?= $(AGDA_REPO)/dist-newstyle/build/x86_64-linux/ghc-9.14.1/Agda-2.9.0/x/agda-tests/build/agda-tests/agda-tests
 
 # 构建工具
 CABAL ?= cabal
@@ -132,8 +132,10 @@ test-using-std-lib: ## 标准库相关测试
 
 .PHONY: cubical-test
 cubical-test: ## Cubical 核心修复验证
-	@$(call decorate, "Cubical test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/CubicalSucceed)
+	-rm -rf cubical/_build
+	@$(call decorate, "Cubical library test", \
+		time $(MAKE) -C cubical \
+			AGDA_BIN="$(AGDA_BIN)" AGDA_FLAGS="-j" RTS_OPTIONS=$(AGDA_OPTS))
 
 .PHONY: cubical-succeed
 cubical-succeed: ## Cubical 成功测试
@@ -155,7 +157,7 @@ common: ## 公共库测试
 .PHONY: succeed
 succeed: ## 成功测试集
 	@$(call decorate, "Suite of successful tests", \
-		echo $$(command -v $(AGDA_BIN)) > $(AGDA_TEST_DIR)/helpers/exec-tc/executables && \
+		echo $(shell command -v $(AGDA_BIN)) > $(AGDA_TEST_DIR)/helpers/exec-tc/executables && \
 		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Succeed ; \
 		rm -f $(AGDA_TEST_DIR)/helpers/exec-tc/executables)
 
@@ -166,8 +168,8 @@ fail: ## 失败测试集
 
 .PHONY: examples
 examples: ## 示例测试
-	@$(call decorate, "Suite of example tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Examples)
+	@$(call decorate, "Suite of examples", \
+		$(MAKE) -C examples)
 
 .PHONY: build-succeed-test
 build-succeed-test: ## 构建成功测试
@@ -191,15 +193,15 @@ api-test: ## API 测试
 
 .PHONY: compiler-test
 compiler-test: ## 编译器后端测试
-	@$(call decorate, "Compiler test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Compiler)
+	@$(call decorate, "Compiler tests", \
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Compiler --regex-exclude AllStdLib)
 
 # --- interaction 组 ---
 
 .PHONY: interaction
 interaction: ## 交互测试
-	@$(call decorate, "Interaction test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Interaction)
+	@$(call decorate, "Suite of interaction tests", \
+		$(MAKE) -C test/interaction)
 
 .PHONY: interactive
 interactive: ## 交互模式测试
@@ -217,24 +219,29 @@ latex-html-test: ## LaTeX/HTML 后端测试
 
 .PHONY: std-lib-test
 std-lib-test: ## 标准库测试
-	@$(call decorate, "Standard library test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibSucceed)
+	@$(call decorate, "Standard library test", \
+		cd std-lib && cabal run --project-dir=. GenerateEverything && \
+						time $(AGDA_BIN) $(AGDA_OPTS) --ignore-interfaces --no-default-libraries $(PROFILEOPTS) \
+																 -i. -isrc Everything.agda \
+																 +RTS -s)
 
 .PHONY: std-lib-compiler-test
 std-lib-compiler-test: ## 标准库编译器测试
 	@$(call decorate, "Standard library compiler tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibCompiler)
+	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include AllStdLib --regex-exclude AllStdLibJS)
 
 .PHONY: std-lib-succeed
 std-lib-succeed: ## 标准库成功测试
-	@$(call decorate, "Standard library succeed tests", \
-		$(AGDA_BIN) --ignore-interfaces --no-default-libraries \
-			-i std-lib -i std-lib/src std-lib/Everything.agda +RTS -s)
+	@$(call decorate, "Successful tests using the standard library", \
+	  find test/LibSucceed -type f -name '*.agdai' -delete ; \
+	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibSucceed)
 
 .PHONY: std-lib-interaction
 std-lib-interaction: ## 标准库交互测试
-	@$(call decorate, "Standard library interaction tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibInteraction)
+	@$(call decorate, "Interaction tests using the standard library", \
+	  $(MAKE) -C test/lib-interaction)
 
 # ============================================================
 # dype 专有测试

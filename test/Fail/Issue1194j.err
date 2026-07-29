@@ -1,0 +1,9 @@
+Issue1194j.agda:21.8-13: error: [UnequalTypes]
+The type
+  D₂
+is not a subtype of
+  D₁
+when checking that the inferred type of an application
+  D₂
+matches the expected type
+  D₁

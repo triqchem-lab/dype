@@ -1,0 +1,5 @@
+CompiledBuiltinBool.agda:11.1-52: error: [CustomBackendError]
+GHC:
+  Conflicting GHC pragmas for Bool at
+    - CompiledBuiltinBool.agda:6.1-26
+    - CompiledBuiltinBool.agda:11.1-52

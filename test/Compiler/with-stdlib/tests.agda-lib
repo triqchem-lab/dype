@@ -1,0 +1,7 @@
+name: stdlib-tests
+include:
+  .
+  ../../../std-lib/
+  ../../../std-lib/src
+flags:
+  --warning=noUnsupportedIndexedMatch

@@ -1,0 +1,4 @@
+Issue413.agda:14.1-22: error: [CoverageIssue]
+Incomplete pattern matching for g. Missing cases:
+  g .ℕ x isℕ
+when checking the definition of g

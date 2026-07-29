@@ -1,0 +1,5 @@
+Issue2596b.agda:8.1-9.6: error: [TerminationIssue]
+Termination checking failed for the following function:
+  f
+Problematic call:
+  f (at Issue2596b.agda:9.5-6)

@@ -1,0 +1,6 @@
+Issue1023.agda:28.1-29.41: error: [TerminationIssue]
+Termination checking failed for the following function:
+  noo
+Problematic call:
+  noo FOne iso f
+    (at Issue1023.agda:29.27-30)

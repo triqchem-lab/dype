@@ -1,0 +1,5 @@
+syn match agdaInfixFunction "\<\*\>\|\<+\>\|\<∸\>"
+syn match agdaConstructor "\<suc\>"
+syn match agdaFunction "\<_\*_\>\|\<_+_\>\|\<_∸_\>\|\<Nat\>\|\<Set\>"
+syn match agdaConstructor "\<zero\>"
+syn match agdaFunction "\<pred\>"

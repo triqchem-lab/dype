@@ -1,0 +1,7 @@
+COMPILE_FAILED
+
+ret > ExitFailure 251
+err > agda: Heap exhausted;
+err > agda: Current maximum heap size is 4294967296 bytes (4096 MB).
+err > agda: Use `+RTS -M<size>' to increase it.
+err >

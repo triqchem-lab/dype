@@ -1,0 +1,10 @@
+Issue279.agda:20.7-12: error: [UnequalTerms]
+The terms
+  ⊥
+and
+  ⊤
+are not equal at type Set
+when checking that the inferred type of an application
+  M.P ⊥ tt
+matches the expected type
+  M.P ⊤ tt

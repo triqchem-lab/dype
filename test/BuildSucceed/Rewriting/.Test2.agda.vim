@@ -1,0 +1,7 @@
+syn match agdaInfixFunction "\<\*\>\|\<+\>\|\<-\>\|\<<\>\|\<≡\>"
+syn match agdaInfixFunction "\<==\>"
+syn match agdaConstructor "\<suc\>"
+syn match agdaFunction "\<_\*_\>\|\<_+_\>\|\<_-_\>\|\<_<_\>\|\<_≡_\>\|\<Nat\>\|\<Set\>"
+syn match agdaConstructor "\<refl\>\|\<zero\>"
+syn match agdaFunction "\<_==_\>\|\<test\>"
+syn match agdaFunction "\<div-helper\>\|\<mod-helper\>"

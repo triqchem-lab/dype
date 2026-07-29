@@ -1,0 +1,7 @@
+syn match agdaFunction "\<a\>\|\<b\>\|\<c\>\|\<d\>\|\<e\>\|\<f\>"
+syn match agdaInfixFunction "\<≡\>"
+syn match agdaFunction "\<_≡_\>\|\<Set\>"
+syn match agdaConstructor "\<refl\>\|\<true\>"
+syn match agdaFunction "\<Bool\>"
+syn match agdaConstructor "\<false\>"
+syn match agdaFunction "\<primRewriteNoMatch\>"

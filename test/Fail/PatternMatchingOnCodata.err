@@ -1,0 +1,7 @@
+PatternMatchingOnCodata.agda:31.1-11: error: [NoParseForLHS]
+Could not parse the left-hand side my-♭ (♯ x)
+Problematic expression: (♯ x)
+Operators used in the grammar:
+  None
+when scope checking the left-hand side my-♭ (♯ x) in the definition
+of my-♭

@@ -1,0 +1,5 @@
+syn match agdaFunction "\<∞\>\|\<♭\>"
+syn match agdaInfixFunction "\<♯\>"
+syn match agdaFunction "\<♯_\>"
+syn match agdaFunction "\<Set\>"
+syn match agdaFunction "\<my-♯\>"

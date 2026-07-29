@@ -1,0 +1,6 @@
+SizedTypesFunctionFromSuccSize.agda:11.1-13.18: error: [TerminationIssue]
+Termination checking failed for the following function:
+  bad
+Problematic call:
+  bad zero
+    (at SizedTypesFunctionFromSuccSize.agda:12.15-18)

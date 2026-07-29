@@ -1,0 +1,2 @@
+Issue1389.agda:19.12-17: error: [Syntax.UnquoteDefRequiresSignature]
+Missing type signatures for unquoteDef id-ok

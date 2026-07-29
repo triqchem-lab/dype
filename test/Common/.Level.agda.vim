@@ -1,0 +1,6 @@
+syn match agdaInfixFunction "\<⊔\>"
+syn match agdaFunction "\<_⊔_\>\|\<Set\>"
+syn match agdaConstructor "\<lift\>"
+syn match agdaFunction "\<Lift\>\|\<lsuc\>"
+syn match agdaFunction "\<Level\>\|\<lzero\>"
+syn match agdaFunction "\<LevelUniv\>"

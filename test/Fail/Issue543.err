@@ -1,0 +1,10 @@
+Issue543.agda:32.10-72: error: [UnequalTerms]
+The terms
+  unsquash _
+and
+  true
+are not equal at type Bool
+when checking that the inferred type of an application
+  unsquash _ ≡ unsquash _
+matches the expected type
+  true ≡ false

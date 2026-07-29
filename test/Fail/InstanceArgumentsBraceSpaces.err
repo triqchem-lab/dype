@@ -1,0 +1,2 @@
+InstanceArgumentsBraceSpaces.agda:5.19: error: [ParseError]
+Expecting '}}', found separated '}'s.

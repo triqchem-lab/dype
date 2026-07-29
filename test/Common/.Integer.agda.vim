@@ -1,0 +1,5 @@
+syn match agdaConstructor "\<pos\>"
+syn match agdaFunction "\<Set\>"
+syn match agdaConstructor "\<negsuc\>"
+syn match agdaFunction "\<Integer\>"
+syn match agdaFunction "\<primShowInteger\>"

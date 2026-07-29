@@ -1,0 +1,6 @@
+WithTooFewPatterns.agda:4.1-5.13: error: [TooFewPatternsInWithClause]
+Too few arguments given in with-clause
+when checking that the clause
+test A with A
+test | B = B
+has type Set → Set
