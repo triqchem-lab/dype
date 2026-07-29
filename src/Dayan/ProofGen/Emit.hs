@@ -42,6 +42,9 @@ emitDecl = \case
   DDef n ty cls -> map (\c -> n <> " : " <> emitType ty <> "\n" <> n <> " " <> emitClause c) cls
   DClause n pats body -> [n <> " " <> T.unwords (map emitPattern pats) <> " = " <> emitTerm body]
   DData n _ cons -> ("data " <> n <> " : Set where") : map (\c -> "  " <> emitConDecl c) cons
+  DRecord n params fields ->
+    ("record " <> n <> (if null params then "" else " " <> T.unwords params) <> " : Set where")
+    : "  field" : map (\(fn, ft) -> "    " <> fn <> " : " <> emitType ft) fields
   DRewrite n eq -> ["{-# REWRITE " <> n <> " #-}\n" <> "postulate\n  " <> n <> " : " <> emitTerm eq]
   DInfix fx prec ops -> [emitFixity fx <> " " <> T.pack (show prec) <> " " <> T.unwords ops]
   DComment t -> ["-- " <> t]
@@ -61,6 +64,7 @@ emitType = \case
   TSet -> "Set"; TNat -> "Nat"; TDef n -> n
   TFun a b -> emitTypeArg a <> " → " <> emitType b
   TPi x a b -> "(" <> x <> " : " <> emitType a <> ") → " <> emitType b
+  TPiImplicit x a b -> "{" <> x <> " : " <> emitType a <> "} → " <> emitType b
   TFin n -> "Fin " <> emitTerm n; TVec a n -> "Vec " <> emitType a <> " " <> emitTerm n
   TApp (TApp (TDef "_≡_") a) b -> emitTerm a <> " ≡ " <> emitTerm b
   TApp (TApp (TDef "_≤_") a) b -> emitTerm a <> " ≤ " <> emitTerm b

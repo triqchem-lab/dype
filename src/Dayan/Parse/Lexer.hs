@@ -20,6 +20,7 @@ data Token
   | TokArrow | TokColon | TokEqual | TokLParen | TokRParen
   | TokDColon | TokVBar | TokSemi | TokUnderscore
   | TokInfixl | TokInfixr | TokInfix | TokLambda | TokComma
+  | TokLBrace | TokRBrace | TokRecord | TokField
   | TokName Text | TokNum Integer
   | TokComment Text
   deriving (Show, Eq)
@@ -52,6 +53,8 @@ lexDy = topLevel . T.unpack
     scanToken ('|' : cs) = (TokVBar, cs)
     scanToken (';' : cs) = (TokSemi, cs)
     scanToken ('{' : '!' : '!' : '}' : cs) = (TokHole, cs)  -- {!!}
+    scanToken ('{' : cs) = (TokLBrace, cs)
+    scanToken ('}' : cs) = (TokRBrace, cs)
     scanToken ('λ' : cs) = (TokLambda, cs)
     scanToken ('_' : cs)
       | null name = (TokUnderscore, rest)
@@ -123,6 +126,8 @@ keyword "rewrite"   = TokRewrite
 keyword "infixl"    = TokInfixl
 keyword "infixr"    = TokInfixr
 keyword "infix"     = TokInfix
+keyword "record"    = TokRecord
+keyword "field"     = TokField
 keyword "Set"       = TokSet
 keyword "ℕ"         = TokNat
 keyword "Nat"       = TokNat

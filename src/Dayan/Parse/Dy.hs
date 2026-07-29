@@ -71,6 +71,10 @@ parseTopLevel (TokData : rest) =
   let (decl, rest') = parseDataDecl rest
       (errs, (opts, decls)) = parseTopLevel rest'
   in (errs, (opts, decl : decls))
+parseTopLevel (TokRecord : rest) =
+  let (decl, rest') = parseRecordDecl rest
+      (errs, (opts, decls)) = parseTopLevel rest'
+  in (errs, (opts, decl : decls))
 parseTopLevel (TokRewrite : rest) =
   let (decl, rest') = parseRewrite rest
       (errs, (opts, decls)) = parseTopLevel rest'
@@ -117,6 +121,10 @@ parseDecls (TokPostulate : rest) =
   in (errs, ds ++ more)
 parseDecls (TokData : rest) =
   let (d, rest') = parseDataDecl rest
+      (errs, ds) = parseDecls rest'
+  in (errs, d : ds)
+parseDecls (TokRecord : rest) =
+  let (d, rest') = parseRecordDecl rest
       (errs, ds) = parseDecls rest'
   in (errs, d : ds)
 parseDecls (TokRewrite : rest) =
@@ -182,6 +190,10 @@ tokenText TokInfixr         = "infixr"
 tokenText TokInfix          = "infix"
 tokenText TokLambda         = "λ"
 tokenText TokComma          = ","
+tokenText TokLBrace         = "{"
+tokenText TokRBrace         = "}"
+tokenText TokRecord         = "record"
+tokenText TokField          = "field"
 tokenText (TokName n)       = n
 tokenText (TokNum n)        = T.pack (show n)
 tokenText (TokComment _)    = "--"
@@ -273,6 +285,59 @@ parseConstructors (TokName n : TokColon : rest) =
       (more, rest'') = parseConstructors rest'
   in (ConDecl n ty : more, rest'')
 parseConstructors rest = ([], rest)
+
+----------------------------------------------------------------------
+-- Record
+----------------------------------------------------------------------
+
+-- | record Name params : Set where field ...
+parseRecordDecl :: [Token] -> (Decl, [Token])
+parseRecordDecl toks =
+  let (name, rest) = case toks of
+        TokName n : r -> (n, r)
+        _ -> ("?", toks)
+      -- 收集参数 (直到 : Set)
+      (params, rest') = collectRecordParams rest
+      -- 消费 : Type (record 的返回类型)
+      rest'' = case rest' of
+        TokColon : r -> snd (parseType r)
+        _ -> rest'
+  in case rest'' of
+    TokWhere : TokField : rest''' ->
+      let (fields, rest'''') = parseFields rest'''
+      in (DRecord name params fields, rest'''')
+    TokWhere : rest''' ->
+      let (fields, rest'''') = parseFields rest'''
+      in (DRecord name params fields, rest'''')
+    _ -> (DRecord name params [], rest'')
+
+-- | 收集 record 参数名 (直到 : Set where)
+-- 处理: record Name (A : Set) (B : Set) : Set where
+collectRecordParams :: [Token] -> ([Name], [Token])
+collectRecordParams (TokColon : rest) = ([], TokColon : rest)
+collectRecordParams (TokLParen : TokName n : TokColon : rest) =
+  -- (A : Set) → 跳过括号内的类型, 收集参数名
+  let rest' = skipPastRParen rest
+      (more, rest'') = collectRecordParams rest'
+  in (n : more, rest'')
+collectRecordParams (TokName n : rest) =
+  let (more, rest') = collectRecordParams rest
+  in (n : more, rest')
+collectRecordParams rest = ([], rest)
+
+-- | 跳过到 ) 之后
+skipPastRParen :: [Token] -> [Token]
+skipPastRParen (TokRParen : rest) = rest
+skipPastRParen (_ : rest) = skipPastRParen rest
+skipPastRParen [] = []
+
+-- | 解析 field 列表: name : Type
+parseFields :: [Token] -> ([(Name, Type)], [Token])
+parseFields (TokName n : TokColon : rest) =
+  let (ty, rest') = parseType rest
+      (more, rest'') = parseFields rest'
+  in ((n, ty) : more, rest'')
+parseFields rest = ([], rest)
 
 ----------------------------------------------------------------------
 -- Rewrite
@@ -391,6 +456,21 @@ parseTypeApp (TokLParen : rest) =
     _ -> let (t, rest') = parseTypeArrow rest
          in case rest' of
            TokRParen : rest'' -> (t, rest'')
+           _ -> (t, rest')
+-- 隐式参数: {A : Set} → ...
+parseTypeApp (TokLBrace : rest) =
+  case rest of
+    TokName x : TokColon : rest' ->
+      let (a, rest'') = parseTypeArrow rest'
+      in case rest'' of
+        TokRBrace : TokArrow : rest''' ->
+          let (b, rest'''') = parseTypeArrow rest'''
+          in (TPiImplicit x a b, rest'''')
+        TokRBrace : rest''' -> (TDef x, rest''')
+        _ -> (TDef x, rest'')
+    _ -> let (t, rest') = parseTypeArrow rest
+         in case rest' of
+           TokRBrace : rest'' -> (t, rest'')
            _ -> (t, rest')
 parseTypeApp (TokSet : rest) = (TSet, rest)
 parseTypeApp (TokNat : rest) = (TNat, rest)
