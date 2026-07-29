@@ -53,7 +53,7 @@ smokeFiles =
   [ "Succeed/simple.agda"            -- 最简文件
   , "Succeed/Lambda.agda"            -- lambda 语法
   , "Succeed/DataRecordInductive.agda" -- data + record
-  , "Succeed/ImportAnonymousModule.agda" -- 模块系统
+  , "Succeed/Nat.agda"               -- 自包含 data 声明
   ]
 
 ----------------------------------------------------------------------
