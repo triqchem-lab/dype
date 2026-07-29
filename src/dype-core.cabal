@@ -97,59 +97,59 @@ extra-source-files:
     config/stack-9.2.8.yaml
     -- Agda's data files, embedded by module Agda.Setup.
     -- Keep in sync with the list in Agda.Setup.DataFiles and below.
-    src/data/emacs-mode/agda-input.el
-    src/data/emacs-mode/agda2-abbrevs.el
-    src/data/emacs-mode/agda2-highlight.el
-    src/data/emacs-mode/agda2-mode-pkg.el
-    src/data/emacs-mode/agda2-mode.el
-    src/data/emacs-mode/agda2-queue.el
-    src/data/emacs-mode/agda2.el
-    src/data/emacs-mode/annotation.el
-    src/data/emacs-mode/eri.el
+    data/emacs-mode/agda-input.el
+    data/emacs-mode/agda2-abbrevs.el
+    data/emacs-mode/agda2-highlight.el
+    data/emacs-mode/agda2-mode-pkg.el
+    data/emacs-mode/agda2-mode.el
+    data/emacs-mode/agda2-queue.el
+    data/emacs-mode/agda2.el
+    data/emacs-mode/annotation.el
+    data/emacs-mode/eri.el
     src/data/html/Agda.css
     src/data/html/highlight-hover.js
-    src/data/JS/agda-rts.mjs
-    src/data/JS/agda-rts.js
-    src/data/JS/agda-rts.amd.js
+    data/JS/agda-rts.mjs
+    data/JS/agda-rts.js
+    data/JS/agda-rts.amd.js
     src/data/latex/agda.sty
     src/data/latex/postprocess-latex.pl
-    src/data/lib/prim/agda-builtins.agda-lib
-    src/data/lib/prim/Agda/Builtin/Bool.agda
-    src/data/lib/prim/Agda/Builtin/Char.agda
-    src/data/lib/prim/Agda/Builtin/Char/Properties.agda
-    src/data/lib/prim/Agda/Builtin/Coinduction.agda
-    src/data/lib/prim/Agda/Builtin/Cubical/Path.agda
-    src/data/lib/prim/Agda/Builtin/Cubical/Sub.agda
-    src/data/lib/prim/Agda/Builtin/Cubical/Glue.agda
-    src/data/lib/prim/Agda/Builtin/Cubical/Equiv.agda
-    src/data/lib/prim/Agda/Builtin/Cubical/HCompU.agda
-    src/data/lib/prim/Agda/Builtin/Equality.agda
-    src/data/lib/prim/Agda/Builtin/Equality/Erase.agda
-    src/data/lib/prim/Agda/Builtin/Equality/Rewrite.agda
-    src/data/lib/prim/Agda/Builtin/Float.agda
-    src/data/lib/prim/Agda/Builtin/Float/Properties.agda
-    src/data/lib/prim/Agda/Builtin/FromNat.agda
-    src/data/lib/prim/Agda/Builtin/FromNeg.agda
-    src/data/lib/prim/Agda/Builtin/FromString.agda
-    src/data/lib/prim/Agda/Builtin/IO.agda
-    src/data/lib/prim/Agda/Builtin/Int.agda
-    src/data/lib/prim/Agda/Builtin/List.agda
-    src/data/lib/prim/Agda/Builtin/Maybe.agda
-    src/data/lib/prim/Agda/Builtin/Nat.agda
-    src/data/lib/prim/Agda/Builtin/Reflection.agda
-    src/data/lib/prim/Agda/Builtin/Reflection/External.agda
-    src/data/lib/prim/Agda/Builtin/Reflection/Properties.agda
-    src/data/lib/prim/Agda/Builtin/Sigma.agda
-    src/data/lib/prim/Agda/Builtin/Size.agda
-    src/data/lib/prim/Agda/Builtin/Strict.agda
-    src/data/lib/prim/Agda/Builtin/String.agda
-    src/data/lib/prim/Agda/Builtin/String/Properties.agda
-    src/data/lib/prim/Agda/Builtin/TrustMe.agda
-    src/data/lib/prim/Agda/Builtin/Unit.agda
-    src/data/lib/prim/Agda/Builtin/Word.agda
-    src/data/lib/prim/Agda/Builtin/Word/Properties.agda
-    src/data/lib/prim/Agda/Primitive.agda
-    src/data/lib/prim/Agda/Primitive/Cubical.agda
+    data/lib/prim/agda-builtins.agda-lib
+    data/lib/prim/Agda/Builtin/Bool.agda
+    data/lib/prim/Agda/Builtin/Char.agda
+    data/lib/prim/Agda/Builtin/Char/Properties.agda
+    data/lib/prim/Agda/Builtin/Coinduction.agda
+    data/lib/prim/Agda/Builtin/Cubical/Path.agda
+    data/lib/prim/Agda/Builtin/Cubical/Sub.agda
+    data/lib/prim/Agda/Builtin/Cubical/Glue.agda
+    data/lib/prim/Agda/Builtin/Cubical/Equiv.agda
+    data/lib/prim/Agda/Builtin/Cubical/HCompU.agda
+    data/lib/prim/Agda/Builtin/Equality.agda
+    data/lib/prim/Agda/Builtin/Equality/Erase.agda
+    data/lib/prim/Agda/Builtin/Equality/Rewrite.agda
+    data/lib/prim/Agda/Builtin/Float.agda
+    data/lib/prim/Agda/Builtin/Float/Properties.agda
+    data/lib/prim/Agda/Builtin/FromNat.agda
+    data/lib/prim/Agda/Builtin/FromNeg.agda
+    data/lib/prim/Agda/Builtin/FromString.agda
+    data/lib/prim/Agda/Builtin/IO.agda
+    data/lib/prim/Agda/Builtin/Int.agda
+    data/lib/prim/Agda/Builtin/List.agda
+    data/lib/prim/Agda/Builtin/Maybe.agda
+    data/lib/prim/Agda/Builtin/Nat.agda
+    data/lib/prim/Agda/Builtin/Reflection.agda
+    data/lib/prim/Agda/Builtin/Reflection/External.agda
+    data/lib/prim/Agda/Builtin/Reflection/Properties.agda
+    data/lib/prim/Agda/Builtin/Sigma.agda
+    data/lib/prim/Agda/Builtin/Size.agda
+    data/lib/prim/Agda/Builtin/Strict.agda
+    data/lib/prim/Agda/Builtin/String.agda
+    data/lib/prim/Agda/Builtin/String/Properties.agda
+    data/lib/prim/Agda/Builtin/TrustMe.agda
+    data/lib/prim/Agda/Builtin/Unit.agda
+    data/lib/prim/Agda/Builtin/Word.agda
+    data/lib/prim/Agda/Builtin/Word/Properties.agda
+    data/lib/prim/Agda/Primitive.agda
+    data/lib/prim/Agda/Primitive/Cubical.agda
     src/data/MAlonzo/src/MAlonzo/RTE.hs
     src/data/MAlonzo/src/MAlonzo/RTE/Float.hs
 
