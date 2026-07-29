@@ -32,8 +32,8 @@ AGDA_RTS ?= +RTS -M6G -RTS
 
 # 全量测试组 (agda CI 对齐) — GHCRTS 给 agda-tests, AGDA_TESTS_OPTIONS 含 RTS 给子进程
 # 用法: make succeed | make fail | make test-quick
-# 或:   GHCRTS=-M6G make succeed
-test-group-options = GHCRTS=-M6G AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
+# 或:   GHCRTS=-M6G make succeed (需要大堆时手动覆盖)
+test-group-options = AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
 
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
@@ -156,7 +156,7 @@ cubical-test: ## Cubical 核心修复验证
 .PHONY: cubical-succeed
 cubical-succeed: ## Cubical 成功测试
 	@$(call decorate, "Cubical succeed tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/CubicalSucceed)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/CubicalSucceed)
 
 # --- test 组 ---
 
@@ -222,14 +222,14 @@ interaction: ## 交互测试
 .PHONY: interactive
 interactive: ## 交互模式测试
 	@$(call decorate, "Interactive test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Interactive)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Interactive)
 
 # --- latex/html 组 ---
 
 .PHONY: latex-html-test
 latex-html-test: ## LaTeX/HTML 后端测试
 	@$(call decorate, "LaTeX and HTML test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/LaTeXAndHTML)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LaTeXAndHTML)
 
 # --- stdlib 组 ---
 
@@ -245,14 +245,14 @@ std-lib-test: ## 标准库测试
 std-lib-compiler-test: ## 标准库编译器测试
 	@$(call decorate, "Standard library compiler tests", \
 	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
-	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include AllStdLib --regex-exclude AllStdLibJS)
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include AllStdLib --regex-exclude AllStdLibJS)
 
 .PHONY: std-lib-succeed
 std-lib-succeed: ## 标准库成功测试
 	@$(call decorate, "Successful tests using the standard library", \
 	  find test/LibSucceed -type f -name '*.agdai' -delete ; \
 	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
-	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/LibSucceed)
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibSucceed)
 
 .PHONY: std-lib-interaction
 std-lib-interaction: ## 标准库交互测试
