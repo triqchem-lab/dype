@@ -27,6 +27,14 @@ JFLAG ?= 1
 # 并行测试数 (默认 = CPU 核心数)
 PARALLEL_TESTS ?= $(shell getconf _NPROCESSORS_ONLN)
 
+# 子 agda 进程的内存限制 (默认 6GB)
+AGDA_RTS ?= +RTS -M6G -RTS
+
+# 全量测试组 (agda CI 对齐) — GHCRTS 给 agda-tests, AGDA_TESTS_OPTIONS 含 RTS 给子进程
+# 用法: make succeed | make fail | make test-quick
+# 或:   GHCRTS=-M6G make succeed
+test-group-options = GHCRTS=-M6G AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
+
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
@@ -148,14 +156,14 @@ cubical-test: ## Cubical 核心修复验证
 .PHONY: cubical-succeed
 cubical-succeed: ## Cubical 成功测试
 	@$(call decorate, "Cubical succeed tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/CubicalSucceed)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/CubicalSucceed)
 
 # --- test 组 ---
 
 .PHONY: bugs
 bugs: ## 回归测试
 	@$(call decorate, "Suite of tests for bugs", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Bugs)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Bugs)
 
 .PHONY: common
 common: ## 公共库测试
@@ -165,14 +173,14 @@ common: ## 公共库测试
 .PHONY: succeed
 succeed: ## 成功测试集
 	@$(call decorate, "Suite of successful tests", \
-		echo $(shell command -v $(AGDA_BIN)) > $(AGDA_TEST_DIR)/helpers/exec-tc/executables && \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Succeed ; \
+		$(test-group-options) echo $(shell command -v $(AGDA_BIN)) > $(AGDA_TEST_DIR)/helpers/exec-tc/executables && \
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Succeed ; \
 		rm -f $(AGDA_TEST_DIR)/helpers/exec-tc/executables)
 
 .PHONY: fail
 fail: ## 失败测试集
 	@$(call decorate, "Suite of failing tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Fail)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Fail)
 
 .PHONY: examples
 examples: ## 示例测试
@@ -182,27 +190,27 @@ examples: ## 示例测试
 .PHONY: build-succeed-test
 build-succeed-test: ## 构建成功测试
 	@$(call decorate, "Suite of successful --build-library tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/BuildSucceed)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/BuildSucceed)
 
 .PHONY: build-fail-test
 build-fail-test: ## 构建失败测试
 	@$(call decorate, "Suite of failing --build-library tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/BuildFail)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/BuildFail)
 
 .PHONY: internal-tests
 internal-tests: ## 内部单元测试
 	@$(call decorate, "Internal test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Internal)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Internal)
 
 .PHONY: api-test
 api-test: ## API 测试
 	@$(call decorate, "API test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/API)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/API)
 
 .PHONY: compiler-test
 compiler-test: ## 编译器后端测试
 	@$(call decorate, "Compiler tests", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Compiler --regex-exclude AllStdLib)
+		$(test-group-options) AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Compiler --regex-exclude AllStdLib)
 
 # --- interaction 组 ---
 
@@ -214,14 +222,14 @@ interaction: ## 交互测试
 .PHONY: interactive
 interactive: ## 交互模式测试
 	@$(call decorate, "Interactive test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/Interactive)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/Interactive)
 
 # --- latex/html 组 ---
 
 .PHONY: latex-html-test
 latex-html-test: ## LaTeX/HTML 后端测试
 	@$(call decorate, "LaTeX and HTML test suite", \
-		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LaTeXAndHTML)
+		AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/LaTeXAndHTML)
 
 # --- stdlib 组 ---
 
@@ -237,14 +245,14 @@ std-lib-test: ## 标准库测试
 std-lib-compiler-test: ## 标准库编译器测试
 	@$(call decorate, "Standard library compiler tests", \
 	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
-	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include AllStdLib --regex-exclude AllStdLibJS)
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include AllStdLib --regex-exclude AllStdLibJS)
 
 .PHONY: std-lib-succeed
 std-lib-succeed: ## 标准库成功测试
 	@$(call decorate, "Successful tests using the standard library", \
 	  find test/LibSucceed -type f -name '*.agdai' -delete ; \
 	  AGDA_TESTS_OPTIONS="$(AGDA_TESTS_OPTIONS) +RTS -M6G -RTS" \
-	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) $(AGDA_TESTS_OPTIONS) --regex-include all/LibSucceed)
+	  AGDA_BIN=$(AGDA_BIN) $(AGDA_TESTS_BIN) --regex-include all/LibSucceed)
 
 .PHONY: std-lib-interaction
 std-lib-interaction: ## 标准库交互测试

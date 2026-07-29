@@ -122,8 +122,11 @@ readAgdaProcessWithCWD extraEnv mcwd args input = do
   let env = expandEnvVarTelescope home $ maybe origEnv (origEnv ++) extraEnv
   let envArgs = maybe [] words $ lookup "AGDA_ARGS" env
   let agdaBin = getAgdaBin env
+  -- dype: 子 agda 进程默认 RTS (6GB)。已有 +RTS 参数的测试不会重复添加
+  let argsWithRts = if any (List.isPrefixOf "+RTS") args then args
+                    else args ++ ["+RTS", "-M6G", "-RTS"]
   -- hPutStrLn stderr $ unwords $ agdaBin : envArgs ++ args
-  readProcessWithEnv env mcwd agdaBin (envArgs ++ args) input
+  readProcessWithEnv env mcwd agdaBin (envArgs ++ argsWithRts) input
 
 data AgdaResult
   = AgdaSuccess (Maybe Text)          -- ^ A success can come with warnings
