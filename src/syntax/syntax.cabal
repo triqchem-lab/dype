@@ -1,5 +1,5 @@
 cabal-version: 2.4
-name:          agda-syntax
+name:          syntax
 version:       0.1.0.0
 synopsis:      Agda.Syntax parser modules vendored for dype
 build-type:    Simple

@@ -7,7 +7,7 @@ dype/
 ├── src/Dayan/           # dype 自有代码 (CRT/Trit/Parse/ProofGen/Pipeline)
 ├── vendor/
 │   ├── agda-src/Agda/   # 类型检查器源码 (已修改内核)
-│   └── agda-syntax/     # cabal 库 (编译 agda-src)
+│   └── syntax/     # cabal 库 (编译 agda-src)
 ├── test/                # 测试套件 (自带 Agda 全量测试)
 ├── cubical/             # cubical 库 (clearnature fork)
 ├── std-lib/             # 标准库 (clearnature fork)

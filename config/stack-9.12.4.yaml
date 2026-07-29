@@ -6,4 +6,4 @@ allow-newer: true
 
 packages:
 - '..'
-- '../src/agda-syntax'
+- '../src/syntax'

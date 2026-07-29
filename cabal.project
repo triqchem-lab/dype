@@ -1,6 +1,6 @@
 packages:
   .
-  src/agda-syntax
+  src/syntax
   src
 
 allow-newer: monad-control:transformers-compat
