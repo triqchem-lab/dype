@@ -35,4 +35,4 @@ excluded-files:
   - "test/Fail/Issue4506.agda"
   - "test/Fail/Tabs.agda"
   - "test/Fail/TabsInPragmas.agda"
-  - "vendor/agda-src/Agda/Syntax/Parser/Lexer.hs"
+  - "src/dype-core/Agda/Syntax/Parser/Lexer.hs"

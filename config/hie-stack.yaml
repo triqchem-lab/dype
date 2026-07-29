@@ -2,9 +2,9 @@ cradle:
   stack:
     - path: './src'
       component: 'dype:lib'
-    - path: './src/vendor/agda-src'
+    - path: './src/dype-core'
       component: 'agda-syntax:lib'
-    - path: './src/vendor/agda-syntax/src'
+    - path: './src/agda-syntax/src'
       component: 'agda-syntax:lib'
     - path: './app'
       component: 'dype:exe:gen-demo'

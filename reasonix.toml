@@ -1,0 +1,2 @@
+[permissions]
+allow = ["Bash(# Reasonix 的模型配置\nfind /home/yanli/work/DeepSeek-Reasonix -name \"*.toml\" -o -name \"*.json\" -o -name \"*.yaml\" 2>/dev/null | xargs grep -l \"context\\|max_token\\|model\" 2>/dev/null | head -5\necho \"---\"\n# qwen-code 的模型配置\nfind /data/training/cli/qwen-code -name \"*.toml\" -o -name \"*.json\" -o -name \"*.yaml\" 2>/dev/null | xargs grep -l \"context\\|max_token\\|model\" 2>/dev/null | head -5)"]

@@ -48,8 +48,8 @@ make test    # 全量串行
 
 dype 修改了 Agda 类型检查器的两个核心文件:
 
-- `vendor/agda-src/Agda/TypeChecking/Empty.hs`: instantiateFull 修复
-- `vendor/agda-src/Agda/TypeChecking/Rules/LHS/Unify.hs`: d/=d' 冲突检测
+- `src/dype-core/Agda/TypeChecking/Empty.hs`: instantiateFull 修复
+- `src/dype-core/Agda/TypeChecking/Rules/LHS/Unify.hs`: d/=d' 冲突检测
 
 ## 代码规范
 

@@ -1,7 +1,7 @@
 packages:
   .
-  src/vendor/agda-syntax
-  src/vendor/agda-src
+  src/agda-syntax
+  src/dype-core
 
 allow-newer: monad-control:transformers-compat
 allow-newer: monad-control:transformers
