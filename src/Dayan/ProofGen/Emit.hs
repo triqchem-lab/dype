@@ -55,8 +55,14 @@ emitTerm = \case
   -- 中缀运算符: App (App (Def "_op_") a) b → (a op b)
   App (App (Def op) a) b | isInfixOp op ->
     "(" <> emitTerm a <> " " <> stripUnderscores op <> " " <> emitTerm b <> ")"
-  App f a -> emitTerm f <> " " <> emitTerm a
+  App f a -> emitTerm f <> " " <> emitTermAtom a
   Ann e t -> "(" <> emitTerm e <> " : " <> emitType t <> ")"; Pi _ _ _ -> "{! Pi !}"
+
+-- | 原子项渲染: 复合项 (App/Lam) 作为参数时需要括号
+emitTermAtom :: Term -> Text
+emitTermAtom t@(App _ _) = "(" <> emitTerm t <> ")"
+emitTermAtom t@(Lam _ _) = "(" <> emitTerm t <> ")"
+emitTermAtom t = emitTerm t
 
 -- | 判断是否为中缀运算符名 (_xxx_ 形式)
 isInfixOp :: Text -> Bool
