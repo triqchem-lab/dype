@@ -40,8 +40,8 @@ test-group-options = AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
 # 二进制路径 — cabal 动态解析 (跨平台/跨GHC版本)
-AGDA_BIN        ?= $(shell cabal list-bin dype-core:exe:agda)
-AGDA_TESTS_BIN  ?= $(shell cabal list-bin dype-core:exe:agda-tests)
+AGDA_BIN        ?= $(shell cabal list-bin dype-core:exe:dype)
+AGDA_TESTS_BIN  ?= $(shell cabal list-bin dype-core:exe:dype-tests)
 
 # 测试目录
 AGDA_TEST_DIR = test

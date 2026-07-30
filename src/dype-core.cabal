@@ -970,7 +970,7 @@ library
 -- Agda binary
 ---------------------------------------------------------------------------
 
-executable agda
+executable dype
   hs-source-dirs: main
   main-is:        Main.hs
   build-depends:
@@ -1000,7 +1000,7 @@ executable agda
 -- agda-mode executable
 ---------------------------------------------------------------------------
 
-executable agda-mode
+executable dype-mode
   import:           language
 
   hs-source-dirs:   agda-mode full setup
@@ -1044,7 +1044,7 @@ executable agda-mode
 -- executing the tests using cabal directly is almost
 -- guaranteed to fail. See also Issue #1490.
 --
-executable agda-tests
+executable dype-tests
   import:           language
 
   hs-source-dirs:   ../test
