@@ -313,8 +313,8 @@ cleanOutput' ::
 cleanOutput' agda pwd t = foldl (\ t' (rgx, n) -> replace rgx n t') t rgxs
   where
   rgxs = map (first mkRegex) $ concat
-    [ [ (T.pack Agda.Version.package, "«Agda-package»")  -- dype: must precede binary name replacement
-      , (agda, "agda") | agda /= "agda" ]
+    [ (T.pack Agda.Version.package, "«Agda-package»") ]  -- dype: must precede binary name replacement
+    : [ [ (agda, "agda") | agda /= "agda" ]
     , [ (" called at full/Agda/", " called at src/full/Agda/")  -- dype: normalize error paths to golden expectation
       , ("[^ (]*test.Fail.", "")
       , ("[^ (]*test.Succeed.", "")
