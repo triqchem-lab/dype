@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding
 
 import System.Directory
+import System.Environment ( getEnvironment )
 import System.Exit
 import System.FilePath
 import System.IO.Temp
@@ -72,7 +73,14 @@ mkFailTest testDir agdaFile =
   flagFile   = baseName <.> "flags"
   goldenFile = baseName <.> "err"
 
-  readGolden = readTextFileMaybe goldenFile
+  readGolden = do
+    mgolden <- readTextFileMaybe goldenFile
+    case mgolden of
+      Nothing -> return Nothing
+      Just g -> do
+        agdaBin <- takeFileName . getAgdaBin <$> getEnvironment
+        pwd <- getCurrentDirectory
+        return $ Just $ cleanOutput' (T.pack agdaBin) (T.pack $ map (\c -> if c == '\\' then '/' else c) pwd) g
   updGolden  = writeTextFile goldenFile
 
   doRun = do
