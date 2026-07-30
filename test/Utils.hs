@@ -313,7 +313,7 @@ cleanOutput' ::
 cleanOutput' agda pwd t = foldl (\ t' (rgx, n) -> replace rgx n t') t rgxs
   where
   rgxs = map (first mkRegex) $ concat
-    [ [ (agda, "agda") | agda /= "agda" ]
+    [ [ (agda <> "/", "agda/") | agda /= "agda" ]  -- dype: normalize binary name in paths only
     , [ (" called at full/Agda/", " called at src/full/Agda/")  -- dype: normalize error paths to golden expectation
       , ("[^ (]*test.Fail.", "")
       , ("[^ (]*test.Succeed.", "")
