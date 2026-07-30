@@ -80,7 +80,7 @@ install: ## 安装 dype
 
 .PHONY: install-bin
 install-bin: ## 编译 dype (CI Step 1, 测试阶段仅编译不安装)
-	cabal build all -fdype-core:debug
+	cabal build all
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
