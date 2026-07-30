@@ -80,7 +80,7 @@ install: ## 安装 dype
 
 .PHONY: install-bin
 install-bin: ## 编译 dype (CI Step 1, 测试阶段仅编译不安装)
-	cabal build all
+	cabal build all -fdype-core:debug
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
@@ -220,7 +220,7 @@ interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
 		$(MAKE) -C test/interaction \
 			AGDA_BIN="$(AGDA_BIN)" \
-			RUNGHC="stack exec runghc --")
+			RUNGHC="stack exec runghc -- -package dype-core")
 
 .PHONY: interactive
 interactive: ## 交互模式测试

@@ -8,4 +8,4 @@ allow-newer: monad-control:transformers-compat
 allow-newer: monad-control:transformers
 
 package dype-core
-  flags: +enable-cluster-counting +debug
+  flags: +enable-cluster-counting
