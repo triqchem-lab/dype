@@ -81,6 +81,15 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Install direnv
+      run: |
+        sudo apt-get update -qq && sudo apt-get install -y -qq direnv
+
+    - name: Setup direnv
+      run: |
+        direnv allow .
+        eval "$(direnv export bash)"
+
     - &haskell_setup
       name: Detect Haskell toolchain
       id: setup-haskell

@@ -12,7 +12,6 @@ cabal.sandbox.config
 test/Succeed/
 
 # direnv / venv
-.envrc
 .direnv/
 .venv/
 .reasonix/
