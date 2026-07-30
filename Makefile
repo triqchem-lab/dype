@@ -39,9 +39,9 @@ test-group-options = AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
-# 二进制路径 — 系统安装后直接用 (dist-newstyle 被 install 清理)
-AGDA_BIN        ?= $(shell command -v dype 2>/dev/null || cabal list-bin dype-core:exe:dype)
-AGDA_TESTS_BIN  ?= $(shell command -v dype-tests 2>/dev/null || cabal list-bin dype-core:exe:dype-tests)
+# 二进制路径 — 本地构建优先 (增量快速), 系统安装后备
+AGDA_BIN        ?= $(shell find dist-newstyle -name dype -type f -path "*/dype-core-*/x/dype/*" 2>/dev/null | head -1 || command -v dype 2>/dev/null)
+AGDA_TESTS_BIN  ?= $(shell find dist-newstyle -name dype-tests -type f -path "*/dype-core-*/x/dype-tests/*" 2>/dev/null | head -1 || command -v dype-tests 2>/dev/null)
 
 # 测试目录
 AGDA_TEST_DIR = test
@@ -79,8 +79,8 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: ## 安装 dype 到系统 (CI Step 1, 全局可用)
-	cabal install dype dype-core:exe:dype dype-core:exe:dype-tests --overwrite-policy=always
+install-bin: ## 编译 dype (CI Step 1, 增量构建)
+	cabal build all
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
