@@ -218,6 +218,7 @@ compiler-test: ## 编译器后端测试
 .PHONY: interaction
 interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
+		env GHC_PACKAGE_PATH=$$(find dist-newstyle -path "*/dype-core-*/package.conf.inplace" -type d 2>/dev/null | head -1) \
 		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)")
 
 .PHONY: interactive
