@@ -5,4 +5,3 @@ Issue2487-2.agda:4.8-19: error: [CoInfectiveImport]
 Importing module
 Issue2487.A (at Issue2487/A.agda:1.1)
 not using the --safe flag from a module which does.
-test

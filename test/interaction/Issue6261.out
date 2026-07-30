@@ -1,6 +1,7 @@
 (agda2-status-action "")
 (agda2-info-action "*Type-checking*" "" nil)
 (agda2-highlight-clear)
+(agda2-info-action "*Type-checking*" "Checking Issue6261 (Issue6261.agda)." t)
 (agda2-info-action "*Type-checking*" " Checking Issue6261a (Issue6261a.agda)." t)
 (agda2-info-action "*Type-checking*" " Finished Issue6261a." t)
 (agda2-info-action "*Type-checking*" " Checking Issue6261b (Issue6261b.agda)." t)
