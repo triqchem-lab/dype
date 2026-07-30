@@ -39,9 +39,9 @@ test-group-options = AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
-# 二进制路径 — cabal 动态解析 (跨平台/跨GHC版本)
-AGDA_BIN        ?= $(shell cabal list-bin dype-core:exe:dype)
-AGDA_TESTS_BIN  ?= $(shell cabal list-bin dype-core:exe:dype-tests)
+# 二进制路径 — 系统安装后直接用 (dist-newstyle 被 install 清理)
+AGDA_BIN        ?= $(shell command -v dype 2>/dev/null || cabal list-bin dype-core:exe:dype)
+AGDA_TESTS_BIN  ?= $(shell command -v dype-tests 2>/dev/null || cabal list-bin dype-core:exe:dype-tests)
 
 # 测试目录
 AGDA_TEST_DIR = test

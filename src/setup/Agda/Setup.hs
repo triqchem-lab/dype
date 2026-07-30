@@ -16,6 +16,8 @@ import System.FilePath    ( (</>), takeDirectory )
 import System.Directory   ( getAppUserDataDirectory, getCurrentDirectory
                           , makeAbsolute, doesDirectoryExist )
 
+import qualified Paths_dype_core
+
 -- | Get the path to ~/.agda (overridable via AGDA_DIR env var).
 getAgdaAppDir :: IO FilePath
 getAgdaAppDir = do
@@ -25,21 +27,9 @@ getAgdaAppDir = do
     Nothing -> getAppUserDataDirectory "agda"
 
 -- | Get the data directory (prim library etc).
---   Walks up from CWD to find src/data/; no env var required.
+--   Uses cabal Paths module like agda original.
 getDataDir :: IO FilePath
-getDataDir = do
-  cwd <- getCurrentDirectory
-  dir <- findDataDir cwd
-  makeAbsolute dir
-  where
-    findDataDir d = do
-      let candidate = d </> "src" </> "data"
-      exists <- doesDirectoryExist candidate
-      if exists then return candidate
-      else do
-        let parent = takeDirectory d
-        if parent == d then return candidate  -- reached root, use CWD fallback
-        else findDataDir parent
+getDataDir = Paths_dype_core.getDataDir
 
 -- | Get a specific data file path.
 getDataFileName :: FilePath -> IO FilePath
