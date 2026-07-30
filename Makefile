@@ -80,7 +80,7 @@ install: ## 安装 dype
 
 .PHONY: install-bin
 install-bin: ## 安装 dype 到系统 (CI Step 1, 全局可用)
-	cabal install dype --overwrite-policy=always
+	cabal install dype dype-core:exe:dype dype-core:exe:dype-tests --overwrite-policy=always
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
