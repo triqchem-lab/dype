@@ -79,10 +79,7 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: ## 编译 dype (CI Step 1, 测试阶段仅编译不安装)
-	cabal build all
-
-install-system: ## 安装 dype 到系统 (全局可用)
+install-bin: ## 安装 dype 到系统 (CI Step 1, 全局可用)
 	cabal install dype --overwrite-policy=always
 
 .PHONY: install-deps
