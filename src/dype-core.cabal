@@ -1124,7 +1124,7 @@ executable dype-tests
   -- Since 'agda-tests' wants to call 'agda', we have to add it here,
   -- should we want to run 'cabal run agda-tests'.
   if !flag(ignore-build-tool-depends)
-    build-tool-depends: dype-core:agda
+    build-tool-depends: dype-core:dype
 
   build-depends:
     , dype-core
