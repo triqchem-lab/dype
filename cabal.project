@@ -2,7 +2,6 @@ packages:
   .
   src/syntax
   src
-  std-lib
 
 allow-newer: monad-control:transformers-compat
 allow-newer: monad-control:transformers
