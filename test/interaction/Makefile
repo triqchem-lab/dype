@@ -70,8 +70,10 @@ run_test=\
            2>&1 | $(filter) ; \
     elif test -f $*.hs; \
     then $(RUNGHC) --ghc-arg=-v0 --ghc-arg=-w ./$*.hs $(AGDA_BIN) 2>&1 | $(filter) ; \
-    else /usr/bin/env bash ./$*.sh $(AGDA_BIN) "$(RUNGHC)" > $(TMPDIR)/$*.tmp_out ; \
+    elif test -f $*.sh; \
+    then /usr/bin/env bash ./$*.sh $(AGDA_BIN) "$(RUNGHC)" > $(TMPDIR)/$*.tmp_out ; \
          cat $(TMPDIR)/$*.tmp_out | $(filter) ; \
+    else $(AGDA_BIN) -v0 -i . -i .. --interaction --ignore-interfaces $(AGDA_OPT) < /dev/null 2>&1 | $(filter) ; \
     fi
 
 # Note that RTS_... variables are ignored when .hs/.sh files are used.
