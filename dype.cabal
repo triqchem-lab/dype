@@ -47,7 +47,7 @@ library
         Dayan.Parse.Agda
     build-depends:
         base >=4.17 && <5,
-        syntax,
+        dype-core,
         process,
         temporary,
         directory,

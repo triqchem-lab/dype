@@ -1,6 +1,5 @@
 packages:
   .
-  src/syntax
   src
 
 allow-newer: monad-control:transformers-compat
