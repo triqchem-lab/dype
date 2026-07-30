@@ -7,7 +7,7 @@
 #   或 4 组并行:
 #     make cubical-test cubical-succeed
 #     GHCRTS=-M6G AGDA_TESTS_OPTIONS="-j1" make bugs common succeed fail examples interactive api-test internal-tests compiler-test
-#     yes y | make interaction
+#     yes y | make interaction HAS_STACK=1
 #     GHCRTS=-M6G AGDA_TESTS_OPTIONS="-j1" make std-lib-test std-lib-compiler-test std-lib-succeed std-lib-interaction
 #
 # 本地测试:
@@ -224,7 +224,7 @@ compiler-test: ## 编译器后端测试
 .PHONY: interaction
 interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
-		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)")
+		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)" HAS_STACK=1)
 
 .PHONY: interactive
 interactive: ## 交互模式测试
