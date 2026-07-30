@@ -47,6 +47,7 @@ filter=$(SED) -e 's"$(pwdPlusDelimiter)""g' \
               -e 's/\(\\n\| \)\+/ /g' \
               -e 's/^ //g' \
               -e '/Linking /d' \
+              -e '/"Checking /d' \
               -e 's/Agda2> //g' \
      | $(clean)
 
