@@ -224,7 +224,7 @@ compiler-test: ## 编译器后端测试
 .PHONY: interaction
 interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
-		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)" HAS_STACK=1)
+		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)" RUNGHC="cabal exec -- runghc")
 
 .PHONY: interactive
 interactive: ## 交互模式测试
