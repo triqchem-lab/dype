@@ -3,27 +3,31 @@ Warning: Both /home/yanli/.cabal and /home/yanli/.config/cabal/config exist -
 ignoring the former.
 It is advisable to remove one of them. In that case, we will use the remaining
 one by default (unless '$CABAL_DIR' is explicitly set).
+Warning: Both /home/yanli/.cabal and /home/yanli/.config/cabal/config exist -
+ignoring the former.
+It is advisable to remove one of them. In that case, we will use the remaining
+one by default (unless '$CABAL_DIR' is explicitly set).
+Warning: Both /home/yanli/.cabal and /home/yanli/.config/cabal/config exist -
+ignoring the former.
+It is advisable to remove one of them. In that case, we will use the remaining
+one by default (unless '$CABAL_DIR' is explicitly set).
 Configuration is affected by cabal.project and cabal.project.local at
 '/data/work/functional-programming/dype'.
-Issue1232.hs:«line»:«col»: error: [GHC-87110]
-Could not load module ‘Agda.Version’.
-It is a member of the hidden package ‘dype-core-2.9.0’.
-You can run ‘:set -package dype-core’ to expose it.
-(Note: this unloads all the modules in the current scope.)
-It is a member of the hidden package ‘dype-core-2.9.0’.
-You can run ‘:set -package dype-core’ to expose it.
-(Note: this unloads all the modules in the current scope.)
-It is a member of the hidden package ‘Agda-2.9.0’.
-You can run ‘:set -package Agda’ to expose it.
-(Note: this unloads all the modules in the current scope.)
-It is a member of the hidden package ‘Agda-2.9.0’.
-You can run ‘:set -package Agda’ to expose it.
-(Note: this unloads all the modules in the current scope.)
-it is a hidden module in the package ‘syntax-0.1.0.0’
-it is a hidden module in the package ‘syntax-0.1.0.0’
-it is a hidden module in the package ‘syntax-0.1.0.0’
-Use :set -v to see a list of the files searched for.
-|
-6 | import Agda.Version
-| ^^^^^^^^^^^^^^^^^^^
-
+Checking Issue1232.All (Issue1232/All.agda).
+Checking Issue1232.Fin (Issue1232/Fin.agda).
+Checking Issue1232.List (Issue1232/List.agda).
+Checking Issue1232.Nat (Issue1232/Nat.agda).
+(agda2-status-action "")
+(agda2-info-action "*Type-checking*" "" nil)
+(agda2-highlight-clear)
+(agda2-info-action "*Type-checking*" "Checking Issue1232 (Issue1232.agda)." t)
+(agda2-status-action "Checked")
+(agda2-info-action "*All Done*" "" nil)
+((last . 1) . (agda2-goals-action '()))
+(agda2-status-action "")
+(agda2-info-action "*Type-checking*" "" nil)
+(agda2-highlight-clear)
+(agda2-info-action "*Type-checking*" "Checking Issue1232 (Issue1232.agda)." t)
+(agda2-status-action "Checked")
+(agda2-info-action "*All Done*" "" nil)
+((last . 1) . (agda2-goals-action '()))

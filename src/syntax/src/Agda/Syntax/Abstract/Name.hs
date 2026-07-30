@@ -1,0 +1,815 @@
+
+{-| Abstract names carry unique identifiers and stuff.
+-}
+module Agda.Syntax.Abstract.Name
+  ( module Agda.Syntax.Abstract.Name
+  , IsNoName(..)
+  , FreshNameMode(..)
+  ) where
+
+import Prelude hiding (length, null)
+
+import Control.DeepSeq
+
+import Data.Foldable (length)
+import Data.Function (on)
+import Data.Hashable (Hashable(..))
+import qualified Data.List as List
+import Data.Maybe
+import Data.Map (Map)
+import Data.Void
+
+import GHC.Generics (Generic)
+
+import Agda.Syntax.Position
+import Agda.Syntax.Common
+import Agda.Syntax.Common.Pretty
+import Agda.Syntax.Concrete.Name (IsNoName(..), NumHoles(..), NameInScope(..), LensInScope(..), FreshNameMode(..))
+import qualified Agda.Syntax.Concrete.Name as C
+
+import Data.Set (Set)
+import Data.Set qualified as Set
+import Data.Map (Map)
+import Data.Map qualified as Map
+
+import Agda.Utils.Functor
+import Agda.Utils.Lens
+import Agda.Utils.List qualified as List
+import Agda.Utils.List1 (List1, pattern (:|), (<|))
+import Agda.Utils.List1 qualified as List1
+import Agda.Utils.Map1 (Map1)
+import Agda.Utils.Map1 qualified as Map1
+import Agda.Utils.Maybe ( unionMaybeWith )
+import Agda.Utils.Null
+import Agda.Utils.Singleton
+import Agda.Utils.Size
+
+import qualified Agda.Syntax.Common.Aspect as Asp
+import Agda.Utils.Impossible
+
+---------------------------------------------------------------------------
+-- * Types
+---------------------------------------------------------------------------
+
+-- | A name is a unique identifier and a suggestion for a concrete name. The
+--   concrete name contains the source location (if any) of the name. The
+--   source location of the binding site is also recorded.
+data Name = Name
+  { _nameId          :: {-# UNPACK #-} !NameId
+  , nameConcrete     :: C.Name  -- ^ The concrete name used for this instance
+  , nameCanonical    :: C.Name  -- ^ The concrete name in the original definition (needed by primShowQName, see #4735)
+  , _nameBindingSite :: Range   -- ^ Range of the name in its /defining/ occurrence.
+  , nameFixity       :: Fixity'
+  , nameIsRecordName :: Bool
+      -- ^ Is this the name of the invisible record variable `self`?
+      --   Should not be printed or displayed in the context, see issue #3584.
+  }
+
+-- | A name suffix.
+data Suffix
+  = NoSuffix
+  | Suffix !Integer
+  deriving (Show, Eq, Ord)
+
+-- | Qualified names are non-empty lists of names. Equality on qualified names
+--   are just equality on the last name, i.e. the module part is just
+--   for show.
+--
+-- The 'SetRange' instance for qualified names sets all individual
+-- ranges (including those of the module prefix) to the given one.
+data QName = QName
+  { qnameModule :: ModuleName
+  , qnameName   :: Name
+  } deriving (Generic)
+
+{-# SPECIALIZE Set.insert   :: QName -> Set QName -> Set QName #-}
+{-# SPECIALIZE Set.delete   :: QName -> Set QName -> Set QName #-}
+{-# SPECIALIZE Set.member   :: QName -> Set QName -> Bool #-}
+{-# SPECIALIZE Set.fromList :: [QName] -> Set QName #-}
+
+{-# SPECIALIZE Map.insert   :: QName -> v -> Map QName v -> Map QName v #-}
+{-# SPECIALIZE Map.lookup   :: QName -> Map QName v -> Maybe v #-}
+{-# SPECIALIZE Map.delete   :: QName -> Map QName v -> Map QName v #-}
+{-# SPECIALIZE Map.fromList :: [(QName, v)] -> Map QName v #-}
+
+-- | Something preceeded by a qualified name.
+data QNamed a = QNamed
+  { qname  :: QName
+  , qnamed :: a
+  }
+  deriving (Functor, Foldable, Traversable)
+
+-- | A module name is just a qualified name.
+--
+-- The 'SetRange' instance for module names sets all individual ranges
+-- to the given one.
+newtype ModuleName = MName { mnameToList :: [Name] }
+  deriving (Eq, Ord, NFData, Null, Hashable)
+
+-- | Ambiguous qualified names. Used for overloaded constructors.
+--
+-- A 'QName' in this collection might be equipped with lineage information
+-- in form of an associated 'AbstractName' (which must contain the same 'QName').
+--
+-- Invariant: All the names in the map must have the same concrete,
+-- unqualified name.  (This implies that they all have the same 'Range').
+--
+-- Don't use the constructor 'AmbQ' directly, use the smart constructors below!
+newtype AmbiguousQName = AmbQ { unAmbQ :: Map1 NameId AmbQNameEntry }
+  deriving (Eq, Ord, NFData, Sized)
+
+-- | Alternative in 'AmbiguousQName'.
+data AmbQNameEntry
+  = AmbQName QName
+      -- ^ 'QName' without lineage information.
+  | AmbAbstractName AbstractName
+      -- ^ 'QName' with lineage information, for error reporting.
+  deriving (Eq, Ord, Show, Generic)
+
+-- | A decoration of 'Agda.Syntax.Abstract.Name.QName'.
+data AbstractName = AbsName
+  { anameName    :: QName
+    -- ^ The resolved qualified name.
+  , anameKind    :: KindOfName
+    -- ^ The kind (definition, constructor, record field etc.).
+  , anameLineage :: WhyInScope
+    -- ^ Explanation where this name came from.
+  , anameMetadata :: NameMetadata
+    -- ^ Additional information needed during scope checking. Currently used
+    --   for generalized data/record params.
+  }
+  deriving (Show, Generic)
+
+-- | A decoration of abstract syntax module names.
+data AbstractModule = AbsModule
+  { amodName    :: ModuleName
+    -- ^ The resolved module name.
+  , amodLineage :: WhyInScope
+    -- ^ Explanation where this name came from.
+  }
+  deriving (Show, Generic)
+
+-- | For the sake of parsing left-hand sides, we distinguish
+--   constructor and record field names from defined names.
+
+-- Note: order does matter in this enumeration, see 'isDefName'.
+data KindOfName
+  = ConName                  -- ^ Constructor name ('Inductive' or don't know).
+  | CoConName                -- ^ Constructor name (definitely 'CoInductive').
+  | FldName                  -- ^ Record field name.
+  | PatternSynName           -- ^ Name of a pattern synonym.
+  | GeneralizeName           -- ^ Name to be generalized
+  | DisallowedGeneralizeName -- ^ Generalizable variable from a let open
+  | MacroName                -- ^ Name of a macro
+  | QuotableName             -- ^ A name that can only be quoted.
+  -- Previous category @DefName@:
+  -- (Refined in a flat manner as Enum and Bounded are not hereditary.)
+  | DataName                 -- ^ Name of a @data@.
+  | RecName                  -- ^ Name of a @record@.
+  | FunName                  -- ^ Name of a defined function.
+  | AxiomName                -- ^ Name of a @postulate@.
+  | PrimName                 -- ^ Name of a @primitive@.
+  | OtherDefName             -- ^ A @DefName@, but either other kind or don't know which kind.
+  -- End @DefName@.  Keep these together in sequence, for sake of @isDefName@!
+  deriving (Eq, Ord, Show, Enum, Bounded, Generic)
+
+-- | Where does a name come from?
+--
+--   This information is solely for reporting to the user,
+--   see 'Agda.Interaction.InteractionTop.whyInScope'.
+data WhyInScope
+  = Defined
+    -- ^ Defined in this module.
+  | Opened C.QName WhyInScope
+    -- ^ Imported from another module.
+  | Applied C.QName WhyInScope
+    -- ^ Imported by a module application.
+  deriving (Show, Generic)
+
+data NameMetadata = NameMetadata
+  { nameDataGeneralizedVars :: Map QName Name
+  , nameDataIsInstance      :: IsInstance
+  }
+  deriving (Show, Generic)
+
+---------------------------------------------------------------------------
+-- * Overloaded 'nameId'
+---------------------------------------------------------------------------
+
+class HasNameId a where
+  nameId :: a -> NameId
+
+instance HasNameId Name where
+  nameId = _nameId
+
+instance HasNameId QName where
+  nameId = nameId . qnameName
+
+instance HasNameId AbstractName where
+  nameId = nameId . anameName
+
+---------------------------------------------------------------------------
+-- * Overloaded 'nameBindingSite'
+---------------------------------------------------------------------------
+
+class HasNameBindingSite a where
+  nameBindingSite :: a -> Range
+
+instance HasNameBindingSite Name where
+  nameBindingSite = _nameBindingSite
+
+instance HasNameBindingSite QName where
+  nameBindingSite = nameBindingSite . qnameName
+
+instance HasNameBindingSite ModuleName where
+  nameBindingSite = nameBindingSite . mnameToQName
+
+instance HasNameBindingSite AbstractName where
+  nameBindingSite = nameBindingSite . anameName
+
+instance HasNameBindingSite AbstractModule where
+  nameBindingSite = nameBindingSite . amodName
+
+---------------------------------------------------------------------------
+-- * Class 'IsProjP'
+---------------------------------------------------------------------------
+
+-- | Check whether we are a projection pattern.
+class IsProjP a where
+  isProjP :: a -> Maybe (ProjOrigin, AmbiguousQName)
+
+instance IsProjP a => IsProjP (Arg a) where
+  isProjP p = case isProjP $ unArg p of
+    Just (ProjPostfix , f)
+     | getHiding p /= NotHidden -> Nothing
+    x -> x
+
+instance IsProjP a => IsProjP (Named n a) where
+  isProjP = isProjP . namedThing
+
+instance IsProjP Void where
+  isProjP _ = __IMPOSSIBLE__
+
+---------------------------------------------------------------------------
+-- * 'Name'
+---------------------------------------------------------------------------
+
+-- | Make a 'Name' from some kind of string.
+class MkName a where
+  -- | The 'Range' sets the /definition site/ of the name, not the use site.
+  mkName :: Range -> NameId -> a -> Name
+
+  mkName_ :: NameId -> a -> Name
+  mkName_ = mkName noRange
+
+instance MkName String where
+  mkName r i s = makeName i (C.Name noRange InScope (C.stringNameParts s)) r noFixity' False
+
+makeName :: NameId -> C.Name -> Range -> Fixity' -> Bool -> Name
+makeName i c r f rec = Name i c c r f rec
+
+nameToArgName :: Name -> ArgName
+nameToArgName = stringToArgName . prettyShow
+
+namedArgName :: NamedArg Name -> ArgName
+namedArgName x = fromMaybe (nameToArgName $ namedArg x) $ bareNameOf x
+
+-- | Ignoring the suffix.
+sameRoot :: Name -> Name -> Bool
+sameRoot = C.sameRoot `on` nameConcrete
+
+---------------------------------------------------------------------------
+-- * 'ModuleName'
+---------------------------------------------------------------------------
+
+-- | A module is anonymous if the qualification path ends in an underscore.
+isAnonymousModuleName :: ModuleName -> Bool
+isAnonymousModuleName (MName mms) = maybe False isNoName $ List.lastMaybe mms
+
+-- | Sets the ranges of the individual names in the module name to
+-- match those of the corresponding concrete names. If the concrete
+-- names are fewer than the number of module name name parts, then the
+-- initial name parts get the range 'noRange'.
+--
+-- @C.D.E \`withRangesOf\` [A, B]@ returns @C.D.E@ but with ranges set
+-- as follows:
+--
+-- * @C@: 'noRange'.
+--
+-- * @D@: the range of @A@.
+--
+-- * @E@: the range of @B@.
+--
+-- Precondition: The number of module name name parts has to be at
+-- least as large as the length of the list.
+
+withRangesOf :: ModuleName -> List1 C.Name -> ModuleName
+MName ms `withRangesOf` ns = if m < n then __IMPOSSIBLE__ else MName $
+      zipWith setRange (replicate (m - n) noRange ++ map getRange (List1.toList ns)) ms
+  where
+    m = length ms
+    n = length ns
+
+-- | Like 'withRangesOf', but uses the name parts (qualifier + name)
+-- of the qualified name as the list of concrete names.
+
+withRangesOfQ :: ModuleName -> C.QName -> ModuleName
+m `withRangesOfQ` q = m `withRangesOf` C.qnameParts q
+
+mnameFromList :: [Name] -> ModuleName
+mnameFromList = MName
+
+mnameFromList1 :: List1 Name -> ModuleName
+mnameFromList1 = MName . List1.toList
+
+mnameToList1 :: ModuleName -> List1 Name
+mnameToList1 (MName ns) = List1.ifNull ns __IMPOSSIBLE__ id
+
+noModuleName :: ModuleName
+noModuleName = mnameFromList []
+
+commonParentModule :: ModuleName -> ModuleName -> ModuleName
+commonParentModule m1 m2 =
+  mnameFromList $ List.commonPrefix (mnameToList m1) (mnameToList m2)
+
+mnameToConcrete :: ModuleName -> C.QName
+mnameToConcrete (MName []) = __IMPOSSIBLE__ -- C.QName C.noName_  -- should never happen?
+mnameToConcrete (MName (x:xs)) = foldr C.Qual (C.QName $ List1.last cs) $ List1.init cs
+  where
+    cs = fmap nameConcrete (x :| xs)
+
+qualifyM :: ModuleName -> ModuleName -> ModuleName
+qualifyM m1 m2 = mnameFromList $ mnameToList m1 ++ mnameToList m2
+
+-- | Is the first module a weak parent of the second?
+isLeParentModuleOf :: ModuleName -> ModuleName -> Bool
+isLeParentModuleOf = List.isPrefixOf `on` mnameToList
+
+-- | Is the first module a proper parent of the second?
+isLtParentModuleOf :: ModuleName -> ModuleName -> Bool
+isLtParentModuleOf x y =
+  isJust $ (List.stripPrefixBy (==) `on` mnameToList) x y
+
+-- | Is the first module a weak child of the second?
+isLeChildModuleOf :: ModuleName -> ModuleName -> Bool
+isLeChildModuleOf = flip isLeParentModuleOf
+
+-- | Is the first module a proper child of the second?
+isLtChildModuleOf :: ModuleName -> ModuleName -> Bool
+isLtChildModuleOf = flip isLtParentModuleOf
+
+---------------------------------------------------------------------------
+-- * 'QName'
+---------------------------------------------------------------------------
+
+qnameToList0 :: QName -> [Name]
+qnameToList0 = List1.toList . qnameToList
+
+qnameToList :: QName -> List1 Name
+qnameToList (QName m x) = mnameToList m `List1.snoc` x
+
+qnameFromList :: List1 Name -> QName
+qnameFromList xs = QName (mnameFromList $ List1.init xs) (List1.last xs)
+
+qnameToMName :: QName -> ModuleName
+qnameToMName = mnameFromList1 . qnameToList
+
+mnameToQName :: ModuleName -> QName
+mnameToQName = qnameFromList . mnameToList1
+
+showQNameId :: QName -> String
+showQNameId q = show (List1.toList ns) ++ "@" ++ show (List1.head ms)
+  where
+    (ns, ms) = List1.unzip $ fmap (unNameId . nameId) $ List1.snoc (mnameToList $ qnameModule q) (qnameName q)
+    unNameId (NameId n m) = (n, m)
+
+-- | Turn a qualified name into a concrete name. This should only be used as a
+--   fallback when looking up the right concrete name in the scope fails.
+qnameToConcrete :: QName -> C.QName
+qnameToConcrete (QName m x) =       -- Use the canonical name here (#5048)
+   foldr (C.Qual . nameConcrete) (C.QName $ nameCanonical x) (mnameToList m)
+
+qualifyQ :: ModuleName -> QName -> QName
+qualifyQ m x = qnameFromList $ mnameToList m `List1.prependList` qnameToList x
+
+qualify :: ModuleName -> Name -> QName
+qualify = QName
+
+-- | Convert a 'Name' to a 'QName' (add no module name).
+qualify_ :: Name -> QName
+qualify_ = qualify noModuleName
+
+-- | Is the name an operator?
+
+isOperator :: QName -> Bool
+isOperator = C.isOperator . nameConcrete . qnameName
+
+isInModule :: QName -> ModuleName -> Bool
+isInModule q m = mnameToList m `List.isPrefixOf` qnameToList0 q
+
+-- | Get the next version of the concrete name. For instance, @nextName "x" = "x₁"@.
+--   The name must not be a 'NoName'.
+nextName :: C.FreshNameMode -> Name -> Name
+nextName freshNameMode x = x { nameConcrete = C.nextName freshNameMode (nameConcrete x) }
+
+---------------------------------------------------------------------------
+-- * 'AmbiguousQName'
+---------------------------------------------------------------------------
+
+fromAmbQName :: AmbQNameEntry -> QName
+fromAmbQName = \case
+  AmbQName x -> x
+  AmbAbstractName x -> anameName x
+
+-- | A singleton "ambiguous" name.
+unambiguous :: QName -> AmbiguousQName
+unambiguous = ambiguous . singleton
+
+ambiguous :: List1 QName -> AmbiguousQName
+ambiguous = AmbQ . Map1.fromList . fmap \ x -> (nameId x, AmbQName x)
+
+-- | Get the first of the ambiguous names.
+headAmbQ :: AmbiguousQName -> QName
+headAmbQ = List1.head . getAmbiguous
+
+-- | Is a name ambiguous.
+isAmbiguous :: AmbiguousQName -> Bool
+isAmbiguous (AmbQ m) = size m > 1
+
+-- | Get the name if unambiguous.
+getUnambiguous :: AmbiguousQName -> Maybe QName
+getUnambiguous m
+  | size m == 1 = Just $ headAmbQ m
+  | otherwise   = Nothing
+
+getAmbiguous :: AmbiguousQName -> List1 QName
+getAmbiguous = fmap fromAmbQName . Map1.elems . unAmbQ
+
+ambAbstractNames :: AmbiguousQName -> [AbstractName]
+ambAbstractNames (AmbQ xs) = (`List1.mapMaybe` Map1.elems xs) \case
+  AmbQName{} -> Nothing
+  AmbAbstractName x -> Just x
+
+unambigName :: AbstractName -> AmbiguousQName
+unambigName = ambigName . singleton
+
+ambigName :: List1 AbstractName -> AmbiguousQName
+ambigName = AmbQ . Map1.fromList . fmap \ x -> (nameId x, AmbAbstractName x)
+
+-- | Preserve lineage information from both maps, left-biased.
+mergeAmbQ :: AmbiguousQName -> AmbiguousQName -> AmbiguousQName
+mergeAmbQ (AmbQ xs) (AmbQ ys) = AmbQ (Map1.unionWith (<>) xs ys)
+
+-- | Prefer 'AmbAbstractName' over 'AmbQName', left-biased.
+instance Semigroup AmbQNameEntry where
+  x@AmbAbstractName{} <> _ = x
+  _ <> y@AmbAbstractName{} = y
+  x <> _                   = x
+
+---------------------------------------------------------------------------
+-- * 'AbstractName'
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- * 'NameMetadata'
+---------------------------------------------------------------------------
+
+noMetadata :: NameMetadata
+noMetadata = empty
+
+generalizedVarsMetadata :: Map QName Name -> NameMetadata
+generalizedVarsMetadata m = NameMetadata m empty
+
+instanceMetadata :: IsInstance -> NameMetadata
+instanceMetadata i = NameMetadata empty i
+
+instance IsInstanceDef NameMetadata where
+  isInstanceDef = isInstanceDef . nameDataIsInstance
+
+instance IsInstanceDef AbstractName where
+  isInstanceDef = isInstanceDef . anameMetadata
+
+---------------------------------------------------------------------------
+-- * Instances
+---------------------------------------------------------------------------
+
+-- | Important instances: 'Eq', 'Ord', 'Hashable'
+--
+--   For the identity and comparing of names, only the 'NameId' matters!
+
+instance Eq Name where
+  (==) = (==) `on` nameId
+
+instance Ord Name where
+  compare = compare `on` nameId
+
+instance Hashable Name where
+  {-# INLINE hashWithSalt #-}
+  hashWithSalt salt = hashWithSalt salt . nameId
+
+-- QName
+
+instance Eq QName where
+  (==) = (==) `on` qnameName
+
+instance Ord QName where
+  compare = compare `on` qnameName
+
+instance Hashable QName where
+  {-# INLINE hashWithSalt #-}
+  hashWithSalt salt = hashWithSalt salt . qnameName
+
+-- AbstractName
+
+instance Eq AbstractName where
+  (==) = (==) `on` anameName
+
+instance Ord AbstractName where
+  compare = compare `on` anameName
+
+instance Hashable AbstractName where
+  hashWithSalt salt = hashWithSalt salt . anameName
+
+-- AbstractModule
+
+instance Eq AbstractModule where
+  (==) = (==) `on` amodName
+
+instance Ord AbstractModule where
+  compare = compare `on` amodName
+
+------------------------------------------------------------------------
+-- 'IsNoName' and 'Null' instances (checking for "_")
+------------------------------------------------------------------------
+
+-- | An abstract name is empty if its concrete name is empty.
+instance IsNoName Name where
+  isNoName = isNoName . nameConcrete
+
+instance IsNoName ModuleName where
+  isNoName (MName xs) = all isNoName xs
+
+instance Null Name where
+  empty = Name empty empty empty empty empty empty
+  null = isNoName
+
+instance Null QName where
+  empty = QName empty empty
+  null (QName m x) = null m && null x
+
+instance Null Suffix where
+  empty = NoSuffix
+
+instance Null NameMetadata where
+  empty = NameMetadata empty empty
+  null (NameMetadata m i) = null m && null i
+
+------------------------------------------------------------------------
+-- 'NumHoles' instances
+------------------------------------------------------------------------
+
+instance NumHoles Name where
+  numHoles = numHoles . nameConcrete
+
+instance NumHoles QName where
+  numHoles = numHoles . qnameName
+
+-- | We can have an instance for ambiguous names as all share a common concrete name.
+instance NumHoles AmbiguousQName where
+  numHoles = numHoles . headAmbQ
+
+------------------------------------------------------------------------
+-- Name lenses
+------------------------------------------------------------------------
+
+lensQNameName :: Lens' QName Name
+lensQNameName f (QName m n) = QName m <$> f n
+
+-- | Van Laarhoven lens on 'anameName'.
+lensAnameName :: Lens' AbstractName QName
+lensAnameName f am = f (anameName am) <&> \ m -> am { anameName = m }
+
+-- | Van Laarhoven lens on 'amodName'.
+lensAmodName :: Lens' AbstractModule ModuleName
+lensAmodName f am = f (amodName am) <&> \ m -> am { amodName = m }
+
+------------------------------------------------------------------------
+-- LensFixity' instances
+------------------------------------------------------------------------
+
+instance LensFixity' Name where
+  lensFixity' f n = f (nameFixity n) <&> \ fix' -> n { nameFixity = fix' }
+
+instance LensFixity' QName where
+  lensFixity' = lensQNameName . lensFixity'
+
+------------------------------------------------------------------------
+-- LensFixity instances
+------------------------------------------------------------------------
+
+instance LensFixity Name where
+  lensFixity = lensFixity' . lensFixity
+
+instance LensFixity QName where
+  lensFixity = lensFixity' . lensFixity
+
+instance LensFixity AbstractName where
+  lensFixity = lensAnameName . lensFixity
+
+------------------------------------------------------------------------
+-- LensInScope instances
+------------------------------------------------------------------------
+
+instance LensInScope Name where
+  lensInScope f n@Name{ nameConcrete = x } =
+    (\y -> n { nameConcrete = y }) <$> lensInScope f x
+
+instance LensInScope QName where
+  lensInScope f q@QName{ qnameName = n } =
+    (\n' -> q { qnameName = n' }) <$> lensInScope f n
+
+------------------------------------------------------------------------
+-- | Show instances (only for debug printing!)
+--
+-- Use 'prettyShow' to print names to the user.
+------------------------------------------------------------------------
+
+deriving instance Show Name
+deriving instance Show ModuleName
+deriving instance Show QName
+deriving instance Show a => Show (QNamed a)
+deriving instance Show AmbiguousQName
+
+-- | Useful for debugging scoping problems
+uglyShowName :: Name -> String
+uglyShowName x = show (nameId x, nameConcrete x)
+
+------------------------------------------------------------------------
+-- Pretty instances
+------------------------------------------------------------------------
+
+instance Pretty Name where
+  pretty n = pretty (nameConcrete n) `definedAt` (nameBindingSite n)
+
+instance Pretty ModuleName where
+  pretty = hcat . punctuate "." . map pretty . mnameToList
+
+instance Pretty QName where
+  pretty = hcat . punctuate "." . map pretty . qnameToList0 . useCanonical
+    where
+      -- #4735: When printing a fully qualified name (as done by primShowQName) we need to
+      -- use the origincal concrete name, not the possibly renamed concrete name in 'nameConcrete'.
+      useCanonical q = q { qnameName = (qnameName q) { nameConcrete = nameCanonical (qnameName q) } }
+
+instance Pretty AmbiguousQName where
+  pretty qs = hcat $ punctuate " | " $ fmap pretty $ getAmbiguous qs
+
+instance Pretty a => Pretty (QNamed a) where
+  pretty (QNamed a b) = pretty a <> "." <> pretty b
+
+instance Pretty Suffix where
+  pretty NoSuffix   = mempty
+  pretty (Suffix i) = text (show i)
+
+instance Pretty AbstractName where
+  pretty = pretty . anameName
+
+instance Pretty AbstractModule where
+  pretty = pretty . amodName
+
+------------------------------------------------------------------------
+-- Range instances
+------------------------------------------------------------------------
+
+-- HasRange
+
+instance HasRange Name where
+  getRange = getRange . nameConcrete
+
+instance HasRange ModuleName where
+  getRange (MName []) = noRange
+  getRange (MName xs) = getRange xs
+
+instance HasRange QName where
+  getRange q = getRange (qnameModule q, qnameName q)
+
+-- | The range of an @AmbiguousQName@ is the range of any of its
+--   disambiguations (they are the same concrete name).
+instance HasRange AmbiguousQName where
+  getRange = getRange . headAmbQ
+
+instance HasRange AmbQNameEntry where
+  getRange = \case
+    AmbQName        x -> getRange x
+    AmbAbstractName x -> getRange x
+
+-- SetRange
+
+instance SetRange Name where
+  setRange r x = x { nameConcrete = setRange r $ nameConcrete x }
+
+instance SetRange QName where
+  setRange r q = q { qnameModule = setRange r $ qnameModule q
+                   , qnameName   = setRange r $ qnameName   q
+                   }
+
+instance SetRange ModuleName where
+  setRange r (MName ns) = MName (zipWith setRange rs ns)
+    where
+      -- Put the range only on the last name. Otherwise
+      -- we get overlapping jump-to-definition links for all
+      -- the parts (See #2666).
+      rs = replicate (length ns - 1) noRange ++ [r]
+
+-- KillRange
+
+instance KillRange Name where
+  killRange (Name a b c d e f) =
+    (killRangeN Name a b c d e f) { _nameBindingSite = d }
+    -- Andreas, 2017-07-25, issue #2649
+    -- Preserve the nameBindingSite for error message.
+    --
+    -- Older remarks:
+    --
+    -- Andreas, 2014-03-30
+    -- An experiment: what happens if we preserve
+    -- the range of the binding site, but kill all
+    -- other ranges before serialization?
+    --
+    -- Andreas, Makoto, 2014-10-18 AIM XX
+    -- Kill all ranges in signature, including nameBindingSite.
+
+instance KillRange ModuleName where
+  killRange (MName xs) = MName $ killRange xs
+
+instance KillRange QName where
+  killRange (QName a b) = killRangeN QName a b
+  -- killRange q = q { qnameModule = killRange $ qnameModule q
+  --                 , qnameName   = killRange $ qnameName   q
+  --                 }
+
+instance KillRange AmbiguousQName where
+  killRange (AmbQ xs) = AmbQ $ killRange xs
+
+instance KillRange AmbQNameEntry where
+  killRange = \case
+    AmbQName x -> killRangeN AmbQName x
+    AmbAbstractName x -> killRangeN AmbAbstractName x
+
+instance KillRange AbstractName where
+  killRange (AbsName a b c d) = killRangeN AbsName a b c d
+
+instance KillRange KindOfName where
+  killRange = id
+
+instance KillRange WhyInScope where
+  killRange = \case
+    Defined -> Defined
+    Opened a b -> killRangeN Opened a b
+    Applied a b -> killRangeN Applied a b
+
+instance KillRange NameMetadata where
+  killRange = \case
+    NameMetadata a b -> killRangeN NameMetadata a b
+
+
+-- AbstractName
+
+instance HasRange AbstractName where
+  getRange = getRange . anameName
+
+instance SetRange AbstractName where
+  setRange r x = x { anameName = setRange r $ anameName x }
+
+------------------------------------------------------------------------
+-- Sized instances
+------------------------------------------------------------------------
+
+instance Sized QName where
+  size = size . qnameToList
+  natSize = natSize . qnameToList
+
+instance Sized ModuleName where
+  size = size . mnameToList
+  natSize = natSize . mnameToList
+
+------------------------------------------------------------------------
+-- NFData instances
+------------------------------------------------------------------------
+
+-- | The range is not forced.
+
+instance NFData Name where
+  rnf (Name _ a b _ c d) = rnf (a, b, c, d)
+
+instance NFData Suffix where
+  rnf NoSuffix   = ()
+  rnf (Suffix _) = ()
+
+instance NFData AbstractModule
+instance NFData AbstractName
+instance NFData AmbQNameEntry
+instance NFData KindOfName
+instance NFData NameMetadata
+instance NFData QName
+instance NFData WhyInScope
