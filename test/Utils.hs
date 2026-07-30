@@ -313,7 +313,8 @@ cleanOutput' ::
 cleanOutput' agda pwd t = foldl (\ t' (rgx, n) -> replace rgx n t') t rgxs
   where
   rgxs = map (first mkRegex) $ concat
-    [ [ (agda <> "/", "agda/") | agda /= "agda" ]  -- dype: normalize binary name in paths only
+    [ [ (T.pack Agda.Version.package, "«Agda-package»")  -- dype: must precede binary name replacement
+      , (agda, "agda") | agda /= "agda" ]
     , [ (" called at full/Agda/", " called at src/full/Agda/")  -- dype: normalize error paths to golden expectation
       , ("[^ (]*test.Fail.", "")
       , ("[^ (]*test.Succeed.", "")
@@ -330,7 +331,6 @@ cleanOutput' agda pwd t = foldl (\ t' (rgx, n) -> replace rgx n t') t rgxs
       -- Strip NodeJS stack trace & version
       , ("at .+[(]node:internal[^)]+[)]", "at «NodeJS internals»")
       , ("Node[.]js v[0-9.]+", "Node.js «NodeJS version»")
-      , (T.pack Agda.Version.package, "«Agda-package»")
       -- Andreas, 2021-08-26.  When run with 'cabal test',
       -- Agda.Version.package didn't match, so let's be generous:
       -- Andreas, 2021-09-02.  The match failure could be triggered
