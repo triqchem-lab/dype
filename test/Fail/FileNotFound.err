@@ -1,7 +1,7 @@
 FileNotFound.agda:3.1-21: error: [FileNotFound]
 Failed to find source of module A.B.WildGoose in any of the
 following locations:
-  ../A/B/WildGoose.AGDA
+  /data/work/functional-programming/agda/test/A/B/WildGoose.AGDA
   A/B/WildGoose.AGDA
   agda-default-include-path/A/B/WildGoose.AGDA
 where .AGDA denotes a legal extension for an Agda file
