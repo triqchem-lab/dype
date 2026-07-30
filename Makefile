@@ -71,7 +71,7 @@ endef
 all: build
 
 .PHONY: build
-build: ## 构建 dype
+build: ## 编译 dype
 	$(CABAL) build all
 
 .PHONY: install
@@ -79,8 +79,13 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: ## 编译 dype (CI Step 1, 增量构建)
-	cabal build all
+install-bin: build ## CI Step 1: 编译
+
+.PHONY: dev-link
+dev-link: build ## 开发模式: 链接 ~/.local/bin/dype → dist-newstyle
+	@ln -sf $$(find dist-newstyle -name dype -type f -path '*/x/dype/*' | head -1) $(HOME)/.local/bin/dype 2>/dev/null && \
+	 ln -sf $$(find dist-newstyle -name dype-tests -type f -path '*/x/dype-tests/*' | head -1) $(HOME)/.local/bin/dype-tests 2>/dev/null && \
+	 echo "dype → dist-newstyle (dev mode)" || echo "ERROR: run 'make build' first"
 
 .PHONY: install-deps
 install-deps: ## 安装依赖
