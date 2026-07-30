@@ -220,8 +220,7 @@ interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
 		$(MAKE) -C test/interaction \
 			AGDA_BIN="$(AGDA_BIN)" \
-			HAS_STACK= \
-			RUNGHC="cabal exec runghc --")
+			RUNGHC="stack exec runghc --")
 
 .PHONY: interactive
 interactive: ## 交互模式测试

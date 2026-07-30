@@ -7,3 +7,4 @@ allow-newer: true
 packages:
 - '.'
 - 'src/syntax'
+- 'src'
