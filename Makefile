@@ -39,9 +39,9 @@ test-group-options = AGDA_TESTS_OPTIONS="-j$(PARALLEL_TESTS) $(AGDA_RTS)"
 # 测试选项 (传递给 tasty test runner)
 AGDA_TESTS_OPTIONS ?= -i -j$(PARALLEL_TESTS)
 
-# 二进制路径 — cabal 动态解析 (跨平台/跨GHC版本)
-AGDA_BIN        ?= $(shell cabal list-bin dype-core:exe:dype)
-AGDA_TESTS_BIN  ?= $(shell cabal list-bin dype-core:exe:dype-tests)
+# 二进制路径 — cabal list-bin (跨平台)
+AGDA_BIN        ?= $(shell cabal list-bin dype-core:exe:dype 2>/dev/null || command -v dype)
+AGDA_TESTS_BIN  ?= $(shell cabal list-bin dype-core:exe:dype-tests 2>/dev/null || command -v dype-tests)
 
 # 测试目录
 AGDA_TEST_DIR = test
@@ -79,7 +79,8 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: build ## CI Step 1: 编译
+install-bin: ## CI Step 1: 安装 dype-core 到系统
+	cabal install dype-core dype --overwrite-policy=always
 
 .PHONY: dev-link
 dev-link: build ## 开发模式: 链接 ~/.local/bin/dype → dist-newstyle
@@ -223,7 +224,7 @@ compiler-test: ## 编译器后端测试
 .PHONY: interaction
 interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
-		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)" HAS_STACK= RUNGHC="cabal exec --project-dir=../.. -- runghc")
+		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)")
 
 .PHONY: interactive
 interactive: ## 交互模式测试
