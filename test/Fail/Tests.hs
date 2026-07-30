@@ -80,7 +80,7 @@ mkFailTest testDir agdaFile =
       Just g -> do
         agdaBin <- takeFileName . getAgdaBin <$> getEnvironment
         pwd <- getCurrentDirectory
-        return $ Just $ cleanOutput' (T.pack agdaBin) (T.pack $ map (\c -> if c == '\\' then '/' else c) pwd) g
+        return $ Just $ cleanOutput' (T.pack agdaBin) (map (\c -> if c == '\\' then '/' else c) pwd) g
   updGolden  = writeTextFile goldenFile
 
   doRun = do
