@@ -1,10 +1,3 @@
-Warning: this is a debug build of cabal-install with assertions enabled.
-Warning: Both /home/yanli/.cabal and /home/yanli/.config/cabal/config exist -
-ignoring the former.
-It is advisable to remove one of them. In that case, we will use the remaining
-one by default (unless '$CABAL_DIR' is explicitly set).
-Configuration is affected by cabal.project and cabal.project.local at
-'/data/work/functional-programming/dype'.
 Checking Issue2063.Instance (Issue2063/Instance.agda).
 Checking Issue2063.Class (Issue2063/Class.agda).
 (agda2-status-action "")
