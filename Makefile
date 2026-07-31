@@ -79,8 +79,8 @@ install: ## 安装 dype
 	$(CABAL) install --overwrite-policy=always
 
 .PHONY: install-bin
-install-bin: ## CI Step 1: 安装 dype-core 到系统
-	cabal install dype-core dype --overwrite-policy=always
+install-bin: ## CI Step 1: 编译
+	cabal build all
 
 .PHONY: dev-link
 dev-link: build ## 开发模式: 链接 ~/.local/bin/dype → dist-newstyle
@@ -224,7 +224,7 @@ compiler-test: ## 编译器后端测试
 .PHONY: interaction
 interaction: ## 交互测试
 	@$(call decorate, "Suite of interaction tests", \
-		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)" RUNGHC="cabal exec -- runghc")
+		$(MAKE) -C test/interaction AGDA_BIN="$(AGDA_BIN)")
 
 .PHONY: interactive
 interactive: ## 交互模式测试
