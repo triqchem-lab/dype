@@ -160,20 +160,43 @@ dype/
 │   │   └── Constants.hs # 144 / 46 / 6624 / LCM
 │   │
 │   ├── Compute/        # 计算引擎
-│   │   ├── CRT.hs      # CRT 全局查表 (预计算 6624 项)
+│   │   ├── CRT.hs      # CRT 全局查表 (预计算 6624 项, 规范代表元)
 │   │   ├── Orbit.hs    # Orbit-Stabilizer 分解
 │   │   ├── Cascade.hs  # 极限环级联
-│   │   └── ModArith.hs # mod 3/12/46 快速算术
+│   │   ├── ModArith.hs # mod 3/12/46 快速算术
+│   │   └── Det.hs      # CRT 行列式引擎 (对齐 jac_CRTDet 拱顶石:
+│   │                   #   det2/det3 Sarrus/det4 Laplace + 19683 项查表
+│   │                   #   + CRT 分解 det≠0 ⟺ det₃≠0 ∧ det₄≠0
+│   │                   #   + M_F 函数表结构判据, 对齐 jac_NMatrix)
 │   │
-│   └── ProofGen/       # 证明项生成
-│       ├── AST.hs      # Agda AST 类型 (GADT)
-│       ├── Emit.hs     # → .agda 文件
-│       └── Templates.hs # 证明模板 (div3k/mod3k/CRT)
+│   ├── Kernel/         # 内核等价判定
+│   │   └── Conversion.hs # 三极等价判定 (替代 Agda βη: 代数/几何/拓扑极)
+│   │
+│   ├── Parse/          # .dy 语法前端 (Agda 语法真子集 + 大衍扩展)
+│   │   ├── Lexer.hs
+│   │   ├── Dy.hs
+│   │   └── Agda.hs
+│   │
+│   ├── Adapter/        # Dayan AST ↔ Agda AST 转换
+│   │   └── Agda.hs     # dyToAgda 完整编译管线
+│   │
+│   ├── ProofGen/       # 证明项生成
+│   │   ├── AST.hs      # Agda AST 类型 (GADT)
+│   │   ├── Emit.hs     # → .agda 文件
+│   │   ├── Templates.hs # 证明模板 (div3k/mod3k/CRT)
+│   │   └── Jacobian.hs # 行列式等式证明 + λ() 空模式生成 (消费 Det.hs)
+│   │
+│   ├── Algebra/        # GF(9) 代数
+│   │   └── GF9.hs      # i²+1²=0² 幻方正交表示
+│   │
+│   └── Verify/         # 外部验证
+│       ├── Agda.hs     # 调用 agda 验证生成的 .agda
+│       └── Pipeline.hs # 跨层验证: .dy → parse → emit → verify
 │
 ├── tables/             # 预计算数据
-├── test/               # hspec 测试
+├── test/               # hspec 测试 (15 套件, 含 Det 19683 项穷举)
 ├── bench/              # criterion 基准
-├── docs/               # 设计文档
+├── docs/               # 设计文档 (DEVELOPMENT-GUIDE: 管线架构)
 └── dype.cabal
 ```
 

@@ -335,7 +335,7 @@ toAgdaTerm (D.App f a) = Agda.App (toAgdaTerm f) (toAgdaTerm a)
 
 ```haskell
 -- 文件: src/Dayan/Adapter/Agda.hs
--- 管线: .dy → Parse → Dayan AST → Agda AST → .agda 文件 → agda 验证
+-- 管线: .dy → Parse → Compute (Det 行列式判据) → ProofGen → Emit → .agda 文件 → agda 验证
 
 dyToAgda :: FilePath -> IO (Either Error FilePath)
 dyToAgda dyFile = do
