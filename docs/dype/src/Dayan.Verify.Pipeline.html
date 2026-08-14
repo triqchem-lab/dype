@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- src/Dayan/Verify/Pipeline.hs &#8212; &#36328;&#23618;&#39564;&#35777;&#31649;&#32447;</span><span>
+</span><span id="line-2"></span><span class="hs-comment">--   .dy &#8594; Parse &#8594; AgdaFile &#8594; Emit &#8594; .agda &#8594; agda verify &#8594; report</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Dayan.Verify.Pipeline.html"><span class="hs-identifier">Dayan.Verify.Pipeline</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.IO</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">TIO</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Process</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">readProcessWithExitCode</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Exit</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ExitCode</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.IO.Temp</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">withSystemTempDirectory</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.FilePath</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(&lt;/&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">System.Directory</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">createDirectoryIfMissing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">setCurrentDirectory</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.ProofGen.AST.html"><span class="hs-identifier">Dayan.ProofGen.AST</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#AgdaModuleName"><span class="hs-identifier">AgdaModuleName</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.ProofGen.Emit.html"><span class="hs-identifier">Dayan.ProofGen.Emit</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.Emit.html#emitFile"><span class="hs-identifier">emitFile</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Parse.Dy.html"><span class="hs-identifier">Dayan.Parse.Dy</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Parse.Dy.html#parseDy"><span class="hs-identifier">parseDy</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Dayan.Adapter.Agda.html"><span class="hs-identifier">Dayan.Adapter.Agda</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Adapter.Agda.html#writeAgdaFile"><span class="hs-identifier">writeAgdaFile</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">data</span><span> </span><span id="VerifyResult"><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyResult"><span class="hs-identifier hs-var">VerifyResult</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="VerifyOk"><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyOk"><span class="hs-identifier hs-var">VerifyOk</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="VerifyFail"><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyFail"><span class="hs-identifier hs-var">VerifyFail</span></a></span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679513914"><span id="local-6989586621679513920"><span id="local-6989586621679513924"><span class="annot"><span class="annottext">Int -&gt; VerifyResult -&gt; ShowS
+[VerifyResult] -&gt; ShowS
+VerifyResult -&gt; String
+(Int -&gt; VerifyResult -&gt; ShowS)
+-&gt; (VerifyResult -&gt; String)
+-&gt; ([VerifyResult] -&gt; ShowS)
+-&gt; Show VerifyResult
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; VerifyResult -&gt; ShowS
+showsPrec :: Int -&gt; VerifyResult -&gt; ShowS
+$cshow :: VerifyResult -&gt; String
+show :: VerifyResult -&gt; String
+$cshowList :: [VerifyResult] -&gt; ShowS
+showList :: [VerifyResult] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679513930"><span id="local-6989586621679513938"><span class="annot"><span class="annottext">VerifyResult -&gt; VerifyResult -&gt; Bool
+(VerifyResult -&gt; VerifyResult -&gt; Bool)
+-&gt; (VerifyResult -&gt; VerifyResult -&gt; Bool) -&gt; Eq VerifyResult
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: VerifyResult -&gt; VerifyResult -&gt; Bool
+== :: VerifyResult -&gt; VerifyResult -&gt; Bool
+$c/= :: VerifyResult -&gt; VerifyResult -&gt; Bool
+/= :: VerifyResult -&gt; VerifyResult -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- | &#23436;&#25972;&#31649;&#32447;: .dy &#25991;&#26412; &#8594; agda &#39564;&#35777;</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--   &#40664;&#35748;&#21253;&#21547; Agda &#26631;&#20934;&#24211;&#36335;&#24452;</span><span>
+</span><span id="line-25"></span><span class="annot"><a href="Dayan.Verify.Pipeline.html#runPipeline"><span class="hs-identifier hs-type">runPipeline</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyResult"><span class="hs-identifier hs-type">VerifyResult</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span id="runPipeline"><span class="annot"><span class="annottext">runPipeline :: Text -&gt; IO (Text, Text, VerifyResult)
+</span><a href="Dayan.Verify.Pipeline.html#runPipeline"><span class="hs-identifier hs-var hs-var">runPipeline</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Text -&gt; IO (Text, Text, VerifyResult)
+</span><a href="Dayan.Verify.Pipeline.html#runPipelineWithInclude"><span class="hs-identifier hs-var">runPipelineWithInclude</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
+</span><a href="Dayan.Verify.Pipeline.html#agdaStdLibPath"><span class="hs-identifier hs-var">agdaStdLibPath</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">-- | Agda &#26631;&#20934;&#24211;&#36335;&#24452;</span></span><span>
+</span><span id="line-29"></span><span class="annot"><a href="Dayan.Verify.Pipeline.html#agdaStdLibPath"><span class="hs-identifier hs-type">agdaStdLibPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-30"></span><span id="agdaStdLibPath"><span class="annot"><span class="annottext">agdaStdLibPath :: String
+</span><a href="Dayan.Verify.Pipeline.html#agdaStdLibPath"><span class="hs-identifier hs-var hs-var">agdaStdLibPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;/data/work/functional-programming/agda/std-lib/src&quot;</span></span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="annot"><span class="hs-comment">-- | &#24102;&#39069;&#22806; include-path &#30340;&#31649;&#32447; (&#29992;&#20110; Sovereign &#24211;&#20381;&#36182;)</span></span><span>
+</span><span id="line-33"></span><span class="annot"><a href="Dayan.Verify.Pipeline.html#runPipelineWithInclude"><span class="hs-identifier hs-type">runPipelineWithInclude</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyResult"><span class="hs-identifier hs-type">VerifyResult</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span id="runPipelineWithInclude"><span class="annot"><span class="annottext">runPipelineWithInclude :: [String] -&gt; Text -&gt; IO (Text, Text, VerifyResult)
+</span><a href="Dayan.Verify.Pipeline.html#runPipelineWithInclude"><span class="hs-identifier hs-var hs-var">runPipelineWithInclude</span></a></span></span><span> </span><span id="local-6989586621679513947"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679513947"><span class="hs-identifier hs-var">extraPaths</span></a></span></span><span> </span><span id="local-6989586621679513948"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513948"><span class="hs-identifier hs-var">dySource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either [ParseError] (AgdaModuleName, AgdaFile)
+</span><a href="Dayan.Parse.Dy.html#parseDy"><span class="hs-identifier hs-var">parseDy</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513948"><span class="hs-identifier hs-var">dySource</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679513949"><span class="annot"><span class="annottext">[ParseError]
+</span><a href="#local-6989586621679513949"><span class="hs-identifier hs-var">errs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Text, Text, VerifyResult) -&gt; IO (Text, Text, VerifyResult)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[ParseError] -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[ParseError]
+</span><a href="#local-6989586621679513949"><span class="hs-identifier hs-var">errs</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; VerifyResult
+</span><a href="Dayan.Verify.Pipeline.html#VerifyFail"><span class="hs-identifier hs-var">VerifyFail</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[ParseError] -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">[ParseError]
+</span><a href="#local-6989586621679513949"><span class="hs-identifier hs-var">errs</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679513952"><span class="annot"><span class="annottext">AgdaModuleName
+</span><a href="#local-6989586621679513952"><span class="hs-identifier hs-var">modName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679513953"><span class="annot"><span class="annottext">AgdaFile
+</span><a href="#local-6989586621679513953"><span class="hs-identifier hs-var">agdaFile</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-38"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679513954"><span class="annot"><span class="annottext">agdaSrc :: Text
+</span><a href="#local-6989586621679513954"><span class="hs-identifier hs-var hs-var hs-var">agdaSrc</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AgdaFile -&gt; Text
+</span><a href="Dayan.ProofGen.Emit.html#emitFile"><span class="hs-identifier hs-var">emitFile</span></a></span><span> </span><span class="annot"><span class="annottext">AgdaFile
+</span><a href="#local-6989586621679513953"><span class="hs-identifier hs-var">agdaFile</span></a></span><span>
+</span><span id="line-39"></span><span>      </span><span id="local-6989586621679513955"><span class="annot"><a href="#local-6989586621679513955"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; (String -&gt; IO VerifyResult) -&gt; IO VerifyResult
+forall (m :: * -&gt; *) a.
+(MonadIO m, MonadMask m) =&gt;
+String -&gt; (String -&gt; m a) -&gt; m a
+</span><span class="hs-identifier hs-var">withSystemTempDirectory</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;dayan-verify&quot;</span></span><span> </span><span class="annot"><span class="annottext">((String -&gt; IO VerifyResult) -&gt; IO VerifyResult)
+-&gt; (String -&gt; IO VerifyResult) -&gt; IO VerifyResult
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679513956"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513956"><span class="hs-identifier hs-var">tmp</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-40"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679513959"><span class="annot"><span class="annottext">modParts :: [Text]
+</span><a href="#local-6989586621679513959"><span class="hs-identifier hs-var hs-var hs-var">modParts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.split</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'.'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">AgdaModuleName -&gt; Text
+</span><a href="Dayan.ProofGen.AST.html#agdaModuleText"><span class="hs-identifier hs-var">agdaModuleText</span></a></span><span> </span><span class="annot"><span class="annottext">AgdaModuleName
+</span><a href="#local-6989586621679513952"><span class="hs-identifier hs-var">modName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>            </span><span id="local-6989586621679513966"><span class="annot"><span class="annottext">modDir :: String
+</span><a href="#local-6989586621679513966"><span class="hs-identifier hs-var hs-var hs-var">modDir</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Text] -&gt; [Text]
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">init</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679513959"><span class="hs-identifier hs-var">modParts</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>            </span><span id="local-6989586621679513977"><span class="annot"><span class="annottext">modFile :: String
+</span><a href="#local-6989586621679513977"><span class="hs-identifier hs-var hs-var hs-var">modFile</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Text] -&gt; Text
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">last</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679513959"><span class="hs-identifier hs-var">modParts</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;.agda&quot;</span></span><span>
+</span><span id="line-43"></span><span>            </span><span id="local-6989586621679513979"><span class="annot"><span class="annottext">agdaDir :: String
+</span><a href="#local-6989586621679513979"><span class="hs-identifier hs-var hs-var hs-var">agdaDir</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513956"><span class="hs-identifier hs-var">tmp</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513966"><span class="hs-identifier hs-var">modDir</span></a></span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><span class="annottext">Bool -&gt; String -&gt; IO ()
+</span><span class="hs-identifier hs-var">createDirectoryIfMissing</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513979"><span class="hs-identifier hs-var">agdaDir</span></a></span><span>
+</span><span id="line-45"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679513980"><span class="annot"><span class="annottext">agdaPath :: String
+</span><a href="#local-6989586621679513980"><span class="hs-identifier hs-var hs-var hs-var">agdaPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513979"><span class="hs-identifier hs-var">agdaDir</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+</span><span class="hs-operator hs-var">&lt;/&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513977"><span class="hs-identifier hs-var">modFile</span></a></span><span>
+</span><span id="line-46"></span><span>        </span><span class="annot"><span class="annottext">String -&gt; Text -&gt; IO ()
+</span><span class="hs-identifier hs-var">TIO.writeFile</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513980"><span class="hs-identifier hs-var">agdaPath</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513954"><span class="hs-identifier hs-var">agdaSrc</span></a></span><span>
+</span><span id="line-47"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679513989"><span class="annot"><span class="annottext">includeArgs :: [String]
+</span><a href="#local-6989586621679513989"><span class="hs-identifier hs-var hs-var hs-var">includeArgs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;--include-path=&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513956"><span class="hs-identifier hs-var">tmp</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;--include-path=&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="Dayan.Verify.Pipeline.html#agdaStdLibPath"><span class="hs-identifier hs-var">agdaStdLibPath</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-48"></span><span>                       </span><span class="annot"><span class="annottext">[String] -&gt; [String] -&gt; [String]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;--include-path=&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513990"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679513990"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513990"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679513947"><span class="hs-identifier hs-var">extraPaths</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-49"></span><span>        </span><span class="hs-special">(</span><span id="local-6989586621679513991"><span class="annot"><a href="#local-6989586621679513991"><span class="hs-identifier hs-var">exit</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679513992"><span class="annot"><a href="#local-6989586621679513992"><span class="hs-identifier hs-var">stdout</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679513993"><span class="annot"><a href="#local-6989586621679513993"><span class="hs-identifier hs-var">stderr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String -&gt; IO (ExitCode, String, String)
+</span><span class="hs-identifier hs-var">readProcessWithExitCode</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;agda&quot;</span></span><span>
+</span><span id="line-50"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679513989"><span class="hs-identifier hs-var">includeArgs</span></a></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; [String] -&gt; [String]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513980"><span class="hs-identifier hs-var">agdaPath</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-51"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679513995"><span class="annot"><a href="#local-6989586621679513995"><span class="hs-identifier hs-var hs-var">output</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513992"><span class="hs-identifier hs-var">stdout</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679513993"><span class="hs-identifier hs-var">stderr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="annot"><span class="hs-operator hs-type">$</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621679513991"><span class="hs-identifier hs-type">exit</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-53"></span><span>          </span><span class="annot"><span class="annottext">ExitCode
+</span><span class="hs-identifier hs-var">ExitSuccess</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">VerifyResult
+</span><a href="Dayan.Verify.Pipeline.html#VerifyOk"><span class="hs-identifier hs-var">VerifyOk</span></a></span><span>
+</span><span id="line-54"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">ExitFailure</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; VerifyResult
+</span><a href="Dayan.Verify.Pipeline.html#VerifyFail"><span class="hs-identifier hs-var">VerifyFail</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513995"><span class="hs-identifier hs-var">output</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.ProofGen.AST.html#agdaModuleText"><span class="hs-identifier hs-var">agdaModuleText</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679513952"><span class="hs-identifier hs-type">modName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679513954"><span class="hs-identifier hs-type">agdaSrc</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679513955"><span class="hs-identifier hs-type">result</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">-- | &#32479;&#35745;&#25253;&#21578;</span></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="Dayan.Verify.Pipeline.html#report"><span class="hs-identifier hs-type">report</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyResult"><span class="hs-identifier hs-type">VerifyResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-59"></span><span id="report"><span class="annot"><span class="annottext">report :: Text -&gt; Text -&gt; VerifyResult -&gt; Text
+</span><a href="Dayan.Verify.Pipeline.html#report"><span class="hs-identifier hs-var hs-var">report</span></a></span></span><span> </span><span id="local-6989586621679513999"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513999"><span class="hs-identifier hs-var">modName</span></a></span></span><span> </span><span id="local-6989586621679514000"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679514000"><span class="hs-identifier hs-var">_agdaSrc</span></a></span></span><span> </span><span class="annot"><span class="annottext">VerifyResult
+</span><a href="Dayan.Verify.Pipeline.html#VerifyOk"><span class="hs-identifier hs-var">VerifyOk</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-60"></span><span>  </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&#9989; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679513999"><span class="hs-identifier hs-var">modName</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8212; Agda verification PASSED&quot;</span></span><span>
+</span><span id="line-61"></span><span class="annot"><a href="Dayan.Verify.Pipeline.html#report"><span class="hs-identifier hs-var">report</span></a></span><span> </span><span id="local-6989586621679514001"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679514001"><span class="hs-identifier hs-var">modName</span></a></span></span><span> </span><span id="local-6989586621679514002"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679514002"><span class="hs-identifier hs-var">_agdaSrc</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Dayan.Verify.Pipeline.html#VerifyFail"><span class="hs-identifier hs-type">VerifyFail</span></a></span><span> </span><span id="local-6989586621679514003"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679514003"><span class="hs-identifier hs-var">errs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-62"></span><span>  </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&#10060; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679514001"><span class="hs-identifier hs-var">modName</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &#8212; Agda verification FAILED\n&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;\n&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; [Text] -&gt; [Text]
+forall a. Int -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">take</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">5</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679514003"><span class="hs-identifier hs-var">errs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span></pre></body></html>
