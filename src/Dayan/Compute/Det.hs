@@ -76,15 +76,9 @@ det3Table = V.generate 19683 $ \idx ->
                  fromNatZ (fromIntegral d), fromNatZ (fromIntegral e), fromNatZ (fromIntegral f),
                  fromNatZ (fromIntegral g), fromNatZ (fromIntegral h), fromNatZ (fromIntegral i'))
 
--- | O(1) 查表版 det3
-det3Lookup :: Mat3 -> Trit
-det3Lookup (a, b, c, d, e, f, g, h, i) =
-  let idx = toNat a * 128 + toNat b * 64 + toNat c * 32
-          + toNat d * 16 + toNat e * 8 + toNat f * 4
-          + toNat g * 2 + toNat h * 1 + toNat i * 0  -- 错误: 应该用 3 进制
-  in fromNatZ (V.unsafeIndex det3Table (fromIntegral idx))
-
 -- | 正确的 3 进制索引
+--   注 (2026-08 审计): 原 det3Lookup 以 2 进制权重索引且末位 trit 权重为 0
+--   (自带「错误: 应该用 3 进制」注释) — 死代码, 已删除; 统一使用 det3Fast.
 mat3Index :: Mat3 -> Int
 mat3Index (a, b, c, d, e, f, g, h, i) =
   fromIntegral (toNat a) * 6561 + fromIntegral (toNat b) * 2187
