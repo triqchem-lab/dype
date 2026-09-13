@@ -3,7 +3,6 @@ module Compiler.Tests where
 
 import Utils
 import Test.Tasty
-import Test.Tasty.Silver.Advanced (readFileMaybe)
 import Test.Tasty.Silver
 import Test.Tasty.Silver.Filter
 import Data.Bits (finiteBitSize)
@@ -19,6 +18,7 @@ import System.Exit
 import qualified System.Process as P
 import System.Process.Text as PT
 
+
 import Control.Monad (forM)
 import Data.Maybe
 import Text.Read
@@ -26,6 +26,7 @@ import Text.Read
 import Agda.Utils.List
 import Agda.Utils.List1 (wordsBy, toList)
 import Agda.Utils.Functor ((<&>))
+import Utils (readFileMaybeText)
 
 type GHCArgs = [String]
 
@@ -174,7 +175,10 @@ simpleTests comp = do
 
   where compArgs :: Compiler -> AgdaArgs
         compArgs MAlonzo{} =
-          ghcArgsAsAgdaArgs ["-itest/", "-fno-excess-precision"]
+          -- Compile the generated code without optimising it: the test
+          -- suite only checks the behaviour of the compiled program, and
+          -- GHC's -O pass dominates the runtime of each test.
+          ghcArgsAsAgdaArgs ["-itest/", "-fno-excess-precision", "-O0"]
         compArgs JS{} = []
 
 -- The Compiler tests using the standard library are horribly
@@ -248,7 +252,7 @@ agdaRunProgGoldenTest dir comp extraArgs inp opts =
       agdaRunProgGoldenTest1 dir comp extraArgs inp opts $ \compDir out err -> do
         if executeProg opts then do
           -- read input file, if it exists
-          inp' <- maybe T.empty decodeUtf8 <$> readFileMaybe inpFile
+          inp' <- fromMaybe T.empty <$> readFileMaybeText inpFile
           -- now run the new program
           let exec = getExecForComp comp compDir inpFile
           case comp of
@@ -325,10 +329,10 @@ agdaRunProgGoldenTest1 dir comp extraArgs inp opts cont
 
 readOptions :: FilePath -- file name of the agda file
     -> IO TestOptions
-readOptions inpFile = readFileMaybe optFile <&> \case
+readOptions inpFile = readFileMaybeText optFile <&> \case
     Nothing -> defaultOptions
     (Just optsBS) ->
-      case readMaybe . T.unpack . decodeUtf8 $ optsBS of
+      case readMaybe . T.unpack $ optsBS of
         Nothing -> error $ "Failed to parse options inside file " <> optFile
         (Just optsParsed) -> optsParsed
   where optFile = dropAgdaOrOtherExtension inpFile <.> "options"

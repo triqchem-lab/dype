@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.Text.Encoding
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 import qualified Network.URI.Encode
 import System.Directory
@@ -205,7 +206,7 @@ mkLaTeXOrHTMLTest k copy agdaBin testDir inp =
           <$> cleanOutput out
           <*> cleanOutput err
     else do
-      output <- decodeUtf8 <$> BS.readFile (outDir </> outFileName)
+      output <- T.readFile (outDir </> outFileName)
       let done    = return $ Success output
           compile = do
             rl <- doesEnvContain "DONT_RUN_LATEX"
@@ -213,7 +214,7 @@ mkLaTeXOrHTMLTest k copy agdaBin testDir inp =
             then done
             else do
               -- read compile options
-              doCompile <- readFileMaybe compFile
+              doCompile <- readFileMaybeText compFile
               case doCompile of
                 -- there is no compile file, so we run all the LaTeX compilers
                 Nothing -> foldl (runLaTeX outFileName outDir) done allLaTeXProgs
@@ -221,7 +222,7 @@ mkLaTeXOrHTMLTest k copy agdaBin testDir inp =
                 Just content -> do
                   let latexProgs =
                         fromMaybe allLaTeXProgs
-                          (readMaybe $ T.unpack $ decodeUtf8 content)
+                          (readMaybe $ T.unpack $ content)
                   -- run the selected LaTeX compilers
                   foldl (runLaTeX outFileName outDir) done latexProgs
       case k of

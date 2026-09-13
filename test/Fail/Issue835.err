@@ -1,4 +1,3 @@
-Issue835.agda:12.3-5: error: [UnsolvedConstraints]
-Failed to solve the following constraints:
-  Is empty: x ≡ y (stuck)
-      [ at Issue835.agda:12.3-5 ]
+AGDA_UNEXPECTED_SUCCESS
+
+ret > ExitSuccess
