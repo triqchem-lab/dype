@@ -1,7 +1,7 @@
 [submodule "std-lib"]
 	path = std-lib
 	url = https://github.com/clearnature/agda-stdlib.git
-	branch = experimental
+	branch = v2.4-plus-8557
 [submodule "cubical"]
 	path = cubical
 	url = https://github.com/clearnature/cubical.git
