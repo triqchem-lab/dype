@@ -22,7 +22,7 @@ import Dayan.ProofGen.Emit (emitFile)
 import Dayan.ProofGen.AST (AgdaFile(..))
 
 agdaSucceedDir :: FilePath
-agdaSucceedDir = "/data/work/functional-programming/agda/test/Succeed"
+agdaSucceedDir = "../agda/test/Succeed"   -- 相对 dype 仓库根; 原为 agda clone 的绝对路径
 
 -- | 递归收集 .agda 文件
 collectAgdaFiles :: FilePath -> IO [FilePath]
@@ -71,7 +71,7 @@ main = do
 
   -- Phase 2: agda verify 冒烟测试
   putStrLn "\n=== Phase 2: agda verify 冒烟测试 ==="
-  let agdaTestDir = "/data/work/functional-programming/agda/test"
+  let agdaTestDir = "../agda/test"   -- 相对 dype 仓库根; 原为 agda clone 的绝对路径
   smokeResults <- forM smokeFiles $ \rel -> do
     r <- testSmoke agdaTestDir rel
     putStrLn $ "  " ++ rel ++ ": " ++ show r

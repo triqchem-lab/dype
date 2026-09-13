@@ -141,7 +141,7 @@ testFileSmoke agdaTestDir fp = do
 
 main :: IO ()
 main = do
-  let agdaTestDir = "/data/work/functional-programming/agda/test"
+  let agdaTestDir = "../agda/test"   -- 相对 dype 仓库根; 原为 agda clone 的绝对路径
       succeedDir  = agdaTestDir </> "Succeed"
 
   -- Phase 1: 纯 Haskell 前端测试 (全量)
