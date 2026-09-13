@@ -131,7 +131,7 @@ import Agda.Interaction.Library.Base ( ExeName, ExeMap, LibCache, LibErrors )
 import Agda.Utils.Benchmark (MonadBench(..))
 import Agda.Utils.BiMap (BiMap, HasTag(..))
 import Agda.Utils.BiMap qualified as BiMap
-import Agda.Utils.Boolean   ( fromBool, toBool )
+import Agda.Utils.Boolean   ( Boolean, IsBool, fromBool, toBool )
 import Agda.Utils.CallStack ( CallStack, HasCallStack, withCallerCallStack )
 import Agda.Utils.ExpandCase
 import Agda.Utils.FileId    ( FileDictBuilder, GetFileId(getFileId), GetIdFile(getIdFile) )
@@ -241,7 +241,9 @@ type ImportedModules    = Set TopLevelModuleName
 type UserWarnings       = Map QName Text
 
 data PreScopeState = PreScopeState
-  { stPreTokens             :: !HighlightingInfo
+  { stPreFileId :: !(Strict.Maybe FileId)
+    -- ^ The file being type-checked, if any.
+  , stPreTokens             :: !HighlightingInfo
     -- ^ Highlighting info for tokens and Happy parser warnings (but
     -- not for those tokens/warnings for which highlighting exists in
     -- 'stPostSyntaxInfo').
@@ -540,7 +542,8 @@ initialMetaId = MetaId
 
 initPreScopeState :: PreScopeState
 initPreScopeState = PreScopeState
-  { stPreTokens               = mempty
+  { stPreFileId               = empty
+  , stPreTokens               = mempty
   , stPreImports              = emptySignature
   , stPreImportedModules      = empty
   , stPreImportedModulesTransitive = empty
@@ -692,6 +695,9 @@ lensTopLevelModuleNames f s =
   f (stPersistentTopLevelModuleNames s) <&> \ x -> s { stPersistentTopLevelModuleNames = x }
 
 -- ** Components of 'PreScopeState'
+
+lensPreFileId :: Lens' PreScopeState (Strict.Maybe FileId)
+lensPreFileId f s = f (stPreFileId s) <&> \x -> s { stPreFileId = x }
 
 lensPreTokens :: Lens' PreScopeState HighlightingInfo
 lensPreTokens f s = f (stPreTokens s) <&> \ x -> s { stPreTokens = x }
@@ -969,6 +975,9 @@ stTopLevelModuleNames = lensPersistentState . lensTopLevelModuleNames
 
 -- ** Pre scope state
 
+stFileId :: Lens' TCState (Strict.Maybe FileId)
+stFileId = lensPreScopeState . lensPreFileId
+
 stTokens :: Lens' TCState HighlightingInfo
 stTokens = lensPreScopeState . lensPreTokens
 
@@ -1191,11 +1200,11 @@ stInstanceTree = stSignature . sigInstances . itableTree
 stBuiltinThings :: TCState -> BuiltinThings
 stBuiltinThings s = Map.unionWith unionBuiltin (s ^. stLocalBuiltins) (s ^. stImportedBuiltins)
 
--- | Union two 'Builtin's.  Only defined for 'BuiltinRewriteRelations'.
+-- | Union two 'Builtin's.
 unionBuiltin :: Builtin a -> Builtin a -> Builtin a
 unionBuiltin = curry $ \case
   (BuiltinRewriteRelations xs, BuiltinRewriteRelations ys) -> BuiltinRewriteRelations $ xs <> ys
-  _ -> __IMPOSSIBLE__
+  (x, _) -> x
 
 
 -- * Fresh things
@@ -2845,6 +2854,24 @@ data CompKit = CompKit
 emptyCompKit :: CompKit
 emptyCompKit = CompKit Nothing Nothing
 
+-- | Is a constructor of a data type a path constructor (HIT constructor)
+--   or an ordinary "point" constructor?
+data IsPathCons = PathCons | PointCons
+  deriving (Eq, Show, Generic)
+
+-- | Does a data type have path constructors,
+--   i.e., is it a higher inductive type (HIT)?
+data IsHIT = YesHIT | NotHIT
+  deriving (Eq, Show, Generic)
+
+instance Boolean IsHIT where
+  fromBool True  = YesHIT
+  fromBool False = NotHIT
+
+instance IsBool IsHIT where
+  toBool YesHIT = True
+  toBool NotHIT = False
+
 defaultAxiom :: Defn
 defaultAxiom = Axiom False
 
@@ -3020,8 +3047,9 @@ data DatatypeData = DatatypeData
   , _dataPositivityCheck:: PositivityCheck
       -- ^ Should positivity errors be reported for this data type?
   , _dataAbstr          :: IsAbstract
-  , _dataPathCons       :: [QName]
-      -- ^ Path constructor names (subset of @dataCons@).
+  , _dataHIT            :: !IsHIT
+      -- ^ Does this data type have any path constructors,
+      --   i.e., is it a higher inductive type (HIT)?
   , _dataTranspIx       :: Maybe QName
       -- ^ If indexed datatype, name of the "index transport" function.
   , _dataTransp         :: Maybe QName
@@ -3037,7 +3065,7 @@ pattern Datatype
   -> Maybe [QName]
   -> PositivityCheck
   -> IsAbstract
-  -> [QName]
+  -> IsHIT
   -> Maybe QName
   -> Maybe QName
   -> Defn
@@ -3051,7 +3079,7 @@ pattern Datatype
   , dataMutual
   , dataPositivityCheck
   , dataAbstr
-  , dataPathCons
+  , dataHIT
   , dataTranspIx
   , dataTransp
   } = DatatypeDefn (DatatypeData
@@ -3063,7 +3091,7 @@ pattern Datatype
     dataMutual
     dataPositivityCheck
     dataAbstr
-    dataPathCons
+    dataHIT
     dataTranspIx
     dataTransp
   )
@@ -3171,6 +3199,9 @@ data ConstructorData = ConstructorData
   , _conData   :: QName
       -- ^ Name of datatype or record type.
   , _conAbstr  :: IsAbstract
+  , _conPathCons :: !IsPathCons
+      -- ^ Is this a path constructor (HIT constructor)
+      --   or an ordinary "point" constructor?
   , _conComp   :: CompKit
       -- ^ Cubical composition.
   , _conProj   :: Maybe [QName]
@@ -3197,6 +3228,7 @@ pattern Constructor
   -> ConHead
   -> QName
   -> IsAbstract
+  -> IsPathCons
   -> CompKit
   -> Maybe [QName]
   -> [IsForced]
@@ -3210,6 +3242,7 @@ pattern Constructor
   , conSrcCon
   , conData
   , conAbstr
+  , conPathCons
   , conComp
   , conProj
   , conForced
@@ -3222,6 +3255,7 @@ pattern Constructor
     conSrcCon
     conData
     conAbstr
+    conPathCons
     conComp
     conProj
     conForced
@@ -3410,7 +3444,7 @@ instance Pretty DatatypeData where
       dataMutual
       _dataPositivityCheck
       _dataAbstr
-      _dataPathCons
+      dataHIT
       _dataTranspIx
       _dataTransp
     ) =
@@ -3422,6 +3456,7 @@ instance Pretty DatatypeData where
       , "dataSort       =" <?> pretty dataSort
       , "dataMutual     =" <?> pshow dataMutual
       , "dataAbstr      =" <?> pshow dataAbstr
+      , "dataHIT        =" <?> pshow dataHIT
       ] <?> "}"
 
 instance Pretty RecordData where
@@ -3461,6 +3496,7 @@ instance Pretty ConstructorData where
       conSrcCon
       conData
       conAbstr
+      conPathCons
       _conComp
       _conProj
       _conForced
@@ -3469,14 +3505,15 @@ instance Pretty ConstructorData where
       conInline
     ) =
     "Constructor {" <?> vcat
-      [ "conPars    =" <?> pshow conPars
-      , "conArity   =" <?> pshow conArity
-      , "conSrcCon  =" <?> pretty conSrcCon
-      , "conData    =" <?> pretty conData
-      , "conAbstr   =" <?> pshow conAbstr
-      , "conErased  =" <?> pshow conErased
-      , "conErasure =" <?> pshow conErasure
-      , "conInline  =" <?> pshow conInline
+      [ "conPars     =" <?> pshow conPars
+      , "conArity    =" <?> pshow conArity
+      , "conSrcCon   =" <?> pretty conSrcCon
+      , "conData     =" <?> pretty conData
+      , "conAbstr    =" <?> pshow conAbstr
+      , "conPathCons =" <?> pshow conPathCons
+      , "conErased   =" <?> pshow conErased
+      , "conErasure  =" <?> pshow conErasure
+      , "conInline   =" <?> pshow conInline
       ] <?> "}"
 
 instance Pretty PrimitiveData where
@@ -5230,7 +5267,7 @@ data Warning
     -- ^ Confluence checking with @--cubical@ might be incomplete.
   | NotARewriteRule C.QName IsAmbiguous
     -- ^ 'IllegalRewriteRule' detected during scope checking.
-  | IllegalRewriteRule RewriteSource IllegalRewriteRuleReason
+  | IllegalRewriteRule SerialisableRewriteSource IllegalRewriteRuleReason
   | RewriteNonConfluent Term Term Term Doc
     -- ^ Confluence checker found critical pair and equality checking
     --   resulted in a type error
@@ -5786,6 +5823,8 @@ data TypeError
         | NoSuchPrimitiveFunction String
         | DuplicatePrimitiveBinding PrimitiveId QName QName
         | WrongArgInfoForPrimitive PrimitiveId ArgInfo ArgInfo
+        | TrustedBuiltin BuiltinId
+        | TrustedPrimitive QName
         | ShadowedModule C.Name (List1 A.ModuleName)
         | BuiltinInParameterisedModule BuiltinId
         | IllegalLetInTelescope C.TypedBinding
@@ -5822,6 +5861,9 @@ data TypeError
         | NamedWhereModuleInRefinedContext [Term] [String]
             -- ^ The lists should have the same length.
             --   TODO: enforce this by construction.
+        | NamedWhereModuleUnderWith
+            -- ^ A named @where@ module in a @with@ or @rewrite@ clause.
+            --   Disallowed since Agda 2.9.0, see issue #8698.
         | ComatchingDisabledForRecord QName
     -- Rewriting errors
         | IlltypedRewriteRule Doc
@@ -6131,11 +6173,17 @@ data InductionAndEta = InductionAndEta
   , recordEtaEquality :: EtaEquality
   } deriving (Show, Generic)
 
--- Source of the rewrite rule
-data RewriteSource
-  = GlobalRewrite Definition
+-- | Source of the rewrite rule
+--   Parameterised by the info for global rewrite rules (it is convenient
+--   to remember the definition during checking, but when serialising we just
+--   store the 'QName')
+data RewriteSource' a
+  = GlobalRewrite a
   | LocalRewrite Context (Maybe Name) Type
-  deriving (Show, Generic)
+  deriving (Show, Generic, Functor)
+
+type RewriteSource = RewriteSource' Definition
+type SerialisableRewriteSource = RewriteSource' QName
 
 isLocalRewrite :: RewriteSource -> Bool
 isLocalRewrite (LocalRewrite g r t) = True
@@ -7261,6 +7309,12 @@ instance KillRange FunctionFlag where
 instance KillRange CompKit where
   killRange = id
 
+instance KillRange IsPathCons where
+  killRange = id
+
+instance KillRange IsHIT where
+  killRange = id
+
 instance KillRange ProjectionLikenessMissing where
   killRange = id
 
@@ -7282,7 +7336,7 @@ instance KillRange Defn where
         killRangeN Function a b c d e f g h i j k l m n
       Datatype a b c d e f g h i j k -> killRangeN Datatype a b c d e f g h i j k
       Record a b c d e f g h i j k l m n -> killRangeN Record a b c d e f g h i j k l m n
-      Constructor a b c d e f g h i j k -> killRangeN Constructor a b c d e f g h i j k
+      Constructor a b c d e f g h i j k l -> killRangeN Constructor a b c d e f g h i j k l
       Primitive a b c d e f          -> killRangeN Primitive a b c d e f
       PrimitiveSort a b              -> killRangeN PrimitiveSort a b
 
@@ -7421,6 +7475,8 @@ instance NFData AxiomData
 instance NFData DataOrRecSigData
 instance NFData ProjectionLikenessMissing
 instance NFData FunctionData
+instance NFData IsPathCons
+instance NFData IsHIT
 instance NFData DatatypeData
 instance NFData RecordData
 instance NFData ConstructorData
@@ -7462,7 +7518,7 @@ instance NFData ClashingName
 instance NFData InvalidFileNameReason
 instance NFData LHSOrPatSyn
 instance NFData InductionAndEta
-instance NFData RewriteSource
+instance NFData SerialisableRewriteSource
 instance NFData IllegalRewriteRuleReason
 instance NFData IncorrectTypeForRewriteRelationReason
 instance NFData GHCBackendError
@@ -7478,7 +7534,10 @@ instance NFData Statistics
 instance NFData UnusedImportsState
 instance NFData OpenedModule
 instance NFData IsAxiom
-instance NFData SessionState
+
+instance NFData SessionState where
+  rnf (SessionState backends fileDict moduleToSourceId _interactionCallback) =
+    rnf backends `seq` rnf fileDict `seq` rnf moduleToSourceId
 
 instance NFData PrimFun where
   rnf (PrimFun a b c _fun) =

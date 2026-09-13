@@ -210,6 +210,7 @@ data ErrorName
   | ExplicitPolarityVsPragma_
   | ConstructorNameOfNonRecord_
   | NamedWhereModuleInRefinedContext_
+  | NamedWhereModuleUnderWith_
   | NeedOptionAllowExec_
   | NeedOptionCopatterns_
   | NeedOptionCubical_
@@ -280,6 +281,8 @@ data ErrorName
   | TooManyFields_
   | TooManyPatternsInWithClause_
   | TriedToCopyConstrainedPrim_
+  | TrustedBuiltin_
+  | TrustedPrimitive_
   | InvalidInstanceHeadType_
   | UnboundVariablesInPatternSynonym_
   | UnequalTerms_

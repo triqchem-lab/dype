@@ -100,7 +100,7 @@ import Data.Bits
 import Control.Exception
 import System.IO.Unsafe
 
-import Agda.Interaction.Options.Base (optOccurrence, optPolarity)
+import Agda.Interaction.Options.Base (optCumulativity, optOccurrence, optPolarity)
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern
 import Agda.Syntax.Position (HasRange(..), noRange, Range)
@@ -238,6 +238,7 @@ toGenericGraph graph = unsafeDupablePerformIO do
           InClause p i    -> go' p :|> W.InClause i
           Matched p       -> go' p :|> W.Matched
           InIndex p       -> go' p :|> W.InIndex
+          InSort p        -> go' p :|> W.InSort
           InDefOf p x     -> go' p :|> W.InDefOf x
 
         go :: OccursPath -> (Seq W.Where, Seq W.Where)
@@ -257,6 +258,7 @@ toGenericGraph graph = unsafeDupablePerformIO do
           InClause p i    -> (:|> W.InClause i)    <$!> go p
           Matched p       -> (:|> W.Matched)       <$!> go p
           InIndex p       -> (:|> W.InIndex)       <$!> go p
+          InSort p        -> (:|> W.InSort)        <$!> go p
           InDefOf p x     -> (:|> W.InDefOf x)     <$!> go p
 
         in case go path of (s1, s2) -> W.OccursWhere rng s1 s2
@@ -306,6 +308,8 @@ data OccEnv = OccEnv {
     topDef     :: QName         -- ^ The definition we're working under (as n-th definition in the mutual block)
   , topDefArgs :: [DefArgInEnv] -- ^ Occurrence info for definition args.
   , inf        :: Maybe QName   -- ^ Name for ∞ builtin.
+  , sortOcc    :: Occurrence    -- ^ Occurrence to compose with when descending into a 'Sort'.
+                                --   See 'sortOccurrence'.
   , locals     :: Int           -- ^ Number of local binders (on the top of the definition args).
   , mutuals    :: Mutuals       -- ^ Set of mutual QName-s in the block.
   , target     :: Node          -- ^ We add occurrences pointing to this node.
@@ -399,6 +403,33 @@ occurrencesInMutDefArg d p i e = expand \ret -> case p of
   Unused -> ret $ pure ()
   p      -> ret $ local (\e -> e {path = MutDefArg (path e) d i, target = ArgNode d i, occ = p}) $
                     occurrences e
+
+-- | The 'Occurrence' to compose with when the analysis descends from a 'Term'
+--   into a 'Sort' (issue #8688).
+--
+--   Without @--cumulativity@, distinct universes are unrelated: @Set x@ and
+--   @Set y@ are neither equal nor in a subtyping relation unless @x@ and @y@ are
+--   equal.  So whatever a sort depends on has to be compared invariantly by the
+--   conversion checker, and we return 'Mixed'.
+--
+--   With @--cumulativity@, universes are monotone in their level
+--   (@Set x =< Set y@ iff @x =< y@, see @leqSort@ in
+--   "Agda.TypeChecking.Conversion"), so a /positive/ occurrence is justified.
+--
+--   We deliberately return 'JustPos' and not 'StrictPos' here.  Both give
+--   'Agda.TypeChecking.Polarity.Covariant' polarity, but only 'StrictPos' would
+--   be accepted by the positivity checker, and an occurrence inside a sort must
+--   not count as strictly positive: a definition like
+--   @data D : Setω where c : Set (f D) → D@ defines @D@ by quantifying over a
+--   universe whose size depends on @D@ itself.
+--
+--   Since @--no-cumulativity@ is a /coinfective/ option, a module that does not
+--   use cumulativity can never import occurrence information that was computed
+--   with cumulativity turned on.
+sortOccurrence :: HasOptions m => m Occurrence
+sortOccurrence = do
+  cumulativity <- optCumulativity <$> pragmaOptions
+  pure $! if cumulativity then JustPos else Mixed
 
 -- | The initial 'Occurrence' when processing a definition.
 mutualDefOcc :: Definition -> Occurrence
@@ -522,7 +553,12 @@ instance ComputeOccurrences Term where
     Lam _ t    -> ret $ occurrences t
     Level l    -> ret $ occurrences l
     Lit{}      -> ret $ pure ()
-    Sort{}     -> ret $ pure ()
+    -- Andreas, 2026-08-27, issue #8688: we have to descend into sorts.
+    -- How an occurrence inside a sort is counted depends on @--cumulativity@,
+    -- see 'sortOccurrence'.
+    Sort s     -> ret do
+      o <- asks sortOcc
+      underPathOcc InSort o $ occurrences s
     -- Jesper, 2020-01-12: this information is also used for the
     -- occurs check, so we need to look under DontCare (see #4371)
     DontCare t -> ret $ occurrences t
@@ -566,6 +602,33 @@ instance ComputeOccurrences Clause where
       -- process body
       local (\env -> env {topDefArgs = items}) do
         occurrences $ clauseBody cl
+
+-- | Occurrences in a sort.
+--
+--   The traversal stays on the level of sorts: we only descend into
+--   subexpressions that are sorts themselves, or that are part of the identity
+--   of the sort (the 'Level' of a universe, the eliminations of a stuck sort).
+--   In particular we do /not/ descend into the 'Dom' of a 'PiSort': that is the
+--   type of the domain, living one level below, and it is only stored in the
+--   'PiSort' for context extension (see the documentation of 'PiSort').
+instance ComputeOccurrences Sort where
+  occurrences s = expand \ret -> case s of
+    Univ _ l       -> ret $ occurrences l
+    Inf _ _        -> ret $ pure ()
+    SizeUniv       -> ret $ pure ()
+    LockUniv       -> ret $ pure ()
+    LevelUniv      -> ret $ pure ()
+    IntervalUniv   -> ret $ pure ()
+    -- NB: we skip the domain type stored in the 'PiSort', see the note above.
+    PiSort _ s1 s2 -> ret $ underPath LeftOfArrow (occurrences s1) >> occurrences s2
+    FunSort s1 s2  -> ret $ underPath LeftOfArrow (occurrences s1) >> occurrences s2
+    UnivSort s     -> ret $ occurrences s
+    -- @MetaS x es@ and @DefS q es@ are just the applications @x es@ and @q es@
+    -- that happen to be sorts, so we reuse the corresponding 'Term' cases
+    -- rather than duplicating the (subtle) treatment of eliminations.
+    MetaS x es     -> ret $ occurrences $ MetaV x es
+    DefS q es      -> ret $ occurrences $ Def q es
+    DummyS _       -> ret $ pure ()
 
 instance ComputeOccurrences Level where
   occurrences (Max _ as) = occurrences as
@@ -660,7 +723,13 @@ computeDefOccurrences q clauses = inConcreteOrAbstractMode q \def -> do
                                go (i + 1) ps
           go 0 (namedClausePats cl)
 
-    Datatype{dataClause = Just c} -> ret $ occurrences =<< lift (instantiateFull c)
+    -- Andreas, 2026-08-29, issue #8696:
+    -- A data or record type created by a module application (a /copy/) is
+    -- defined by the pattern-less clause  @N.D = M.D args@.  As for function
+    -- clauses (see 'preprocessMutuals') we have to eta-expand it, otherwise
+    -- the analysis sees no occurrence of the parameters and indices of @N.D@
+    -- and wrongly concludes that they are all 'Unused'.
+    Datatype{dataClause = Just c} -> ret $ occurrences =<< lift (etaExpandCopyClause c)
 
     Datatype{dataPars = np0, dataCons = cs, dataTranspIx = trx} -> ret do
       -- Andreas, 2013-02-27 (later edited by someone else): First,
@@ -738,8 +807,9 @@ computeDefOccurrences q clauses = inConcreteOrAbstractMode q \def -> do
               DontCare{} -> __IMPOSSIBLE__  -- not a type
               Dummy{}    -> __IMPOSSIBLE__
 
+    -- See the 'Datatype' case above for why we eta-expand.
     Record{recClause = Just c} -> ret do
-      occurrences =<< lift (instantiateFull c)
+      occurrences =<< lift (etaExpandCopyClause c)
 
     Record{recPars = np, recTel = tel} -> ret do
       let (tel0, tel1) = splitTelescopeAt np tel
@@ -756,6 +826,12 @@ computeDefOccurrences q clauses = inConcreteOrAbstractMode q \def -> do
     PrimitiveSort{}    -> ret mempty
     GeneralizableVar{} -> ret mempty
     AbstractDefn{}     -> ret __IMPOSSIBLE__
+
+-- | Prepare the defining clause of a data or record type copy (issue #8696)
+--   for occurrence analysis by eta-expanding it, so that the parameters and
+--   indices of the copy appear as pattern variables in the clause.
+etaExpandCopyClause :: Clause -> TCM Clause
+etaExpandCopyClause c = snd <$> (etaExpandClause =<< instantiateFull c)
 
 -- | Pre-pass that eta-expands function clauses and records the "formal arity" of the function in
 --   the signature. Any argument beyond this arity is considered to have 'Mixed' polarity.
@@ -794,13 +870,14 @@ preprocessMutuals qs mutuals = forM qs \q -> inConcreteOrAbstractMode q \def -> 
 buildOccurrenceGraph :: [QName] -> TCM (OccGraph, Mutuals)
 buildOccurrenceGraph qs = do
   inf <- maybe Nothing (\x -> Just $! nameOfInf x) <$> coinductionKit
+  so  <- sortOccurrence
 
   mutuals <- lift HT.empty
   qs      <- preprocessMutuals qs mutuals
 
   graph <- lift HT.empty
   TCM \st tce -> forM_ qs \(q, clauses) -> do
-    let env = OccEnv q [] inf 0 mutuals (DefNode q) Root StrictPos graph
+    let env = OccEnv q [] inf so 0 mutuals (DefNode q) Root StrictPos graph
     unTCM (runReaderT (computeDefOccurrences q clauses) env) st tce
 
   pure (graph, mutuals)

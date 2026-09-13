@@ -167,6 +167,7 @@ typeErrorName = \case
   MultiplePolarityPragmas                                    {} -> MultiplePolarityPragmas_
   ExplicitPolarityVsPragma                                   {} -> ExplicitPolarityVsPragma_
   NamedWhereModuleInRefinedContext                           {} -> NamedWhereModuleInRefinedContext_
+  NamedWhereModuleUnderWith                                  {} -> NamedWhereModuleUnderWith_
   NeedOptionAllowExec                                        {} -> NeedOptionAllowExec_
   NeedOptionCopatterns                                       {} -> NeedOptionCopatterns_
   NeedOptionCubical                                          {} -> NeedOptionCubical_
@@ -233,6 +234,8 @@ typeErrorName = \case
   TooManyFields                                              {} -> TooManyFields_
   TooManyPatternsInWithClause                                {} -> TooManyPatternsInWithClause_
   TriedToCopyConstrainedPrim                                 {} -> TriedToCopyConstrainedPrim_
+  TrustedBuiltin                                             {} -> TrustedBuiltin_
+  TrustedPrimitive                                           {} -> TrustedPrimitive_
   InvalidInstanceHeadType                                    {} -> InvalidInstanceHeadType_
   UnboundVariablesInPatternSynonym                           {} -> UnboundVariablesInPatternSynonym_
   UnexpectedModalityAnnotationInParameter                    {} -> UnexpectedModalityAnnotationInParameter_

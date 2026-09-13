@@ -334,6 +334,10 @@ coreBuiltins =
   , (builtinPropOmega                        |-> BuiltinSort SortPropOmega)
   , (builtinSetOmega                         |-> BuiltinSort SortSetOmega)
   , (builtinSSetOmega                        |-> BuiltinSort SortStrictSetOmega)
+  , (builtinQuotientConstructor              |-> BuiltinUnknown Nothing
+                                                   (\_ _ ->
+                                                     unlessM currentModuleIsBuiltinModuleWithSafePostulates $
+                                                       typeError $ TrustedBuiltin BuiltinQuotientConstructor))
   , (builtinAgdaClause                       |-> BuiltinData tset [builtinAgdaClauseClause, builtinAgdaClauseAbsurd])
   , (builtinAgdaClauseClause                 |-> BuiltinDataCons (ttelescope --> tlist (targ tpat) --> tterm --> tclause))
   , (builtinAgdaClauseAbsurd                 |-> BuiltinDataCons (ttelescope --> tlist (targ tpat) --> tclause))
@@ -995,6 +999,7 @@ bindBuiltinNoDef b q = inTopContext $ do
               , conSrcCon = ch
               , conData   = d
               , conAbstr  = ConcreteDef
+              , conPathCons = PointCons
               , conComp   = emptyCompKit
               , conProj   = Nothing
               , conForced = []
@@ -1021,7 +1026,7 @@ bindBuiltinNoDef b q = inTopContext $ do
               , dataAbstr      = ConcreteDef
               , dataMutual     = Nothing
               , dataPositivityCheck = NoPositivityCheck
-              , dataPathCons   = []
+              , dataHIT        = NotHIT
               , dataTranspIx   = Nothing -- Id has custom transp def.
               , dataTransp     = Nothing
               }

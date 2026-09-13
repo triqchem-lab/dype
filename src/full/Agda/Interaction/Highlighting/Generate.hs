@@ -497,7 +497,7 @@ warningHighlighting' b w = case tcWarning w of
   CoInfectiveImport{}                   -> errorWarningHighlighting w
   InvalidDisplayForm{}                  -> deadcodeHighlighting w
   UnusedVariablesInDisplayForm xs       -> foldMap deadcodeHighlighting xs
-  ShouldBeEtaRecordPattern              -> errorWarningHighlighting w
+  ShouldBeEtaRecordPattern              -> catchallHighlighting $ getRange w
   TooManyArgumentsToSort _ args         -> errorWarningHighlighting args
   RewritesNothing                       -> cosmeticProblemHighlighting w
   RecursiveRecordNeedsInductivity _x    -> errorWarningHighlighting w
@@ -513,7 +513,7 @@ warningHighlighting' b w = case tcWarning w of
   RewriteMaybeNonConfluent{} -> confluenceErrorHighlighting w
   RewriteAmbiguousRules{}    -> confluenceErrorHighlighting w
   RewriteMissingRule{}       -> confluenceErrorHighlighting w
-  IllegalRewriteRule (GlobalRewrite x)  _ -> deadcodeHighlighting (defName x)
+  IllegalRewriteRule (GlobalRewrite x)    _ -> deadcodeHighlighting x
   IllegalRewriteRule (LocalRewrite _ x _) _ -> deadcodeHighlighting x
   NotARewriteRule x _        -> deadcodeHighlighting x
   InferredLocalRewrite _ _   -> mempty

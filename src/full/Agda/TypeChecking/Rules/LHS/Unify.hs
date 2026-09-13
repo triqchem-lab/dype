@@ -367,8 +367,8 @@ dataStrategy k s = do
         -- Call forceNotFree to reduce u as far as possible
         -- around any occurrences of i
         (_ , u) <- liftReduce $ forceNotFree (singleton i) u
-        case flexRigOccurrenceIn i u of
-          Just StronglyRigid -> ret
+        case varOccurrenceIn i u of
+          Just (VarOcc StronglyRigid mod) | isRelevant mod -> ret
           _ -> mzero
 
 checkEqualityStrategy :: Int -> UnifyStrategy
@@ -755,9 +755,12 @@ unifyStep s EtaExpandEquation{ expandAt = k, expandRecordType = d, expandParamet
   where
     expandKth us = do
       let (us1,v:us2) = fromMaybe __IMPOSSIBLE__ $ splitExactlyAt k us
-      vs <- snd <$> etaExpandRecord d pars (unArg v)
-      vs <- addContext (varTel s) $ reduce vs
-      return $! us1 ++! vs ++! us2
+      mvs <- etaExpandRecord d pars (unArg v)
+      case mvs of
+        Nothing -> lift $ patternViolation neverUnblock -- Issue #8636: cannot eta-expand
+        Just (_, vs) -> do
+          vs <- addContext (varTel s) $ reduce vs
+          return $! us1 ++! vs ++! us2
 
 unifyStep s LitConflict
   { litType          = a
@@ -980,7 +983,14 @@ unify s strategy = do
             _               -> return y
 
     failure :: Monad m => m (UnificationResult' a)
-    failure = return $ UnifyStuck []
+    failure = case (eqLHS s, eqRHS s) of
+      (u : _, v : _)
+        | Def d es <- unArg u, Def d' es' <- unArg v
+        , d /= d'
+        , [] <- mustAllApplyElims es
+        , [] <- mustAllApplyElims es'
+        -> return $ NoUnify $ UnifyConflict (varTel s) (unArg u) (unArg v)
+      _ -> return $ UnifyStuck []
 
 -- | Turn a term into a pattern while binding as many of the given forced variables as possible (in
 --   non-forced positions).

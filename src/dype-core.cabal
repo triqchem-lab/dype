@@ -73,6 +73,9 @@ extra-source-files:
     data/lib/prim/Agda/Builtin/Equality.agda
     data/lib/prim/Agda/Builtin/Equality/Erase.agda
     data/lib/prim/Agda/Builtin/Equality/Rewrite.agda
+    data/lib/prim/Agda/Builtin/Erased/Funext.agda
+    data/lib/prim/Agda/Builtin/Erased/Propext.agda
+    data/lib/prim/Agda/Builtin/Erased/Quotient.agda
     data/lib/prim/Agda/Builtin/Float.agda
     data/lib/prim/Agda/Builtin/Float/Properties.agda
     data/lib/prim/Agda/Builtin/FromNat.agda
@@ -131,6 +134,9 @@ data-files:
     lib/prim/Agda/Builtin/Equality.agda
     lib/prim/Agda/Builtin/Equality/Erase.agda
     lib/prim/Agda/Builtin/Equality/Rewrite.agda
+    lib/prim/Agda/Builtin/Erased/Funext.agda
+    lib/prim/Agda/Builtin/Erased/Propext.agda
+    lib/prim/Agda/Builtin/Erased/Quotient.agda
     lib/prim/Agda/Builtin/Float.agda
     lib/prim/Agda/Builtin/Float/Properties.agda
     lib/prim/Agda/Builtin/FromNat.agda

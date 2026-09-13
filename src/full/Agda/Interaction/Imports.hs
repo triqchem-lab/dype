@@ -202,6 +202,8 @@ parseSource sourceFile = Bench.billTo [Bench.Parsing] $ do
 
   -- Now parse again, with module name present to be filled into the ranges.
   let rf = mkRangeFile f $ Just parsedModName0
+  setCurrentRange (beginningOfFile rf) do
+
   ((parsedMod, attrs), fileType) <- runPM $ parseFile mdOnlyAgdaBlocks moduleParser rf txt
   parsedModName                  <- moduleName f parsedMod
 
@@ -375,7 +377,7 @@ mergeInterface i = do
         checkConfluenceOfRules confChk rews
     where
         rebind (x, q) = do
-            PrimImpl _ pf <- lookupPrimitiveFunction x
+            (_, pf) <- lookupPossiblyTrustedPrimitiveFunction x
             stImportedBuiltins `modifyTCLens` Map.insert (someBuiltin x) (Prim pf{ primFunName = q })
 
 addImportedThings
@@ -394,7 +396,7 @@ addImportedThings isig metas ibuiltin patsyns display userwarn
                   partialdefs warnings oblock oid = do
   stImports              `modifyTCLens` \ imp -> importSignature imp isig
   stImportedMetaStore    `modifyTCLens` HMap.union metas
-  stImportedBuiltins     `modifyTCLens` \ imp -> Map.union imp ibuiltin
+  stImportedBuiltins     `modifyTCLens` \ imp -> Map.unionWith unionBuiltin imp ibuiltin
   stImportedUserWarnings `modifyTCLens` \ imp -> Map.union imp userwarn
   stImportedPartialDefs  `modifyTCLens` \ imp -> Set.union imp partialdefs
   stPatternSynImports    `modifyTCLens` \ imp -> Map.union imp patsyns
@@ -1359,6 +1361,7 @@ createInterface ::
   -> Maybe Source          -- ^ Optional information about the source code.
   -> TCM ModuleInfo
 createInterface mname sf@(SourceFile sfi) isMain msrc = do
+  stFileId `setTCLens'` Strict.Just sfi
   file <- srcFilePath sf
   let
     fp = filePath file

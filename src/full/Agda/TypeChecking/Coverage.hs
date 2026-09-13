@@ -73,6 +73,7 @@ import Agda.TypeChecking.Warnings
 
 import Agda.Interaction.Options
 
+import Agda.Utils.Boolean ( toBool )
 import Agda.Utils.Either
 import Agda.Utils.Function
 import Agda.Utils.Functor
@@ -108,24 +109,19 @@ coverageCheck f t cs = do
   reportSLn "tc.cover.top" 30 $ "entering coverageCheck for " ++! prettyShow f
   reportSDoc "tc.cover.top" 75 $ "  of type (raw): " <+> (text . prettyShow) t
   reportSDoc "tc.cover.top" 45 $ "  of type: " <+> prettyTCM t
-  TelV gamma a <- telViewUpTo (-1) t
+  TelV gamma1 a <- telViewUpTo (-1) t
   reportSLn "tc.cover.top" 30 $ "coverageCheck: computed telView"
 
-  let -- n             = arity
-      -- xs            = variable patterns fitting lgamma
-      n            = size gamma
-      xs           =  map (setOrigin Inserted) $ teleNamedArgs gamma
+  reportSLn "tc.cover.top" 30 $ "coverageCheck: getting context and checkpoints"
+  (gamma, checkpoints) <- addContext gamma1 $ do
+    (,) <$> getContextTelescope <*> viewTC eCheckpoints
 
-  reportSLn "tc.cover.top" 30 $ "coverageCheck: getDefFreeVars"
+  let -- n  = arity
+      -- xs = variable patterns fitting gamma
+      n     = size gamma
+      xs    = map (setOrigin Inserted) $ teleNamedArgs gamma
 
-      -- The initial module parameter substitutions need to be weakened by the
-      -- number of arguments that aren't module parameters.
-  fv           <- getDefFreeVars f
-
-  reportSLn "tc.cover.top" 30 $ "coverageCheck: getting checkpoints"
-
-  -- TODO: does this make sense? Why are we weakening by n - fv?
-  checkpoints <- applySubst (raiseS (n - fv)) <$> viewTC eCheckpoints
+  unsafeInTopContext $ do
 
       -- construct the initial split clause
   let sc = SClause gamma xs idS checkpoints $ Just $ defaultDom a
@@ -549,16 +545,16 @@ cover infermissing f cs sc@(SClause tel ps _ _ target) = updateRelevance $ do
           -- Jesper, 2016-03-10  We need to remember which variables were
           -- eta-expanded by the unifier in order to generate a correct split
           -- tree (see Issue 1872).
-          addContext tel $ reportSDoc "tc.cover.split.eta" 60 $ vcat
-            [ "etaRecordSplits"
+          addContext tel $ reportSDoc "tc.cover.split.lazy" 60 $ vcat
+            [ "lazySplits"
             , nest 2 $ vcat
-              [ "n   = " <+> text (show n)
+              [ "n   = " <+> pretty n
               , "scs = " <+> prettyTCM scs
               , "ps  = " <+> inTopContext (addContext tel $ prettyTCMPatternList $ fromSplitPatterns ps)
               ]
             ]
-          let trees' = zipWith (second . etaRecordSplits (unArg n) ps) trees scs
-              tree   = SplitAt n StrictSplit (trees' ++! trees_extra) -- TODO: Lazy?
+          trees' <- zipWithM (lazySplits (unArg n) ps) trees scs
+          let tree   = SplitAt n StrictSplit (trees' ++! trees_extra) -- TODO: Lazy?
           -- Andreas, 2025-10-12: Debug printing to clarify the trees_extra situation.
           reportSDoc "tc.cover.cubical" 30 $ vcat $
             "trees:"           : map' pretty trees ++
@@ -643,47 +639,53 @@ cover infermissing f cs sc@(SClause tel ps _ _ target) = updateRelevance $ do
               tree  = SplitAt n StrictSplit $ zip projs trees   -- TODO: Lazy?
           return $ CoverResult tree (IntSet.unions useds) (concat psss) (concat qsss) (IntSet.unions noex)
 
-    gatherEtaSplits :: Int -> SplitClause
+    gatherLazySplits :: Int -> SplitClause
                     -> [NamedArg SplitPattern] -> [NamedArg SplitPattern]
-    gatherEtaSplits n sc []
+    gatherLazySplits n sc []
        | n >= 0    = __IMPOSSIBLE__ -- we should have encountered the main
                                     -- split by now already
        | otherwise = []
-    gatherEtaSplits n sc (p:ps) = case namedArg p of
+    gatherLazySplits n sc (p:ps) = case namedArg p of
       VarP _ x
        | n == 0    -> case p' of -- this is the main split
-           VarP  _ _    -> p : gatherEtaSplits (-1) sc ps
+           VarP  _ _    -> p : gatherLazySplits (-1) sc ps
            DotP  _ _    -> __IMPOSSIBLE__
-           ConP  _ _ qs -> qs ++! gatherEtaSplits (-1) sc ps
-           LitP{}       -> gatherEtaSplits (-1) sc ps
+           ConP  _ _ qs -> qs ++! gatherLazySplits (-1) sc ps
+           LitP{}       -> gatherLazySplits (-1) sc ps
            ProjP{}      -> __IMPOSSIBLE__
            IApplyP{}    -> __IMPOSSIBLE__
-           DefP  _ _ qs -> qs ++! gatherEtaSplits (-1) sc ps -- __IMPOSSIBLE__ -- Andrea: maybe?
+           DefP  _ _ qs -> qs ++! gatherLazySplits (-1) sc ps -- __IMPOSSIBLE__ -- Andrea: maybe?
        | otherwise ->
-           updateNamedArg (\ _ -> p') p : gatherEtaSplits (n-1) sc ps
+           updateNamedArg (\ _ -> p') p : gatherLazySplits (n-1) sc ps
         where p' = lookupS (scSubst sc) $ splitPatVarIndex x
       IApplyP{}   ->
-           updateNamedArg (applySubst (scSubst sc)) p : gatherEtaSplits (n-1) sc ps
-      DotP  _ _    -> p : gatherEtaSplits (n-1) sc ps -- count dot patterns
-      ConP  _ _ qs -> gatherEtaSplits n sc (qs ++! ps)
-      DefP  _ _ qs -> gatherEtaSplits n sc (qs ++! ps)
-      LitP{}       -> gatherEtaSplits n sc ps
-      ProjP{}      -> gatherEtaSplits n sc ps
+           updateNamedArg (applySubst (scSubst sc)) p : gatherLazySplits (n-1) sc ps
+      DotP  _ _    -> p : gatherLazySplits (n-1) sc ps -- count dot patterns
+      ConP  _ _ qs -> gatherLazySplits n sc (qs ++! ps)
+      DefP  _ _ qs -> gatherLazySplits n sc (qs ++! ps)
+      LitP{}       -> gatherLazySplits n sc ps
+      ProjP{}      -> gatherLazySplits n sc ps
 
-    addEtaSplits :: Int -> [NamedArg SplitPattern] -> SplitTree -> SplitTree
-    addEtaSplits k []     t = t
-    addEtaSplits k (p:ps) t = case namedArg p of
-      VarP  _ _     -> addEtaSplits (k + 1) ps t
-      DotP  _ _     -> addEtaSplits (k + 1) ps t
-      ConP c cpi qs -> SplitAt (p $> k) LazySplit [(SplitCon (conName c) , addEtaSplits k (qs ++! ps) t)]
+    addLazySplits :: Int -> [NamedArg SplitPattern] -> SplitTree -> SplitTree
+    addLazySplits k []     t = t
+    addLazySplits k (p:ps) t = case namedArg p of
+      VarP  _ _     -> addLazySplits (k + 1) ps t
+      DotP  _ _     -> addLazySplits (k + 1) ps t
+      ConP c cpi qs ->
+        -- Jesper, 2026-08-18, issue #8638: propagate erasure to subpatterns
+        let qs' = map (mapQuantity $ composeQuantity $ getQuantity p) qs
+        in SplitAt (p $> k) LazySplit [(SplitCon (conName c) , addLazySplits k (qs' ++! ps) t)]
       LitP{}        -> __IMPOSSIBLE__
       ProjP{}       -> __IMPOSSIBLE__
       DefP{}        -> __IMPOSSIBLE__ -- Andrea: maybe?
-      IApplyP{}     -> addEtaSplits (k + 1) ps t
+      IApplyP{}     -> addLazySplits (k + 1) ps t
 
-    etaRecordSplits :: Int -> [NamedArg SplitPattern]
-                    -> SplitTree -> SplitClause -> SplitTree
-    etaRecordSplits n ps t sc = addEtaSplits 0 (gatherEtaSplits n sc ps) t
+    lazySplits :: Int -> [NamedArg SplitPattern]
+                    -> SplitTree -> (SplitTag, SplitClause) -> TCM (SplitTag, SplitTree)
+    lazySplits n ps t (tag, sc) = do
+      let splitsTodo = gatherLazySplits n sc ps
+      reportSDoc "tc.cover.split.lazy" 60 $ "gatherLazySplits result: " <+> pretty splitsTodo
+      return (tag, addLazySplits 0 splitsTodo t)
 
 
 -- | Append a instance clause to the clauses of a function.
@@ -749,7 +751,7 @@ splitStrategy bs tel = return $ updateLast setBlockingVarOverlap xs
 -- the data type must be inductive.
 isDatatype :: (MonadTCM tcm, MonadError SplitError tcm) =>
               Induction -> Dom Type ->
-              tcm (DataOrRecord, QName, Sort, Args, Args, [QName], Bool)
+              tcm (DataOrRecord, QName, Sort, Args, Args, [QName], IsHIT)
 isDatatype ind at = do
   let t       = unDom at
       throw f = throwError . f =<< do liftTCM $ buildClosure t
@@ -761,22 +763,22 @@ isDatatype ind at = do
     Def d [Apply phi] | Just d == mIsOne -> do
                 xs <- liftTCM $ decomposeInterval =<< reduce (unArg phi)
                 if null xs
-                   then return $ (IsData, d, mkSSet 0, [phi], [], [], False)
+                   then return $ (IsData, d, mkSSet 0, [phi], [], [], NotHIT)
                    else throw NotADatatype
     Def d es -> do
       let ~(Just args) = allApplyElims es
       def <- liftTCM $ getConstInfo d
       case theDef def of
-        Datatype{dataSort = s, dataPars = np, dataCons = cs}
+        Datatype{dataSort = s, dataPars = np, dataCons = cs, dataHIT = hit}
           | otherwise -> do
               let (ps, is) = splitAt np args
-              return (IsData, d, s, ps, is, cs, not $ null (dataPathCons $ theDef def))
+              return (IsData, d, s, ps, is, cs, hit)
         Record{recPars = np, recConHead = con, recInduction = i, recEtaEquality'}
           | i == Just CoInductive && ind /= CoInductive ->
               throw CoinductiveDatatype
           | otherwise -> do
               s <- liftTCM $ shouldBeSort =<< defType def `piApplyM` args
-              return (IsRecord InductionAndEta { recordInduction=i, recordEtaEquality=recEtaEquality' }, d, s, args, [], [conName con], False)
+              return (IsRecord InductionAndEta { recordInduction=i, recordEtaEquality=recEtaEquality' }, d, s, args, [], [conName con], NotHIT)
         _ -> throw NotADatatype
     _ -> throw NotADatatype
 
@@ -1299,7 +1301,8 @@ split' checkEmpty ind allowPartialCover inserttrailing
     return (fst $ unDom dom, snd <$> dom, telFromList tel1, telFromList tel2)
 
   -- Compute the neighbourhoods for the constructors
-  let computeNeighborhoods = do
+  let computeNeighborhoods :: ExceptT SplitError TCM (DataOrRecord, Sort, Bool, Int, [(SplitTag, (SplitClause, IInfo))])
+      computeNeighborhoods = do
         -- Check that t is a datatype or a record
         -- Andreas, 2010-09-21, isDatatype now directly throws an exception if it fails
         -- cons = constructors of this datatype
@@ -1310,7 +1313,7 @@ split' checkEmpty ind allowPartialCover inserttrailing
           NoCheckEmpty -> pure cons'
         mns  <- forM cons $ \ con -> fmap (SplitCon con,) <$>
           computeNeighbourhood delta1 n delta2 d pars ixs x tel ps cps con
-        hcompsc <- if isFib && (isHIT || not (null ixs)) && not (null mns) && inserttrailing == DoInsertTrailing
+        hcompsc <- if isFib && (isHIT == YesHIT || not (null ixs)) && not (null mns) && inserttrailing == DoInsertTrailing
                    then computeHCompSplit delta1 n delta2 d pars ixs x tel ps cps
                    else return Nothing
         let ns = catMaybes mns
@@ -1321,6 +1324,7 @@ split' checkEmpty ind allowPartialCover inserttrailing
                , ns ++! catMaybes ([fmap (fmap (,NoInfo)) hcompsc | not $ null $ ns])
                )
 
+      computeLitNeighborhoods :: ExceptT SplitError TCM (DataOrRecord, Sort, Bool, Int, [(SplitTag, (SplitClause, IInfo))])
       computeLitNeighborhoods = do
         typeOk <- liftTCM $ do
           t' <- litType $ headWithDefault {-'-} __IMPOSSIBLE__ plits
@@ -1453,10 +1457,10 @@ split' checkEmpty ind allowPartialCover inserttrailing
       reportSDoc "tc.cover.top" 60 $ vcat
         [ "TypeChecking.Coverage.split': split"
         , nest 2 $ vcat
-          [ "tel     =" <+> (text . show) tel
-          , "x       =" <+> (text . show) x
-          , "ps      =" <+> (text . show) ps
-          , "cps     =" <+> (text . show) cps
+          [ "tel     =" <+> pretty tel
+          , "x       =" <+> pretty x
+          , "ps      =" <+> pretty ps
+          , "cps     =" <+> pretty cps
           ]
         ]
 

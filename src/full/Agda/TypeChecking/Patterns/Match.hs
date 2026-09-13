@@ -12,6 +12,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 
 import Agda.Syntax.Common
+import qualified Agda.Syntax.Common.Pretty as P
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern
 
@@ -50,6 +51,11 @@ instance Null (Match a) where
   empty = Yes empty empty
   null (Yes simpl as) = null simpl && null as
   null _              = False
+
+instance P.Pretty a => P.Pretty (Match a) where
+  pretty (Yes simp xs) = "Yes" P.<+> P.pretty (IntMap.toList xs)
+  pretty (No _) = "No"
+  pretty (DontKnow _ _ b) = "DontKnow" P.<+> P.pretty b
 
 matchedArgs :: Empty -> Int -> IntMap (Arg a) -> [Arg a]
 matchedArgs err n vs = map (fromMaybe (absurd err)) $ matchedArgs' n vs
@@ -221,8 +227,8 @@ matchPatterns ps vs = do
 
   traceSDoc "tc.match" 50
     (vcat [ "matchPatterns"
-          , nest 2 $ "ps =" <+> fsep (punctuate comma $ map (text . show) ps)
-          , nest 2 $ "vs =" <+> fsep (punctuate comma $ map prettyTCM vs)
+          , nest 2 $ "ps =" <+> fsep (punctuate comma $ map pretty ps)
+          , nest 2 $ "vs =" <+> fsep (punctuate comma $ map pretty vs)
           ]) $ do
   -- Buggy, see issue 1124:
   -- (ms,vs) <- unzip <$> zipWithM' (matchPattern . namedArg) ps vs
@@ -291,11 +297,11 @@ matchPattern p u = debugMatchPattern $ case (p, u) of
             , nest 2 $ "u =" <+> prettyTCM u
             ]
     reportSDoc "tc.match" 60 $
-       vcat [ nest 2 $ "p (raw) =" <+> (text . show) p
+       vcat [ nest 2 $ "p (raw) =" <+> pretty p
             ]
     (m, t) <- go
-    reportSDoc "tc.match" 50 $
-      vcat [ nest 2 $ "result = " <+> (text . show) m ]
+    reportSDoc "tc.match" 60 $
+      vcat [ nest 2 $ "result = " <+> pretty m ]
     -- reportSDoc "tc.match" 20 $
     --   vcat [ nest 2 $ "result = " <+> prettyTCM m ]
     return (m, t)
@@ -308,18 +314,14 @@ matchPattern p u = debugMatchPattern $ case (p, u) of
         f _                         = Nothing
     fallback' f prio lazy ps v
 
-  -- Regardless of blocking, constructors and a properly applied @hcomp@
-  -- can be matched on.
-  isMatchable' :: HasBuiltins m => m (Blocked Term -> Maybe Term)
-  isMatchable' = do
-    mhcomp <- getName' builtinHComp
-    return $ \ r ->
+  -- Regardless of blocking, constructors can be matched on.
+  -- Since hcomp clauses are only computed during coverage checking
+  -- and clause-based reduction is only used *before* coverage checking,
+  -- we do not consider hcomp patterns here (see issue #8700).
+  isMatchable :: Blocked Term -> Maybe Term
+  isMatchable r =
       case ignoreBlocking r of
         t@Con{} -> Just t
-        t@(Def q [l,a,phi,u,u0]) | Just q == mhcomp
-                -> Just t
-        -- TODO this covers the transpIx functions, but it's a hack.
-        t@(Def q _) | NotBlocked{blockingStatus = MissingClauses _} <- r -> Just t
         _       -> Nothing
 
   -- DefP hcomp and ConP matching.
@@ -331,7 +333,6 @@ matchPattern p u = debugMatchPattern $ case (p, u) of
             -> Arg Term
             -> m (Match Term, Arg Term)
   fallback' mtc prio lazy ps (Arg info v) = do
-        isMatchable <- isMatchable'
 
         w <- reduceB v
         -- Unfold delayed (corecursive) definitions one step. This is
@@ -353,6 +354,10 @@ matchPattern p u = debugMatchPattern $ case (p, u) of
                _ -> return w
         let v = ignoreBlocking w
             arg = Arg info v  -- the reduced argument
+
+        reportSDoc "tc.match" 40 $ vcat
+          [ "  v = " <+> prettyTCM v <?> pretty (void w)
+          ]
 
         case w of
           b | Just t <- isMatchable b ->

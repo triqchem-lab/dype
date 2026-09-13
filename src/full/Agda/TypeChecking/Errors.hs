@@ -708,6 +708,14 @@ instance PrettyTCM TypeError where
         things i = [verbalize $ getHiding i,
                     "at modality " ++ verbalize (getModality i)]
 
+    TrustedBuiltin x -> fsep $
+      pwords "The trusted builtin" ++ [text (show x)] ++
+      pwords "is only allowed in certain \"builtin\" modules"
+
+    TrustedPrimitive x -> fsep $
+      pwords "The trusted primitive" ++ [prettyTCM x] ++
+      pwords "is only allowed in certain \"builtin\" modules"
+
     BuiltinInParameterisedModule x -> fwords $
       "The BUILTIN pragma cannot appear inside a bound context " ++
       "(for instance, in a parameterised module or as a local declaration)"
@@ -1579,6 +1587,10 @@ instance PrettyTCM TypeError where
                   " been refined to"
         , nest 2 $ vcat $ zipWith pr names args
         ]
+
+    NamedWhereModuleUnderWith -> fsep $
+      pwords "Named `where` modules are disallowed under `with` or `rewrite` since Agda 2.9.0"
+      ++ [ parens $ "see" <+> githubIssue 8698 ]
 
     CannotGenerateHCompClause ty -> fsep $ concat
         [ pwords "Cannot generate hcomp clause at type"

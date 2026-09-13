@@ -115,6 +115,15 @@ argument, and does not need to be listed here."
   :type 'string
   :group 'agda2)
 
+(defcustom agda2-restart-timeout
+  5
+  "The number of seconds to wait before timing out restart attempts.
+
+If nil, never time out."
+  :type '(choice (const :tag "No timeout")
+                 (number :tag "Number of seconds"))
+  :group 'agda2)
+
 (defcustom agda2-information-window-max-height
   0.35
   "The maximum height of the information window.
@@ -464,6 +473,9 @@ The following paragraph does not apply to Emacs 23 or newer.
 
 Special commands:
 \\{agda2-mode-map}"
+  :group 'agda2
+  :interactive t
+  :after-hook (agda2-initialize)
 
  (if (boundp 'agda2-include-dirs)
      (display-warning 'agda2 "Note that the variable agda2-include-dirs is
@@ -490,16 +502,12 @@ agda2-include-dirs is not bound." :warning))
  ;; Deactivate highlighting if the buffer is edited before
  ;; typechecking is complete.
  (add-hook 'first-change-hook 'agda2-abort-highlighting nil 'local)
- ;; If Agda is not running syntax highlighting does not work properly.
- (unless (eq 'run (agda2-process-status))
-   (agda2-restart))
+
+
  ;; Make sure that Font Lock mode is not used.
  (font-lock-mode 0)
  (agda2-highlight-setup)
- (condition-case err
-     (agda2-highlight-reload)
-   (error (message "Highlighting not loaded: %s"
-                   (error-message-string err))))
+
  (agda2-comments-and-paragraphs-setup)
  (force-mode-line-update)
  ;; Don't take script into account when determining word boundaries
@@ -513,6 +521,15 @@ agda2-include-dirs is not bound." :warning))
  (add-hook 'change-major-mode-hook 'agda2-quit nil 'local)
  ;; Enable Xref
  (add-hook 'xref-backend-functions #'agda2-xref-backend -90 t))
+
+(defun agda2-initialize ()
+  "Initialize the `agda2-process'."
+  (unless (eq 'run (agda2-process-status))
+    (agda2-restart))
+  (condition-case err
+      (agda2-highlight-reload)
+    (error (message "Highlighting not loaded: %s"
+                    (error-message-string err)))))
 
 (defun agda2-restart ()
   "Tries to start or restart the Agda process."
@@ -559,7 +576,7 @@ agda2-include-dirs is not bound." :warning))
       (set-process-coding-system agda2-process 'utf-8 'utf-8)
       (set-process-query-on-exit-flag agda2-process nil)
       (set-process-filter agda2-process 'agda2-output-filter)
-      (setq agda2-in-progress nil
+      (setq agda2-in-progress 'busy
             agda2-file-buffer (current-buffer))
 
       (with-current-buffer agda2-bufname
@@ -567,6 +584,15 @@ agda2-include-dirs is not bound." :warning))
               mode-name            "Agda executable"
               agda2-last-responses nil)
         (set-buffer-file-coding-system 'utf-8))
+
+      ;; Block until we see an initial prompt.
+      ;;
+      ;; This avoids a race condition triggered by sending a command before we've had
+      ;; a chance to read any process output, which in turn makes `agda2-output-filter'
+      ;; erroneously set `agda2-in-progress' to nil when it sees the initial prompt.
+      (while agda2-in-progress
+        (unless (accept-process-output agda2-process agda2-restart-timeout nil t)
+          (error "Failed to start the Agda process")))
 
       (agda2-remove-annotations))))
 
@@ -1760,9 +1786,14 @@ ways."
         (rx (or "{-" "-}")))
        (string-end-rx
         (rx (not "\\") "\""))
+       (char-end-rx
+        (rx (not "\\") "'"))
+       (goal-end-rx
+        (rx (or "{!" "!}")))
        (code-rx
         (rx (or
              (submatch-n 1 "\"")
+             (and blank (submatch-n 1 "'"))
              ;; We want to make sure that we only match proper comments so that we don't
              ;; stop lexing on identifiers like foo--bar.
              (and (or bol (any "." "{" "}" "(" ")" ";" space)) (submatch-n 1 "--"))
@@ -1771,7 +1802,7 @@ ways."
                   (submatch-n 1 "?")
                   (or eol (any "." "{" "}" "(" ")" ";" space)))
              (submatch-n 1 (and "{" (? (any "-" "!"))))
-             (submatch-n 1 (and (? "!") "}"))
+             (submatch-n 1 "}")
              (submatch-n 1 (regexp code-end-rx)))))
        ;; Don't run modification hooks: we don't want this function to
        ;; trigger `agda2-abort-highlighting'.
@@ -1779,32 +1810,36 @@ ways."
        ;; Make sure that we don't use case-sensitive matching
        ;; so that we can pick up on all capitalizations of #+BEGIN_SRC.
        (case-fold-search t)
-       ;; The `stk' is used to store the lexer state.
-       ;; It is a list whose elements whose elements take the following form:
-       ;;
-       ;; -- A 'comment, which is use when we are inside a comment.
-       ;; -- A 'bracket, which is used to track the number of brackets we are inside.
-       ;; -- A NUMBER, which is used to track the starting positions of holes.
-       stk)
+       (nbrackets 0))
       ((advance-to-code-block ()
          (when code-start-rx (re-search-forward code-start-rx nil t)))
-       (advance-to-comment-end ()
+       (advance-to-comment-end (n)
          (re-search-forward comment-rx nil t)
          (pcase (match-string 0)
            ("{-"
-            (push 'comment stk)
-            (advance-to-comment-end))
+            (advance-to-comment-end (1+ n)))
            ("-}"
-            (when (eq 'comment (pop stk))
-              (advance-to-comment-end)))))
+            (unless (zerop n)
+              (advance-to-comment-end (1- n))))))
        (advance-to-string-end ()
          (re-search-forward string-end-rx nil t))
+       (advance-to-char-end ()
+         (re-search-forward char-end-rx nil t))
+       (advance-to-goal-end (n)
+         (re-search-forward goal-end-rx nil t)
+         (pcase (match-string 0)
+           ("{!"
+            (advance-to-goal-end (1+ n)))
+           ("!}"
+            (if (zerop n)
+                (point)
+              (advance-to-goal-end (1- n))))))
        (end-of-code-block (str)
          (pcase file-type
            ('latex (equal str "\\end{code}"))
            ('org (equal (downcase str) "#+end_src"))
            ((or 'typst 'markdown) (equal str "```"))
-           ('forester (and (equal str "}") (not (eq (car stk) 'bracket)))))))
+           ('forester (and (equal str "}") (zerop nbrackets))))))
     (save-excursion
       (goto-char (point-min))
       ;; This code assumes that all delimiters in Agda code
@@ -1819,30 +1854,25 @@ ways."
            (advance-to-code-block))
           ("\""
            (advance-to-string-end))
+          ("'"
+           (advance-to-char-end))
           ("{-"
-           (advance-to-comment-end))
+           (advance-to-comment-end 0))
           ("--"
            (end-of-line))
           ("{!"
-           (push (- (point) 2) stk))
-          ("!}"
-           (let ((start (pop stk)))
-             ;; We skip inserting a hole when the head of the stack
-             ;; is also a hole position marker to avoid putting holes
-             ;; inside of holes.
-             (unless (numberp (car stk))
-               (agda2-make-goal start (point) (pop goals)))))
+           (let ((start (- (point) 2))
+                 (end (advance-to-goal-end 0)))
+             (agda2-make-goal start end (pop goals))))
           ("?"
-           ;; Same idea; don't put holes inside of holes.
-           (unless (numberp (car stk))
-             (goto-char (match-beginning 1))
-             (delete-char 1)
-             (insert "{!!}")
-             (agda2-make-goal (- (point) 4) (point) (pop goals))))
+           (goto-char (match-beginning 1))
+           (delete-char 1)
+           (insert "{!!}")
+           (agda2-make-goal (- (point) 4) (point) (pop goals)))
           ("{"
-           (push 'bracket stk))
+           (cl-incf nbrackets))
           ("}"
-           (pop stk)))))))
+           (cl-decf nbrackets)))))))
 
 (defun agda2-make-goal (p q n)
   "Make a goal with number N at <P>{!...!}<Q>.  Assume the region is clean."

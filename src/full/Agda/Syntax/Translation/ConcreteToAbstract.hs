@@ -2249,11 +2249,17 @@ instance ToAbstract NiceDeclaration where
               | otherwise -> return $ WithHiding h a
             ConstructorName _ ys -> err $ PatternSynonymArgumentShadows IsConstructor x ys
             PatternSynResName ys -> err $ PatternSynonymArgumentShadows IsPatternSynonym x ys
-            UnknownName -> err $ UnusedVariableInPatternSynonym x
-            -- Other cases are impossible because parsing the pattern syn rhs would have failed.
-            _ -> __IMPOSSIBLE__
+            -- In the remaining cases, the name has not been bound by the pattern syn rhs.
+            DefinedName{}         -> failure
+            FieldName{}           -> failure
+            VarName _ LambdaBound -> failure
+            VarName _ LetBound    -> failure
+            VarName _ WithBound   -> failure
+            VarName _ MacroBound  -> failure
+            UnknownName           -> failure
           where
             err = setCurrentRange x . typeError
+            failure = err $ UnusedVariableInPatternSynonym x
 
     d@NiceLoneConstructor{} -> [] <$ do
       declarationWarning $ InvalidConstructorBlock $ getRange d
@@ -2504,27 +2510,31 @@ scopeCheckRecDef r o a pc uc forceEta x directives pars fields =
 
       bindModule p x m
 
+      -- Name kind of the record constructor (inductive/coinductive).
+      let conKind = maybe ConName (conKindOfName . rangedThing) ind
+
       -- Bind the record constructor.
       cm' <- case cm of
 
         -- Andreas, 2019-11-11, issue #4189, no longer add record constructor to record module.
-        Just (c, inst) -> NamedRecCon <$> bindRecordConstructorName c kind inst a p
-          where
-            -- Name kind of the record constructor (inductive/coinductive).
-            kind = maybe ConName (conKindOfName . rangedThing) ind
+        Just (c, inst) -> NamedRecCon <$> bindRecordConstructorName c conKind inst a p
 
         -- Amy, 2024-09-25: if the record does not have a named
-        -- constructor, then generate the QName here, and record it in
-        -- the TC state so that 'Record.constructor' can be resolved.
+        -- constructor, then generate the QName here.
         Nothing -> do
-          -- Technically it doesn't matter with what this name is
-          -- qualified since record constructor names have a special
-          -- printing rule in lookupQName.
+          -- The name is qualified by the record module @m@ so that it is
+          -- copied along with the record module by 'copyScope'.
+          -- (Record constructor names have a special printing rule in
+          -- lookupQName, so the qualification does not show up in output.)
           constr <- withCurrentModule m $
             freshAbstractQName noFixity' $ simpleName "constructor"
           pure $ FreshRecCon constr
 
-      setRecordConstructor x' (recordConName cm', fmap rangedThing ind)
+      -- Andreas, 2026-08-23: Make the constructor accessible as @R.constructor@
+      -- by binding the pseudo-name @constructor@ in the record module.
+      -- Note that this is just an alias; the constructor itself does not live
+      -- in the record module (issue #4189).
+      bindRecordConstructorPseudoName m conKind (recordConName cm')
 
       -- Return the translated record definition.
       let inst = caseMaybe cm NotInstanceDef snd
@@ -3092,7 +3102,8 @@ instance ToAbstract C.Pragma where
         singleton . A.RewritePragma r . catMaybes <$> do
           forM xs \ x -> setCurrentRange x $ unambiguousConOrDef NotARewriteRule x
 
-  toAbstract (C.ForeignPragma _ rb s) = [] <$ addForeignCode (rangedThing rb) s
+  toAbstract (C.ForeignPragma _ rb s) = pure [ A.ForeignPragma rb s ]
+    -- Issue #8647: for the sake of caching, handle FOREIGN code in the type checker
 
   toAbstract (C.CompilePragma _ rb x s) =
     maybe [] (\ y -> [ A.CompilePragma rb y s ]) <$>
@@ -3320,10 +3331,26 @@ scopeCheckDef warn x = do
     failure = Nothing <$ do warning $ warn x
     ret = return . Just
 
+-- | Does this left-hand side equation trigger a with-abstraction?
+--   @using p <- e@ does not, it merely introduces a let-binding.
+withAbstractingEqn :: RewriteEqn' qn nm p e -> Bool
+withAbstractingEqn = \case
+  Rewrite{} -> True   -- @rewrite e@
+  Invert{}  -> True   -- @with p <- e in eq@
+  LeftLet{} -> False  -- @using p <- e@
+
 instance ToAbstract C.Clause where
   type AbsOfCon C.Clause = A.Clause
 
   toAbstract (C.Clause top catchall ai lhs@(C.LHS p eqs with) rhs wh wcs) = withLocalVars $ do
+    -- Andreas, 2026-09-06, issue #8698:
+    -- Establish the invariant of 'RightHandSide':
+    -- no named @where@ module under @with@ or @rewrite@.
+    -- The @where@ clause of a @rewrite@ clause is passed on to 'RightHandSide',
+    -- whereas for @with@ it is the with-subclauses that carry the @where@ clause.
+    when (not (null with) || any withAbstractingEqn eqs) do
+      mapM_ rejectNamedWhereUnderWith $ wh : map (\ (C.Clause _ _ _ _ _ wh' _) -> wh') wcs
+
     -- Jesper, 2018-12-10, #3095: pattern variables bound outside the
     -- module are locally treated as module parameters
     modifyScope $ updateScopeLocals $ map $ second patternToModuleBound
@@ -3349,6 +3376,18 @@ instance ToAbstract C.Clause where
                        toAbstractCtx TopCtx $ RightHandSide [] with wcs' rhs NoWhere
         rhs <- toAbstract rhs
         return $ A.Clause lhs' [] rhs ds catchall
+    where
+      -- Andreas, 2026-09-06, issue #8698.
+      -- Reject a named @where@ module (@module M where@) in a @with@ or @rewrite@
+      -- clause.  With-abstraction can change the types of the module parameters
+      -- inherited by @M@, so instantiating @M@ from outside is unsound.
+      rejectNamedWhereUnderWith :: C.WhereClause -> ScopeM ()
+      rejectNamedWhereUnderWith = \case
+        SomeWhere r _ x _ _
+          | isUnderscore x -> return ()
+          | otherwise      -> setCurrentRange r $ typeError NamedWhereModuleUnderWith
+        AnyWhere{}         -> return ()
+        NoWhere            -> return ()
 
 
 whereToAbstract
@@ -3457,13 +3496,22 @@ checkNoTerminationPragma b ds =
       C.NotProjectionLikePragma _ _ -> []
       C.OverlapPragma _ _ _         -> []
 
+-- | The right-hand side of a clause, before scope checking.
+--
+--   Invariant (issue #8698): if this is a @with@ or @rewrite@ clause,
+--   i.e. if @_rhsWithExpr@ is not 'null' or @_rhsRewriteEqn@ contains a
+--   'withAbstractingEqn', then neither @_rhsWhere@ nor the @where@ clause of
+--   any of the @_rhsSubclauses@ is a named @where@ module ('SomeWhere').
+--   This is established by 'toAbstract' for 'C.Clause', the only producer of
+--   'RightHandSide', which otherwise throws 'NamedWhereModuleUnderWith'.
+--
 data RightHandSide = RightHandSide
   { _rhsRewriteEqn :: [RewriteEqn' () A.BindName A.Pattern A.Expr]
-    -- ^ @rewrite e | with p <- e in eq@ (many)
+      -- ^ @rewrite e | with p <- e in eq@ (many).
   , _rhsWithExpr   :: [C.WithExpr]
-    -- ^ @with e@ (many)
+      -- ^ @with e@ (many).
   , _rhsSubclauses :: (LocalVars, [C.Clause])
-    -- ^ the subclauses spawned by a with (monadic because we need to reset the local vars before checking these clauses)
+      -- ^ the subclauses spawned by a @with@.
   , _rhs           :: C.RHS
   , _rhsWhere      :: WhereClause
       -- ^ @where@ module.
