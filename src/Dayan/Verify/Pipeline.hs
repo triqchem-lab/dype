@@ -25,9 +25,9 @@ data VerifyResult = VerifyOk | VerifyFail [Text]
 runPipeline :: Text -> IO (Text, Text, VerifyResult)
 runPipeline = runPipelineWithInclude [agdaStdLibPath]
 
--- | Agda 标准库路径
+-- | Agda 标准库路径 (dype 自带的 std-lib)
 agdaStdLibPath :: FilePath
-agdaStdLibPath = "/data/work/functional-programming/agda/std-lib/src"
+agdaStdLibPath = "/data/work/functional-programming/dype/std-lib/src"
 
 -- | 带额外 include-path 的管线 (用于 Sovereign 库依赖)
 runPipelineWithInclude :: [FilePath] -> Text -> IO (Text, Text, VerifyResult)
@@ -44,7 +44,7 @@ runPipelineWithInclude extraPaths dySource = do
         createDirectoryIfMissing True agdaDir
         let agdaPath = agdaDir </> modFile
         TIO.writeFile agdaPath agdaSrc
-        let includeArgs = ["--include-path=" <> tmp, "--include-path=" <> agdaStdLibPath]
+        let includeArgs = ["--no-default-libraries", "--include-path=" <> tmp, "--include-path=" <> agdaStdLibPath]
                        ++ ["--include-path=" <> p | p <- extraPaths]
         (exit, stdout, stderr) <- readProcessWithExitCode "agda"
           (includeArgs ++ [agdaPath]) ""
